@@ -6,7 +6,7 @@
 # Description: Script to consolidate all configuration type settings for quasar pipeline and any tools contained within
 # 	Just needs to be sourced within a script to acquire all variables stored within
 #
-# Usage: . ./config.sh
+# Usage: . ./config_template.sh
 #
 # Output location: No output created
 #
@@ -16,7 +16,6 @@
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
-
 
 # Get hostname to help determine if certain tools can be run and how to specifically get others to run with the right options
 hostname=$(hostname -f)
@@ -55,7 +54,7 @@ local_DBs="/scicomp/groups/OID/NCEZID/DHQP/CEMB/databases"
 # Scicomp databases that are necessary for pipeline...eventually refseq, kraken, gottcha,
 scicomp_DBs="/scicomp/reference"
 # Maximum number of quaisar pipelines to be running concurrently
-max_quaisars=9999
+max_quaisars=25
 
 #Instruments and locations of files stored by those instruments
 miseq1="/scicomp/instruments/17-4-4248_Illumina-MiSeq-M04765"
@@ -148,14 +147,12 @@ resGANNOT_srst2=$(find ${local_DBs}/star/ResGANNOT_*_srst2.fasta -maxdepth 1 -ty
 resGANNOT_previous_srst2=$(find ${local_DBs}/star/ResGANNOT_*_srst2.fasta -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n | head -n 2 | tail -n 1)
 #echo "ResGANNOT Summary found: ${resGANNOT_srst2}"
 ResGANNCBI_srst2=$(find ${local_DBs}/star/ResGANNCBI_*_srst2.fasta -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n | head -n 1)
-ResGANNCBI_previous_srst2=$(find ${local_DBs}/star/ResGANNCBI_*_srst2.fasta -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n | head -n 2 | tail -n 1)
-#echo "ResGANNOT Summary found: ${ResGANNCBI_srst2}"
+resGANNCBI_previous_srst2=$(find ${local_DBs}/star/ResGANNCBI_*_srst2.fasta -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n | head -n 2 | tail -n 1)
+#echo "ResGANNOT Summary found: ${resGANNOT_srst2}"
 argannot_srst2_filename=$(echo "${argannot_srst2}" | rev | cut -d'/' -f1 | rev | cut -d'_' -f1,2)
 resFinder_srst2_filename=$(echo "${resFinder_srst2}" | rev | cut -d'/' -f1 | rev | cut -d'_' -f1,2)
-ResGANNOT_srst2_filename=$(echo "${resGANNOT_srst2}" | rev | cut -d'/' -f1 | rev | cut -d'_' -f1,2)
-#echo "${ResGANNCBI_srst2}"
+resGANNOT_srst2_filename=$(echo "${resGANNOT_srst2}" | rev | cut -d'/' -f1 | rev | cut -d'_' -f1,2)
 ResGANNCBI_srst2_filename=$(echo "${ResGANNCBI_srst2}" | rev | cut -d'/' -f1 | rev | cut -d'_' -f1,2)
-#echo "${ResGANNCBI_srst2_filename}"
 # gapped (g) versus ungapped(u)
 csstar_gapping="g"
 # Identity % 100(p), 99(u), 98(h), 95(m), 80(low)
