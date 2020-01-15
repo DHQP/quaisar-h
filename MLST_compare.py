@@ -25,10 +25,10 @@ import argparse
 
 # Parse all arguments from command line
 def parseArgs(args=None):
-	parser = argparse.ArgumentParser(description='Script to group similar MLSTs together')
-	parser.add_argument('-i', '--input', required=True, help='input samples file')
-	parser.add_argument('-o', '--output', required=True, help='output/outbreak folder name')
-	return parser.parse_args()
+    parser = argparse.ArgumentParser(description='Script to group similar MLSTs together')
+    parser.add_argument('-i', '--input', required=True, help='input samples file')
+    parser.add_argument('-o', '--output', required=True, help='output/outbreak folder name')
+    return parser.parse_args()
 
 
 def List_Scorer(list1, list2):
@@ -306,7 +306,7 @@ def STs_Present(input_ST_list):
     for entries in Final:
         Out.append(str(entries))
     #Out_String = ','.join(Out)
-	Out_String = '_'.join(Out)
+    Out_String = '_'.join(Out)
     return Out_String
 
 def OA_Samples(input_file, outbreak_name):
@@ -337,7 +337,7 @@ def OA_Samples(input_file, outbreak_name):
             Isolate_List.append(isos[0])
         STs = ST_Cluster_Maker(Isolate_List)
         #Clusters = Close_STs(STs)
-		Clusters = Same_STs(STs)
+        Clusters = Same_STs(STs)
         for clusters in Clusters:
             if len(clusters) > 1:
                 ST_String = STs_Present(clusters)
