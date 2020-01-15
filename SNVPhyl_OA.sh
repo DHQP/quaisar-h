@@ -59,6 +59,7 @@ python MLST_compare.py -i $List -o $Folder/$Name
 for k in $Folder/*.samples
 do
 	sample=$(basename $k)
+	echo "qSNVPhyl.sh $k $Folder ${sample:0: -8}"
 	qsub qSNVPhyl.sh $k $Folder ${sample:0: -8}
 done
 
