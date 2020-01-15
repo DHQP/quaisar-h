@@ -48,7 +48,8 @@ mass_qsub_folder="/scicomp/groups/OID/NCEZID/DHQP/CEMB/Nick_DIR/mass_subs"
 if [[ ! -d "/scicomp/groups/OID/NCEZID/DHQP/CEMB/Nick_DIR/mass_subs" ]]; then
 	mkdir -p "/scicomp/groups/OID/NCEZID/DHQP/CEMB/Nick_DIR/mass_subs"
 fi
-
+# Location of default Outbreak Analyses files
+Phyl_OA="/scicomp/groups/OID/NCEZID/DHQP/CEMB/PhylogenyAnalysis"
 # Local databases that are necessary for pipeline...ANI, BUSCO, star, adapters, phiX
 local_DBs="/scicomp/groups/OID/NCEZID/DHQP/CEMB/databases"
 # Scicomp databases that are necessary for pipeline...eventually refseq, kraken, gottcha,

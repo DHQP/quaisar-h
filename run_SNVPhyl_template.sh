@@ -21,7 +21,7 @@ fi
 #
 # Modules required: snvphyl-galaxy-cli/1.3.0, Python/2.7.13 Mash/2.0
 #
-# v1.0 (10/3/2019)
+# v1.0.1 (1/15/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -68,6 +68,7 @@ fi
 echo $(python3 -V)
 
 ${shareScript}/clean_list.sh ${1}
+cp ${1} ${OUTDATADIR}
 centroid_filename=$(basename ${1}).centroid
 python3 ${shareScript}/Mash_centroid.py -i ${1} -o ${OUTDATADIR}/${centroid_filename}
 
@@ -141,6 +142,9 @@ sed -i "s/reference/${ref}/g" "${OUTDATADIR}/output/snvMatrix.tsv"
 sed -i "s/reference/${ref}/g" "${OUTDATADIR}/output/phylogeneticTree.newick"
 
 echo -e "\nReference:\t${ref}\nSNVPhyl core estimate:\t${snv_est}%\n" >> "${OUTDATADIR}/output/snvMatrix.tsv"
+
+cp "${OUTDATADIR}/output/snvMatrix.tsv" "${OUTDATADIR}/${3}_snvMatrix.tsv"
+cp "${OUTDATADIR}/output/phylogeneticTree.newick" "${OUTDATADIR}/${3}_SNVPhyl.newick"
 
 ml -snvphyl-galaxy-cli/1.3.0 -Python2/2.7.13 -Mash/2.0
 

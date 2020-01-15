@@ -76,7 +76,7 @@ rm -r "${processed}/${1}/sorted_summaries.txt"
 # Order samples (according to logsheet) in folder if not already done so
 if [[ ! -f ${processed}/${1}/${1}_list_ordered.txt ]]; then
 	# Copy the newest log file to the local directory
-	python3 ${shareScript}/order_samples_2.py -i "${local_DBs}/Seqlog_copies/2019_MMBSeq_Log.xlsx" -r ${1} -s "FY19 Miseq Isolate Log" -o "${processed}/${1}/${1}_list_ordered.txt"
+	python3 ${shareScript}/order_samples_2.py -i "${local_DBs}/Seqlog_copies/2019_2020_MMBSeq_Log.xlsx" -r ${1} -s "Miseq Isolate Log" -o "${processed}/${1}/${1}_list_ordered.txt"
 	if [[ ! -s "${processed}/${1}/${1}_list_ordered.txt" ]]; then
 		echo "Isolates were not able to be sorted, something wrong with MiSeq Log entries or list file, or....?"
 		exit

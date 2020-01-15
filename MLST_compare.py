@@ -9,7 +9,7 @@
 #
 # Modules required: None
 #
-# v1.0.1 (1/06/2020)
+# v1.0.2 (1/15/2020)
 #
 # Created by Rich Stanton (njr5@cdc.gov)
 #
@@ -143,12 +143,12 @@ def MLST_ST(MLST_file):
     String1 = f.readline()
     f.close()
     ST = ['None']
-    print(String1)
+    #print(String1)
     List1 = list(filter(None, re.split("[()\t\n]+", String1)))
     if len(List1) == 17 or len(List1) == 19:
         ST = List1[2]
         ST = list(filter(None,re.split("[/,]+", ST)))
-        print(ST)
+        #print(ST)
     return ST
 
 def Species_Cluster_Maker(input_list):
@@ -158,7 +158,7 @@ def Species_Cluster_Maker(input_list):
     for isos in input_list:
         Name = isos.split('/')[1]
         MLST = glob.glob('/scicomp/groups/OID/NCEZID/DHQP/CEMB/MiSeqAnalysisFiles/' + isos + '/MLST/*.mlst')
-        print("IS:",isos, MLST[0])
+        #print("IS:",isos, MLST[0])
         Species = MLST_Species(MLST[0])
         if Species == 'Unknown':
             Stats = '/scicomp/groups/OID/NCEZID/DHQP/CEMB/MiSeqAnalysisFiles/' + isos + '/' + Name + '_pipeline_stats.txt'
@@ -242,6 +242,26 @@ def Close_STs(input_clusters_list):
             Output_Clusters.append(cluster1)
     return Output_Clusters
 
+def Same_STs(input_clusters_list):
+    """Expands cluster lists to include isolates from the same ST"""
+    Output_Clusters = []
+    Output_Clusters.append(input_clusters_list[0])
+    for cluster1 in input_clusters_list[1:]:
+        Add = 0
+        for cluster2 in Output_Clusters:
+            Name1 = cluster1[0][0]
+            Name2 = cluster2[0][0]
+            Max = Max_MLST_Entries(Name1, Name2)
+            if Max == 7:
+                Add = 1
+                New_Cluster = cluster1 + cluster2
+                Output_Clusters.remove(cluster2)
+                Output_Clusters.append(New_Cluster)
+                break
+        if Add == 0:
+            Output_Clusters.append(cluster1)
+    return Output_Clusters
+
 def Sample_Maker(input_list, output_file):
     """Makes an output file of the isolates in a list"""
     Output = open(output_file, 'w')
@@ -276,16 +296,17 @@ def STs_Present(input_ST_list):
     Final = []
     for entries in STs:
         if str.isdigit(entries) == True:
-            print("is digit:"+entries)
+            #print("is digit:"+entries)
             Final.append(int(entries))
         else:
-            print("Not digit:"+entries)
+            #print("Not digit:"+entries)
             Final.append(entries)
     Final.sort()
     Out = []
     for entries in Final:
         Out.append(str(entries))
     Out_String = ','.join(Out)
+	Out_String = '_'.join(Out)
     return Out_String
 
 def OA_Samples(input_file, outbreak_name):
@@ -301,7 +322,7 @@ def OA_Samples(input_file, outbreak_name):
             Sample_List.append(String1)
             String1 = f.readline()
     f.close()
-    print("SL:",Sample_List)
+    #print("SL:",Sample_List)
     Species = Species_Cluster_Maker(Sample_List)
 ##    for entries in Species:
 ##        Name= entries[0][1]
@@ -315,7 +336,8 @@ def OA_Samples(input_file, outbreak_name):
         for isos in entries:
             Isolate_List.append(isos[0])
         STs = ST_Cluster_Maker(Isolate_List)
-        Clusters = Close_STs(STs)
+        #Clusters = Close_STs(STs)
+		Clusters = Same_STs(STs)
         for clusters in Clusters:
             if len(clusters) > 1:
                 ST_String = STs_Present(clusters)
@@ -326,7 +348,7 @@ def OA_Samples(input_file, outbreak_name):
                 f.close()
         if len(Clusters) > 1:
             f = open(outbreak_name + '__' + Name + '.samples', 'w')
-            entries = Repeat_Remover(clusters)
+            entries = Repeat_Remover(entries)
             for isos in entries:
                 f.write(isos[0] + '\n')
             f.close()

@@ -21,7 +21,7 @@ fi
 #
 # Modules required: None
 #
-# v1.0 (12/23/2019)
+# v1.0.1 (1/15/2019)
 #
 # Created by Rich Stanton (njr5@cdc.gov)
 #
@@ -61,5 +61,7 @@ do
 	sample=$(basename $k)
 	qsub qSNVPhyl.sh $k $Folder ${sample:0: -8}
 done
+
+cp $List $Folder/$List.original
 
 ml -Python3/3.5.2
