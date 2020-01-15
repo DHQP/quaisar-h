@@ -54,15 +54,16 @@ fi
 
 ml Python3/3.5.2
 
-python MLST_compare.py -i $List -o $Folder/$Name
+python MLST_compare.py -i $List -o $Folder/$Name/$Name
 
-for k in $Folder/*.samples
+for k in $Folder/$Name/*.samples
 do
 	sample=$(basename $k)
 	echo "qSNVPhyl.sh $k $Folder ${sample:0: -8}"
 	qsub qSNVPhyl.sh $k $Folder ${sample:0: -8}
 done
 
-cp $List $Folder/$List.original
+short_list=$(basename $List)
+cp $List $Folder/$Name/$short_list.original
 
 ml -Python3/3.5.2
