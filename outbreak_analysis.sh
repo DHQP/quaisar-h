@@ -45,7 +45,7 @@ if [[ $# -eq 0 ]]; then
 elif [[ "$1" = "-h" ]]; then
 	echo "Usage is ./outbreak_analysis.sh path_to_list_file gapped/ungapped 80/95/98/99/100 output_prefix [matrix|SNV|both] clobberness[keep|clobber]"
 	exit 0
-elif [[ ! -f ${list_file} ]]; then
+elif [[ ! -f ${1} ]]; then
 	echo "list does not exist...exiting"
 	exit 1
 # Checks that the gapping is set to one of the csstar presets
