@@ -305,7 +305,7 @@ def STs_Present(input_ST_list):
     Out = []
     for entries in Final:
         Out.append(str(entries))
-    Out_String = ','.join(Out)
+    #Out_String = ','.join(Out)
 	Out_String = '_'.join(Out)
     return Out_String
 

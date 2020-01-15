@@ -45,7 +45,7 @@ if [[ $# -eq 0 ]]; then
 elif [[ "$1" = "-h" ]]; then
 	echo "Usage is ./outbreak_analysis.sh path_to_list_file gapped/ungapped 80/95/98/99/100 output_prefix [matrix|SNV|both] clobberness[keep|clobber]"
 	exit 0
-elif [[ ! -f ${1} ]]; then
+elif [[ ! -f ${list_file} ]]; then
 	echo "list does not exist...exiting"
 	exit 1
 # Checks that the gapping is set to one of the csstar presets
@@ -114,7 +114,8 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 
 	# Clean list of any extra spaces and formatting
 	"${shareScript}/clean_list.sh" "${1}"
-	cp "${1}" "${output_directory}"
+	cp "${1}" "${output_directory}/${4}_samples.txt"
+	list_file="${output_directory}/${4}_samples.txt"
 
 	# Creates a dictionary to match genes to AR conferred when parsing srst files
 	declare -A groups
@@ -184,7 +185,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 				echo "${project}/${sample_name}" >> "${output_directory}/${4}-GAMA_todo.txt"
 				run_GAMA="true"
 			fi
-		done < ${1}
+		done < ${list_file}
 	else
 		run_csstar="true"
 		run_srst2="true"
@@ -192,15 +193,15 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 		rm "${output_directory}/${4}-csstar_todo.txt"
 		rm "${output_directory}/${4}-srst2_todo.txt"
 		rm "${output_directory}/${4}-GAMA_todo.txt"
-		echo "Copying ${1} to ${output_directory}/${4}_*_todo.txt"
-		cp ${1} "${output_directory}/${4}-csstar_todo.txt"
-		cp ${1} "${output_directory}/${4}-srst2_todo.txt"
-		cp ${1} "${output_directory}/${4}-GAMA_todo.txt"
+		echo "Copying ${list_file} to ${output_directory}/${4}_*_todo.txt"
+		cp ${list_file} "${output_directory}/${4}-csstar_todo.txt"
+		cp ${list_file} "${output_directory}/${4}-srst2_todo.txt"
+		cp ${list_file} "${output_directory}/${4}-GAMA_todo.txt"
 	fi
 
 	# Creating mashtree of all isolates in list
 	echo "Creating mashtree of all samples"
-	${shareScript}/mashtree_of_list.sh -i "${1}" -d "${output_directory}/mashtree" -o "${4}"
+	${shareScript}/mashtree_of_list.sh -i "${list_file}" -d "${output_directory}/mashtree" -o "${4}"
 	cp "${output_directory}/mashtree/${4}.dnd" "${output_directory}/${4}_MASH.newick"
 	sed -i "s/_scaffolds_trimmed//g" "${output_directory}/${4}_MASH.newick"
 	rm -r ${output_directory}/mashtree
@@ -531,7 +532,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 			echo -e "${project}\t${sample_name}\tplasmid_assembly\tNo_Plasmids_Found\t${plas_contigs}_contigs-${components}_components" >> ${output_directory}/${4}-plasmid_summary.txt
 		fi
 
-	done < ${1}
+	done < ${list_file}
 
 	# Calls script that sorts and formats all isolates info into a matrix for easy viewing
 	python3 "${shareScript}/project_parser.py" -s "${output_directory}/${4}-sample_summary.txt" -p "${output_directory}/${4}-plasmid_summary.txt" -o "${output_directory}/${4}_AR_plasmid_report.csv" -d "${ResGANNCBI_srst2_filename}"
@@ -547,7 +548,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 fi
 
 if [[ "${analysis_requested}" == "BOTH" ]] || [[ "${analysis_requested}" == "SNV" ]]; then
-	"${shareScript}/SNVPhyl_OA.sh" "${1}" "${4}" "${Phyl_OA}"
+	"${shareScript}/SNVPhyl_OA.sh" "${list_file}" "${4}" "${Phyl_OA}"
 fi
 
 
