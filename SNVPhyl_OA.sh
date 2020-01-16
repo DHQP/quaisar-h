@@ -59,8 +59,8 @@ python MLST_compare.py -i $List -o $Folder/$Name/$Name
 for k in $Folder/$Name/*.samples
 do
 	sample=$(basename $k)
-	echo "qSNVPhyl.sh $k $Folder ${sample:0: -8}"
-	qsub qSNVPhyl.sh $k $Folder ${sample:0: -8}
+	echo "qSNVPhyl.sh $k $Folder/$Name ${sample:0: -8}"
+	qsub qSNVPhyl.sh $k $Folder/$Name ${sample:0: -8}
 done
 
 short_list=$(basename $List)
