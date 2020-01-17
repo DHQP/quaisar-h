@@ -12,7 +12,7 @@
 #
 # Modules required: None
 #
-# v1.0 (10/3/2019)
+# v1.0.1 (1/17/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -23,13 +23,16 @@ host=$(echo ${hostname} | cut -d'.' -f1)
 #echo ${hostname}
 if [[ "${host}" = "scicomp-mue-01" ]];
 then
-	host="biolinux"
+	host="Biolinux"
 elif [[ "${host}" =~ ^("login01"|"aspen"|"login.aspen"|"login02"|"login2.aspen") ]];
 then
 	host="aspen_login"
 elif [[ "${host:0:4}" = "node" ]];
 then
 	host="cluster:${host}"
+elif [[ "${host}" = "scbs-mue-prod-01" ]];
+then
+	host="Biolinux2020"
 else
 	echo "Hostname (${host}) not recognized, exiting"
 	exit 1
