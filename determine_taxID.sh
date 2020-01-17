@@ -20,7 +20,7 @@ fi
 #
 # Modules required: None
 #
-# v1.0.1 (11/4/2019)
+# v1.0.2 (1/17/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -85,14 +85,14 @@ Check_source() {
 			#echo "largest:${largest_species}:"
 			#echo "best:${best_species}:"
 			if [[ "${largest_arr_size}" -ge 3 ]]; then
-				if [[ "${largest_array[2]}" == "Unidentified" ]] || [[ "${largest_array[2]}" == "No_16s_"* ]] || [[ "${largest_array[2]}" == "uncultured" ]]; then
+				if [[ "${largest_array[2]}" == "Unidentified" ]] || [[ "${largest_array[2]}" == "No_16s_"* ]] || [[ "${largest_array[2]}" == "uncultured"* ]]; then
 					:
 				else
 					do_16s "largest"
 					return
 				fi
 			elif [[ "${best_arr_size}" -ge 3 ]] ; then
-				if [[ "${best_array[2]}" == "Unidentified" ]]  || [[ "${best_array[2]}" == "No_16s_"* ]] || [[ "${best_array[2]}" == "uncultured" ]]; then
+				if [[ "${best_array[2]}" == "Unidentified" ]]  || [[ "${best_array[2]}" == "No_16s_"* ]] || [[ "${best_array[2]}" == "uncultured"* ]]; then
 					:
 				else
 					do_16s "best"
