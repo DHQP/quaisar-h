@@ -245,7 +245,7 @@ def do_AR(input_summary_AR, input_plas, output_file, DB_name):
 	header="id,Project__autocolour,Species__autocolour,Species_determinant__autocolour,Species_Support__autocolour,MLST_Pasteur__autocolour,MLST_Pasteur_alleles__autocolour,ALT_MLST__autocolour,ALT_MLST_alleles__autocolour,AR_Database__autocolour"
 	for thing in all_ar_and_plasmids:
 		header = header + "," + thing + "__autocolour"
-	header = header[:-1]
+	#header = header[:-1]
 	summary_out=open(output_file, 'w')
 	summary_out.write(header+'\n')
 	#all_AR_to_write=all_AR_to_write[2:]
