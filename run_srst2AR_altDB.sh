@@ -84,8 +84,8 @@ srst2 --input_pe "${processed}/${2}/${1}/srst2/${1}_S1_L001_R1_001.fastq.gz" "${
 # Clean up extra files
 rm -r "${processed}/${2}/${1}/srst2/${1}_S1_L001_R1_001.fastq.gz"
 rm -r "${processed}/${2}/${1}/srst2/${1}_S1_L001_R2_001.fastq.gz"
-rm -r "${processed}/${2}/${1}/srst2/"*".bam"
-rm -r "${processed}/${2}/${1}/srst2/"*".pileup"
+#rm -r "${processed}/${2}/${1}/srst2/"*".bam"
+#rm -r "${processed}/${2}/${1}/srst2/"*".pileup"
 
 # Rename files to reduce redundancy
 find ${processed}/${2}/${1}/srst2 -type f -name "*_${alt_DB}__*" | while read FILE ; do

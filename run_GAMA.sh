@@ -21,7 +21,7 @@ fi
 #
 # Modules required: blat, Python3/3.5.2
 #
-# v1.0.2 (10/8/2019)
+# v1.0.3 (1/17/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -50,9 +50,13 @@ elif [[ "${3}" != "-c" &&  "${3}" != "-p" ]]; then
 	exit 1
 elif [ ! -z "${4}" ]; then
 	ARDB="${4}"
+	ARDB_short=$(echo "${ARDB}" | rev | cut -d'/' -f1 | rev | cut -d'.' -f1)
 else
 	ARDB="${ResGANNCBI_srst2}"
+	ARDB_short="${ResGANNCBI_srst2_filename}"
 fi
+
+echo "${4} - Using DB - ${ARDB}"
 
 # Sets the output folder of GAMA classifier to the GAMA folder under the sample_name folder in processed samples
 OUTDATADIR="${processed}/${2}/${1}"
@@ -81,7 +85,7 @@ else
 	exit 5564
 fi
 ### GAMA AR Classifier ### in species mode
-python3 GAMA_ResGANNCBI_SciComp_Exe.py -i "${assembly_source}" -d "${ARDB}" -o "${OUTDATADIR}/${1}.${ResGANNCBI_srst2_filename}.GAMA"
+python3 GAMA_ResGANNCBI_SciComp_Exe.py -i "${assembly_source}" -d "${ARDB}" -o "${OUTDATADIR}/${1}.${ARDB_short}.GAMA"
 
 ml -blat -Python3/3.5.4
 
