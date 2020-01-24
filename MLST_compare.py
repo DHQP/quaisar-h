@@ -297,7 +297,7 @@ def STs_Present(input_ST_list):
     for entries in STs:
         if str.isdigit(entries) == True:
             print("is digit:"+entries)
-            Final.append(int(entries))
+            Final.append(str(entries))
         else:
             print("Not digit:"+entries)
             Final.append(entries)
