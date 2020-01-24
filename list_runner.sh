@@ -34,9 +34,9 @@ if [[ $# -eq 0 ]]; then
 elif [[ "$1" = "-h" ]]; then
 	echo "Usage is ./act_by_list_template.sh path_for_list_file"
 	exit 0
-elif [[ ! -f "${1}" ]]; then
-	echo "List file (${1}) does not exist, can not proceed"
-	exit 0
+#elif [[ ! -f "${1}" ]]; then
+#	echo "List file (${1}) does not exist, can not proceed"
+#	exit 0
 fi
 
 sample_name="${1}"
