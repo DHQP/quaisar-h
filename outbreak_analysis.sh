@@ -443,11 +443,13 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 		# Pulls MLST type for sample and adds it to the summary file
 		if [[ -f "${OUTDATADIR}/MLST/${sample_name}_Pasteur.mlst" ]]; then
 			mlst=$(head -n 1 ${OUTDATADIR}/MLST/${sample_name}_Pasteur.mlst)
+			mlst=${mlst//,/\/}
 			alleles=$(echo "${mlst}" | cut -d'	' -f4-)
+			alleles=${alleles//,/\/}
 			echo "${alleles}"
 			alleles=${alleles//	/.}
 			echo "${alleles}"
-			#alleles=${alleles/ /.}
+			#alleles=${alleles// /.}
 			#echo "${alleles}"
 			mlst=$(echo "${mlst}" | cut -d'	' -f3)
 			if [[ "${mlst}" == "SUB" ]] || [[ "${mlst}" == "AU" ]]; then
@@ -474,6 +476,8 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 			alt_alleles=$(echo "${alt_mlst}" | cut -d'	' -f4-)
 			alt_alleles=${alt_alleles//	/.}
 			alt_mlst=$(echo "${alt_mlst}" | cut -d'	' -f3)
+			alt_mlst=${alt_mlst//,/\/}
+			alt_alleles=${alt_alleles//,/\/}
 			if [[ "${alt_mlst}" == "SUB" ]] || [[ "${alt_mlst}" == "AU" ]]; then
 				:
 			else
