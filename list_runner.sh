@@ -66,7 +66,7 @@ while IFS= read -r var; do
 			output="${output}	${entry//\//|}"
 		done
 
-		echo "${output}" > "${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst"
+		echo "${output}" > "${processed}/${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst"
 	fi
 
 done < "${1}"
