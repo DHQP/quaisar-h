@@ -60,14 +60,15 @@ project="${processed}/${2}"
 		gpi=$(echo "${info}" | cut -d'	' -f9)
 		rpoD=$(echo "${info}" | cut -d'	' -f10)
 		allEntries=( ${db} ${st} ${gltA} ${gyrB} ${gdhB} ${recA} ${cpn60} ${gpi} ${rpoD})
+
+		output="${assembly}"
+		for entry in ${allEntries[@]}; do
+			output="${output}	${entry//\//|}"
+		done
+
+		echo "${output}" > "${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst"
 	fi
-
-	output="${assembly}"
-	for entry in ${allEntries[@]}; do
-		output="${output}	${entry//\//|}"
-	done
-
-	echo "${output}"
+	
 #done < "${1}"
 
 # Send a completion email to whoever ran the script
