@@ -48,7 +48,7 @@ while IFS= read -r var; do
 	project=$(echo "${var}" | cut -d'/' -f1 | tr -d '[:space:]')
 	if [[ -f "${processed}/${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst" ]]; then
 		echo echo "Found Oxford for ${project}/${sample_name} in the list"
-		info=$(head -n 1 "${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst")
+		info=$(head -n 1 "${processed}/${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst")
 		assembly=$(echo "${info}" | cut -d'	' -f1)
 		db=$(echo "${info}" | cut -d'	' -f2)
 		st=$(echo "${info}" | cut -d'	' -f3)
