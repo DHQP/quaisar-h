@@ -39,16 +39,40 @@ elif [[ ! -f "${1}" ]]; then
 	exit 0
 fi
 
+sample_name="${1}"
+project="${processed}/${2}"
+
 # Loop through and act on each sample name in the passed/provided list
-while IFS= read -r var; do
-	sample_name=$(echo "${var}" | cut -d'/' -f2 | tr -d '[:space:]')
-	project=$(echo "${var}" | cut -d'/' -f1 | tr -d '[:space:]')
-	echo "Found ${project}/${sample_name} in the list"
-done < "${1}"
+#while IFS= read -r var; do
+#	sample_name=$(echo "${var}" | cut -d'/' -f2 | tr -d '[:space:]')
+#	project=$(echo "${var}" | cut -d'/' -f1 | tr -d '[:space:]')
+#	echo "Found ${project}/${sample_name} in the list"
+	if [[ -f "${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst" ]]; then
+		info=$(head -n 1 "${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst")
+		assembly=$(echo "${info}" | cut -d'	' -f1)
+		db=$(echo "${info}" | cut -d'	' -f2)
+		st=$(echo "${info}" | cut -d'	' -f3)
+		gltA=$(echo "${info}" | cut -d'	' -f4)
+		gyrB=$(echo "${info}" | cut -d'	' -f5)
+		gdhB=$(echo "${info}" | cut -d'	' -f6)
+		recA=$(echo "${info}" | cut -d'	' -f7)
+		cpn60=$(echo "${info}" | cut -d'	' -f8)
+		gpi=$(echo "${info}" | cut -d'	' -f9)
+		rpoD=$(echo "${info}" | cut -d'	' -f10)
+		allEntries=( ${db} ${st} ${gltA} ${gyrB} ${gdhB} ${recA} ${cpn60} ${gpi} ${rpoD})
+	fi
+
+	output="${assembly}"
+	for entry in ${allEntries[@]}; do
+		output="${output}	${entry//\//|}"
+	done
+
+	echo "${output}"
+#done < "${1}"
 
 # Send a completion email to whoever ran the script
 echo "All isolates completed"
 global_end_time=$(date "+%m-%d-%Y @ %Hh_%Mm_%Ss")
 #Script exited gracefully (unless something else inside failed)
-printf "%s %s" "Act_by_list_template.sh has completed check of snd MLSTs" "${global_end_time}" | mail -s "act_by_list complete" nvx4@cdc.gov
+#printf "%s %s" "Act_by_list_template.sh has completed check of snd MLSTs" "${global_end_time}" | mail -s "act_by_list complete" nvx4@cdc.gov
 exit 0
