@@ -34,19 +34,19 @@ if [[ $# -eq 0 ]]; then
 elif [[ "$1" = "-h" ]]; then
 	echo "Usage is ./act_by_list_template.sh path_for_list_file"
 	exit 0
-#elif [[ ! -f "${1}" ]]; then
-#	echo "List file (${1}) does not exist, can not proceed"
-#	exit 0
+elif [[ ! -f "${1}" ]]; then
+	echo "List file (${1}) does not exist, can not proceed"
+	exit 0
 fi
 
-sample_name="${1}"
-project="${processed}/${2}"
+#sample_name="${1}"
+#project="${processed}/${2}"
 
 # Loop through and act on each sample name in the passed/provided list
-#while IFS= read -r var; do
-#	sample_name=$(echo "${var}" | cut -d'/' -f2 | tr -d '[:space:]')
-#	project=$(echo "${var}" | cut -d'/' -f1 | tr -d '[:space:]')
-#	echo "Found ${project}/${sample_name} in the list"
+while IFS= read -r var; do
+	sample_name=$(echo "${var}" | cut -d'/' -f2 | tr -d '[:space:]')
+	project=$(echo "${var}" | cut -d'/' -f1 | tr -d '[:space:]')
+	echo "Found ${project}/${sample_name} in the list"
 	if [[ -f "${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst" ]]; then
 		info=$(head -n 1 "${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst")
 		assembly=$(echo "${info}" | cut -d'	' -f1)
@@ -68,8 +68,8 @@ project="${processed}/${2}"
 
 		echo "${output}" > "${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst"
 	fi
-	
-#done < "${1}"
+
+done < "${1}"
 
 # Send a completion email to whoever ran the script
 echo "All isolates completed"
