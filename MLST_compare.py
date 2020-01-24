@@ -297,10 +297,10 @@ def STs_Present(input_ST_list):
     for entries in STs:
         if str.isdigit(entries) == True:
             print("is digit:"+entries)
-            Final.append(str(entries))
+            Final.append(str(entries).replace("|","and"))
         else:
             print("Not digit:"+entries)
-            Final.append(entries)
+            Final.append(entries.replace("|","and"))
     Final.sort()
     Out = []
     for entries in Final:
