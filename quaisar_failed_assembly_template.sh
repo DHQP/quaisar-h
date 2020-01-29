@@ -337,13 +337,13 @@ if [ -s "${OUTDATADIR}/${sample_name}/prokka/${sample_name}_PROKKA.gbf" ] || [ -
 	# Get start time of busco
 	start=$SECONDS
 	# Set default busco database as bacteria in event that we dont have a database match for sample lineage
-	buscoDB="bacteria_odb9"
+	buscoDB="bacteria_odb10"
 	# Iterate through taxon levels (species to domain) and test if a match occurs to entry in database. If so, compare against it
 	busco_found=0
 	for tax in $species $genus $family $order $class $phylum $kingdom $domain
 	do
-		if [ -d "${local_DBs}/BUSCO/${tax,}_odb9" ]; then
-			buscoDB="${tax,}_odb9"
+		if [ -d "${local_DBs}/BUSCO/${tax,}_odb10" ]; then
+			buscoDB="${tax,}_odb10"
 			busco_found=1
 			break
 		fi
