@@ -11,7 +11,7 @@
 #
 # Modules required: None
 #
-# v1.0 (10/3/2019)
+# v1.0.1 (1/29/2019)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -103,7 +103,7 @@ def do_MLST_check(input_MLST_file, MLST_filetype):
 		mlstype_str = str(MLST_temp_type)
 	else:
 		mlstype=MLST_temp_type.split(",")
-		mlstype_str = "/".join(mlstype)
+		mlstype_str = "|".join(mlstype)
 	for i in range(0, len(mlstype)):
 		if mlstype[i] in change_to_AU:
 			mlstype[i]="AU"
@@ -185,7 +185,7 @@ def do_MLST_check(input_MLST_file, MLST_filetype):
 				#	new_types[i] = "-"
 				new_types[i] = str(new_types[i])
 			#new_types.sort()
-			new_types='/'.join(new_types)
+			new_types='|'.join(new_types)
 			print("Updating MLST types in", input_MLST_file, "from", mlstype_str, "to", new_types)
 			MLST_temp_types=new_types
 			# Log any incomplete/strange types found
