@@ -732,7 +732,7 @@ if [[ ! -z "${mmb_bugs[${ass_ID}]}" ]]; then
 		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "SUCCESS" "${ass_ratio}x against ${ass_ID}"
 	fi
 else
-	printf "%-20s: %-8s : %s\\n" "Assembly_Ratio" "WARNING" "${ass_ID} does not exist in the DB"
+	printf "%-20s: %-8s : %s\\n" "Assembly ratio" "WARNING" "${ass_ID} does not exist in the DB"
 	if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 		status="WARNING"
 	fi
