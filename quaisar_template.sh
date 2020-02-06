@@ -73,7 +73,7 @@ echo "${project}/${filename} started at ${global_time}"
 
 echo "Starting processing of ${project}/${filename}"
 #Checks if FASTQ folder exists for current sample
-if [[ -d "$OUTDATADIR/$filename/FASTQs" ]]; then
+if [[ -d "${OUTDATADIR}/${filename}/FASTQs" ]]; then
 	# Checks if FASTQ folder contains any files then continue
 	if [[ "$(ls -A "${OUTDATADIR}/${filename}/FASTQs")" ]]; then
 		# Checks to see if those files in the folder are unzipped fastqs
@@ -107,7 +107,7 @@ if [[ -d "$OUTDATADIR/$filename/FASTQs" ]]; then
 		fi
 	# If the folder is empty then return from function
 	else
-		echo "FASTQs folder empty - No fastqs available for ${filename} (and download was not requested). Either unzip fastqs to $OUTDATADIR/FASTQs or run the -d flag to trigger unzipping of gzs"
+		echo "FASTQs folder empty - No fastqs available for ${filename} (and download was not requested). Either unzip fastqs to ${OUTDATADIR}/FASTQs or run the -d flag to trigger unzipping of gzs"
 		return 1
 	fi
 # If the fastq folder does not exist then return out of function
@@ -121,12 +121,12 @@ start=$SECONDS
 ### Count the number of Q20, Q30, bases and reads within a pair of FASTQ files
 echo "----- Counting read quality -----"
 # Checks for and creates the specified output folder for the QC counts
-if [ ! -d "$OUTDATADIR/$filename/preQCcounts" ]; then
-	echo "Creating $OUTDATADIR/$filename/preQCcounts"
-	mkdir -p "$OUTDATADIR/$filename/preQCcounts"
+if [ ! -d "${OUTDATADIR}/${filename}/preQCcounts" ]; then
+	echo "Creating ${OUTDATADIR}/${filename}/preQCcounts"
+	mkdir -p "${OUTDATADIR}/${filename}/preQCcounts"
 fi
 # Run qc count check on raw reads
-python3 "${shareScript}/Fastq_Quality_Printer.py" -1 "${OUTDATADIR}/${filename}/FASTQs/${filename}_R1_001.fastq" -2 "${OUTDATADIR}/${filename}/FASTQs/${filename}_R2_001.fastq" > "${OUTDATADIR}/$filename/preQCcounts/${filename}_counts.txt"
+python3 "${shareScript}/Fastq_Quality_Printer.py" -1 "${OUTDATADIR}/${filename}/FASTQs/${filename}_R1_001.fastq" -2 "${OUTDATADIR}/${filename}/FASTQs/${filename}_R2_001.fastq" > "${OUTDATADIR}/${filename}/preQCcounts/${filename}_counts.txt"
 
 	# Get end time of qc count and calculate run time and append to time summary (and sum to total time used)
 end=$SECONDS
@@ -139,15 +139,15 @@ echo "----- Running BBDUK on reads -----"
 # Gets start time for bbduk
 start=$SECONDS
 # Creates folder for BBDUK output
-if [ ! -d "$OUTDATADIR/$filename/removedAdapters" ]; then
-	echo "Creating $OUTDATADIR/$filename/removedAdapters"
-	mkdir -p "$OUTDATADIR/$filename/removedAdapters"
+if [ ! -d "${OUTDATADIR}/${filename}/removedAdapters" ]; then
+	echo "Creating ${OUTDATADIR}/${filename}/removedAdapters"
+	mkdir -p "${OUTDATADIR}/${filename}/removedAdapters"
 # It complains if a folder already exists, so the current one is removed (shouldnt happen anymore as each analysis will move old runs to new folder)
 else
-	echo "Removing old $OUTDATADIR/$filename/removedAdapters"
-	rm -r "$OUTDATADIR/$filename/removedAdapters"
-	echo "Recreating $OUTDATADIR/$filename/removedAdapters"
-	mkdir -p "$OUTDATADIR/$filename/removedAdapters"
+	echo "Removing old ${OUTDATADIR}/${filename}/removedAdapters"
+	rm -r "${OUTDATADIR}/${filename}/removedAdapters"
+	echo "Recreating ${OUTDATADIR}/${filename}/removedAdapters"
+	mkdir -p "${OUTDATADIR}/${filename}/removedAdapters"
 fi
 
 # Run bbduk
@@ -165,8 +165,8 @@ echo "----- Running Trimmomatic on reads -----"
 # Get start time of trimmomatic
 start=$SECONDS
 # Creates folder for trimmomatic output if it does not exist
-if [ ! -d "$OUTDATADIR/$filename/trimmed" ]; then
-	mkdir -p "$OUTDATADIR/$filename/trimmed"
+if [ ! -d "${OUTDATADIR}/${filename}/trimmed" ]; then
+	mkdir -p "${OUTDATADIR}/${filename}/trimmed"
 fi
 
 ml trimmomatic/0.35
@@ -185,9 +185,9 @@ start=$SECONDS
 ### Count the number of Q20, Q30, bases and reads within the trimmed pair of FASTQ files
 echo "----- Counting read quality of trimmed files-----"
 # Checks for and creates the specified output folder for the QC counts
-if [ ! -d "$OUTDATADIR/$filename/preQCcounts" ]; then
-	echo "Creating $OUTDATADIR/$filename/preQCcounts"
-	mkdir -p "$OUTDATADIR/$filename/preQCcounts"
+if [ ! -d "${OUTDATADIR}/${filename}/preQCcounts" ]; then
+	echo "Creating ${OUTDATADIR}/${filename}/preQCcounts"
+	mkdir -p "${OUTDATADIR}/${filename}/preQCcounts"
 fi
 # Run qc count check on filtered reads
 python3 "${shareScript}/Fastq_Quality_Printer.py" -1 "${OUTDATADIR}/${filename}/trimmed/${filename}_R1_001.paired.fq" -2 "${OUTDATADIR}/${filename}/trimmed/${filename}_R2_001.paired.fq" > "${OUTDATADIR}/${filename}/preQCcounts/${filename}_trimmed_counts.txt"
