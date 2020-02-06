@@ -61,7 +61,7 @@ elif  [[ "${6}" == "clobber" ]]; then
 fi
 
 analysis_requested="${5^^}"
-if  [[ "${5}" != "MATRIX" ]] && [[ "${5}" != "SNV" ]] && [[ "${5}" != "BOTH" ]]; then
+if  [[ "${5^^}" != "MATRIX" ]] && [[ "${5^^}" != "SNV" ]] && [[ "${5^^}" != "BOTH" ]]; then
 	echo "Analysis not set correctly, should be MATRIX, SNV, or BOTH, try again"
 	exit 4565
 fi
@@ -114,7 +114,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 
 	# Clean list of any extra spaces and formatting
 	"${shareScript}/clean_list.sh" "${1}"
-	cp "${1}" "${output_directory}/${4}_samples.txt"
+	mv "${1}" "${output_directory}/${4}_samples.txt"
 	list_file="${output_directory}/${4}_samples.txt"
 
 	# Creates a dictionary to match genes to AR conferred when parsing srst files
