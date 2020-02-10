@@ -54,6 +54,14 @@ echo "Source - ${sample_folder}"
 sample_name=$(echo "${sample_folder}" | rev | cut -d'/' -f1 | rev)
 echo "Sample_ID - ${sample_name}"
 # Remove the localANIDB from ANI output folder, if found
+echo "Cleaning srst2"
+if [[ -f "${sample_folder}/srst2/${sample_name}_S1_L001_R1_001.fastq.gz" ]]; then
+	rm -r "${sample_folder}/srst2/${sample_name}_S1_L001_R1_001.fastq.gz"
+fi
+if [[ -f "${sample_folder}/srst2/${sample_name}_S1_L001_R2_001.fastq.gz"]]; then
+	rm -r "${sample_folder}/srst2/${sample_name}_S1_L001_R2_001.fastq.gz"
+fi
+
 echo "Cleaning ANI"
 if [ -d "${sample_folder}/ANI/localANIDB" ]; then
 	echo "removing localANIDb"

@@ -540,7 +540,7 @@ while IFS= read -r var || [ -n "$var" ]; do
 			failure_flags="${failure_flags}-NO_16s"
 			failures=$(( failures + 1 ))
 		elif [[ "${tool}" == "plasmid" ]]; then
-			if [[ -d "${processed}/${1}/${sample_name}/plasmid/" ]]; then
+			if [[ -d "${processed}/${1}/${sample_name}/plasmidFinder/" ]]; then
 				failure_flags="${failure_flags}-NO_plasmidFinder_summary_file"
 				failures=$(( failures + 1 ))
 			else
@@ -548,7 +548,7 @@ while IFS= read -r var || [ -n "$var" ]; do
 				failures=$(( failures + 1 ))
 			fi
 		elif [[ "${tool}" == "plasmid-plasmidAsmb" ]]; then
-			if [[ -d "${processed}/${1}/${sample_name}/plasmid_on_plasFlow/" ]]; then
+			if [[ -d "${processed}/${1}/${sample_name}/plasmidFinder_on_plasFlow/" ]]; then
 				failure_flags="${failure_flags}-NO_plasmidFinder_summary_file"
 				failures=$(( failures + 1 ))
 			else
