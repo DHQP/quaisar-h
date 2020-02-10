@@ -54,7 +54,7 @@ elif [ ! -s "${local_DBs}/BUSCO/${2,}" ]; then
 		mkdir -p "${processed}/${4}/${1}/BUSCO"
 	fi
 	# Write non-results to a file in busco folder
-	echo "No matching DB database found for ${2}(genus)" >> "${processed}/${4}/${1}/BUSCO/summary_${1}.txt"
+	echo "No matching DB database found for ${2}" >> "${processed}/${3}/${1}/BUSCO/summary_${1}.txt"
 	# Add genus to list to download and to database
 	global_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
 	echo "BUSCO: ${2} - Found as ${1} on ${global_time}" >> "${shareScript}/maintenance_To_Do.txt"

@@ -1420,8 +1420,8 @@ else
 fi
 
 # check plasmids
-if [[ -d "${OUTDATADIR}/plasmid/" ]]; then
-	if [[ -s "${OUTDATADIR}/plasmid/${1}_results_table_summary.txt" ]]; then
+if [[ -d "${OUTDATADIR}/plasmidFinder/" ]]; then
+	if [[ -s "${OUTDATADIR}/plasmidFinder/${1}_results_table_summary.txt" ]]; then
 		number_of_plasmids=0
 		while read line_in; do
 			line_in=$(echo ${line_in} | cut -d' ' -f1)
@@ -1430,7 +1430,7 @@ if [[ -d "${OUTDATADIR}/plasmid/" ]]; then
 			else
 				number_of_plasmids=$(( number_of_plasmids + 1 ))
 			fi
-		done < "${OUTDATADIR}/plasmid/${1}_results_table_summary.txt"
+		done < "${OUTDATADIR}/plasmidFinder/${1}_results_table_summary.txt"
 		printf "%-20s: %-8s : %s\\n" "plasmid" "SUCCESS" "${number_of_plasmids} replicons were found in the full scaffold"
 	else
 		printf "%-20s: %-8s : %s\\n" "plasmid" "FAILED" "results_table_summary.txt does not exist"
@@ -1438,14 +1438,14 @@ if [[ -d "${OUTDATADIR}/plasmid/" ]]; then
 	fi
 # No plasmid folder exists
 else
-	printf "%-20s: %-8s : %s\\n" "plasmid" "FAILED" "/plasmid/ does not exist"
+	printf "%-20s: %-8s : %s\\n" "plasmid" "FAILED" "/plasmidFinder/ does not exist"
 	status="FAILED"
 fi
 
 # # check plasmids (on plasmidAssembly)
 if [[ "plasmidsFoundviaplasFlow" -eq 1 ]]; then
-	if [[ -d "${OUTDATADIR}/plasmid_on_plasFlow/" ]]; then
-		if [[ -s "${OUTDATADIR}/plasmid_on_plasFlow/${1}_results_table_summary.txt" ]]; then
+	if [[ -d "${OUTDATADIR}/plasmidFinder_on_plasFlow/" ]]; then
+		if [[ -s "${OUTDATADIR}/plasmidFinder_on_plasFlow/${1}_results_table_summary.txt" ]]; then
 			number_of_plasmids=0
 			while read line_in; do
 				line_in=$(echo ${line_in} | cut -d' ' -f1)
@@ -1454,7 +1454,7 @@ if [[ "plasmidsFoundviaplasFlow" -eq 1 ]]; then
 				else
 					number_of_plasmids=$(( number_of_plasmids + 1 ))
 				fi
-			done < "${OUTDATADIR}/plasmid/${1}_results_table_summary.txt"
+			done < "${OUTDATADIR}/plasmidFinder/${1}_results_table_summary.txt"
 			printf "%-20s: %-8s : %s\\n" "plasmid-plasmidAsmb" "SUCCESS" "${number_of_plasmids} replicons were found in the plasmid scaffold"
 		else
 			printf "%-20s: %-8s : %s\\n" "plasmid-plasmidAsmb" "FAILED" "results_table_summary.txt does not exist"
@@ -1462,7 +1462,7 @@ if [[ "plasmidsFoundviaplasFlow" -eq 1 ]]; then
 		fi
 	# No plasmid folder exists
 	else
-		printf "%-20s: %-8s : %s\\n" "plasmid-plasmidAsmb" "FAILED" "/plasmid_on_plasFlow/ does not exist"
+		printf "%-20s: %-8s : %s\\n" "plasmid-plasmidAsmb" "FAILED" "/plasmidFinder_on_plasFlow/ does not exist"
 		status="FAILED"
 	fi
 fi

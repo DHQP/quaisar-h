@@ -115,6 +115,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 	# Clean list of any extra spaces and formatting
 	"${shareScript}/clean_list.sh" "${1}"
 	mv "${1}" "${output_directory}/${4}_samples.txt"
+	rm "${1}.original"
 	list_file="${output_directory}/${4}_samples.txt"
 
 	# Creates a dictionary to match genes to AR conferred when parsing srst files
@@ -494,7 +495,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 
 		# Goes through the plasmid file of the sample and adds all found plasmid replicons to the summary file
 		#echo "Starting plasmid extraction"
-		if [[ -f ${OUTDATADIR}/plasmid/${sample_name}_results_table_summary.txt ]]; then
+		if [[ -f ${OUTDATADIR}/plasmidFinder/${sample_name}_results_table_summary.txt ]]; then
 			#echo "Found plasmid file"
 			:
 		fi
@@ -510,7 +511,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 				echo -e "${project}\t${sample_name}\tfull_assembly\t${plasmid}" >> ${output_directory}/${4}-plasmid_summary.txt
 				added=1
 			fi
-		done < ${OUTDATADIR}/plasmid/${sample_name}_results_table_summary.txt
+		done < ${OUTDATADIR}/plasmidFinder/${sample_name}_results_table_summary.txt
 		if [[ "${added}" -eq 0 ]]; then
 			echo -e "${project}\t${sample_name}\tfull_assembly\tNo_Plasmids_Found\t${full_contigs}_contigs-${components}_components" >> ${output_directory}/${4}-plasmid_summary.txt
 		fi
@@ -530,7 +531,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 				echo -e "${project}\t${sample_name}\tplasmid_assembly\t${plasmid}" >> ${output_directory}/${4}-plasmid_summary.txt
 				added=1
 			fi
-		done < ${OUTDATADIR}/plasmid_on_plasFlow/${sample_name}_results_table_summary.txt
+		done < ${OUTDATADIR}/plasmidFinder_on_plasFlow/${sample_name}_results_table_summary.txt
 
 		if [[ "${added}" -eq 0 ]]; then
 			echo -e "${project}\t${sample_name}\tplasmid_assembly\tNo_Plasmids_Found\t${plas_contigs}_contigs-${components}_components" >> ${output_directory}/${4}-plasmid_summary.txt
