@@ -82,7 +82,7 @@ done < ${input}
 
 # Call mashtree on all copied fasta
 cd ${outdir}
-mashtree --numcpus ${procs} *.fasta --tempdir ${outdir}/temp > "${outdir}/${output_file}.dnd";
+mashtree --numcpus ${procs} *.fasta > "${outdir}/${output_file}.dnd";
 
 ml -perl/5.16.1-MT
 
