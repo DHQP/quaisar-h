@@ -76,14 +76,20 @@ if [[ -f "${shareScript}/outbreak_analysis.err" ]]; then
 	truncate -s 0 "${shareScript}/outbreak_analysis.err"
 fi
 
-if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "BOTH" ]]; then
-	# Creates the output directory if it does not exist
-	output_directory=${Phyl_OA}/${4}
-	if [[ ! -d ${output_directory} ]]; then
-		mkdir -p ${output_directory}
-	fi
+# Creates the output directory if it does not exist
+output_directory=${Phyl_OA}/${4}
+if [[ ! -d ${output_directory} ]]; then
+	mkdir -p ${output_directory}
+fi
 
-	# # Remove any pre-existing files from previous runs
+# Clean list of any extra spaces and formatting
+"${shareScript}/clean_list.sh" "${1}"
+mv "${1}" "${output_directory}/${4}_samples.txt"
+rm "${1}.original"
+list_file="${output_directory}/${4}_samples.txt"
+
+if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "BOTH" ]]; then
+	# Remove any pre-existing files from previous runs
 	if [[ -f ${output_directory}/${4}-mlst_summary.txt ]]; then
 		rm ${output_directory}/${4}-mlst_summary.txt
 	fi
@@ -112,11 +118,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 		rm ${output_directory}/${4}-srst2_rejects.txt
 	fi
 
-	# Clean list of any extra spaces and formatting
-	"${shareScript}/clean_list.sh" "${1}"
-	mv "${1}" "${output_directory}/${4}_samples.txt"
-	rm "${1}.original"
-	list_file="${output_directory}/${4}_samples.txt"
+
 
 	# Creates a dictionary to match genes to AR conferred when parsing srst files
 	declare -A groups
