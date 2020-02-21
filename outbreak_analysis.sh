@@ -84,7 +84,7 @@ fi
 
 # Clean list of any extra spaces and formatting
 "${shareScript}/clean_list.sh" "${1}"
-mv "${1}" "${output_directory}/${4}_samples.txt"
+cp "${1}" "${output_directory}/${4}_samples.txt"
 rm "${1}.original"
 list_file="${output_directory}/${4}_samples.txt"
 
