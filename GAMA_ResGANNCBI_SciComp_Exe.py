@@ -10,7 +10,7 @@
 #
 # Modules required: Biopython must be available in python instance
 #
-# v1.0.6 (1/06/2020) (Eq. to 4.7.4)
+# v1.0.7 (1/06/2020) (Eq. to 4.7.5)
 #
 # Created by Rich Stanton (njr5@cdc.gov)
 #
@@ -821,6 +821,37 @@ def Frame_Overlap(GAMA_Line_1, GAMA_Line_2):
     else:
         return False
 
+def Edge_Codon_Changes(Edge_GAMA_line):
+    List1 = Edge_GAMA_line.split('\t')
+    Description = List1[5]
+    Codon_Info =  Description.split(',')[1]
+    Codons = int(Codon_Info.split(' ')[0])
+    return Codons
+def Edge_BP_Changes(Edge_GAMA_line):
+    List1 = Edge_GAMA_line.split('\t')
+    Description = List1[5]
+    BP_Info =  Description.split(',')[0]
+    BP = int(BP_Info.split(' ')[0])
+    return BP
+def Edge_Line_Comp(Edge_1, Edge_2):
+    """Determines if Edge_1 (1) is a better match than Edge_2 (0)"""
+    Add = 1
+    List1 = Edge_1.split('\t')
+    List2 = Edge_2.split('\t')
+    if Edge_Codon_Changes(Edge_1) >  Edge_Codon_Changes(Edge_2):
+        Add = 0
+    elif Edge_Codon_Changes(Edge_1) ==  Edge_Codon_Changes(Edge_2):
+        if Edge_BP_Changes(Edge_1) > Edge_BP_Changes(Edge_2):
+            Add = 0
+        elif Edge_BP_Changes(Edge_1) == Edge_BP_Changes(Edge_2):
+            if int(List1[13]) > int(List2[13]):
+                Add = 0
+            elif int(List1[13]) == int(List2[13]):
+                Order_List = [Edge_1, Edge_2]
+                Order_List.sort()
+                if Order_List[0] != Edge_1:
+                    Add = 0
+    return Add
 
 def Best_List(input_contig_list):
     #print("pre44")
@@ -836,25 +867,35 @@ def Best_List(input_contig_list):
             elif Overlap_Fraction([int(List1[2]), int(List1[3])], [int(List2[2]), int(List2[3])]) > 0.5:
 ##                if ('Truncation' in List1[4]) == True and ('Truncation' in List2[4]) == False:
 ##                    Add == 0
-                if float(List2[8]) > float(List1[8]):
+                if List1[4] == 'Contig Edge' and List2[4] == 'Contig Edge':
+                    Add = Edge_Line_Comp(items, items_2)
+                    if Add == 0:
+                        break
+                elif float(List2[8]) > float(List1[8]):
                     Add = 0
+                    break
                 elif float(List2[8]) == float(List1[8]):
                     if float(List2[9]) > float(List1[9]):
                         Add = 0
+                        break
                     elif float(List2[9]) == float(List1[9]):
                         if float(List2[10]) > float(List1[10]):
                             Add = 0
+                            break
                         elif float(List2[10]) == float(List1[10]):
                             if int(List2[11]) > int(List1[11]):
                                 Add = 0
+                                break
                             elif int(List2[11]) == int(List1[11]):
                                 if int(List2[13]) < int(List1[13]):
                                     Add = 0
+                                    break
                                 elif int(List2[13]) == int(List1[13]):
                                     Order_List = [items, items_2]
                                     Order_List.sort()
                                     if Order_List[0] != items:
                                         Add = 0
+                                        break
         if Add == 1 and float(List1[10]) > 0.5:
             Out = '\t'.join(List1[0:13])
             Out = Out + '\t' + List1[-1]
