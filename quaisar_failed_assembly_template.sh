@@ -436,7 +436,7 @@ totaltime=$((totaltime + timeMLST))
 # Try to find any plasmids
 echo "----- Identifying plasmids using plasmidFinder -----"
 start=$SECONDS
-"${shareScript}/run_plasmidFinder.sh" "${sample_name}" "${project}" plasmid
+"${shareScript}/run_plasmidFinder.sh" "${sample_name}" "${project}" plasmidFinder
 end=$SECONDS
 timeplasfin=$((end - start))
 echo "plasmidFinder - ${timeplasfin} seconds" >> "${time_summary_redo}"
@@ -447,7 +447,7 @@ if [[ "${family}" == "Enterobacteriaceae" ]]; then
 	start=$SECONDS
 	${shareScript}/run_plasFlow.sh "${sample_name}" "${project}"
 	${shareScript}/run_c-sstar_plasFlow.sh "${sample_name}" g o "${project}" -p
-	${shareScript}/run_plasmidFinder.sh "${sample_name}" "${project}" plasmid_on_plasFlow
+	${shareScript}/run_plasmidFinder.sh "${sample_name}" "${project}" plasmidFinder_on_plasFlow
 	${shareScript}/run_GAMA.sh "${sample_name}" "${project}" -p
 
 	end=$SECONDS
