@@ -544,7 +544,7 @@ while IFS= read -r var || [ -n "$var" ]; do
 				failure_flags="${failure_flags}-NO_plasmidFinder_summary_file"
 				failures=$(( failures + 1 ))
 			else
-				failure_flags="${failure_flags}-NO_plasmidFinder_directory_for_plasmid_assembly"
+				failure_flags="${failure_flags}-NO_plasmidFinder_directory_for_full_assembly"
 				failures=$(( failures + 1 ))
 			fi
 		elif [[ "${tool}" == "plasmid-plasmidAsmb" ]]; then
