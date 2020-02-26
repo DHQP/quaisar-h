@@ -32,7 +32,7 @@ def parseArgs(args=None):
 
 def trim_assembly(input_assembly, trim_threshold, input_type):
 	assembly=open(input_assembly,'r')
-	trimmed_assembly=input_assembly+".TRIMMED"
+	trimmed_assembly=input_assembly+".TRIMMED.fasta"
 	trimmed_output=open(trimmed_assembly, 'w')
 	line=assembly.readline().strip()
 	total_size=0
