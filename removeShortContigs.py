@@ -32,7 +32,7 @@ def parseArgs(args=None):
 
 def trim_assembly(input_assembly, trim_threshold, input_type):
 	assembly=open(input_assembly,'r')
-	trimmed_assembly=input_assembly+".TRIMMED"
+	trimmed_assembly=input_assembly+".TRIMMED.fasta"
 	trimmed_output=open(trimmed_assembly, 'w')
 	line=assembly.readline().strip()
 	total_size=0
@@ -44,9 +44,9 @@ def trim_assembly(input_assembly, trim_threshold, input_type):
 			sequence=""
 			#print (line_sections[3], "vs", trim_threshold)
 			if input_type == "normal_SPAdes":
-				contig_size = line_sections[3].split('|')[0]
+				contig_size = line_sections[-3].split('|')[0]
 			elif input_type == "plasFlow":
-				contig_size = line_sections[4]
+				contig_size = line_sections[-3]
 			else:
 				print("Unknown input type:", input_type)
 			if int(contig_size) > int(trim_threshold):
