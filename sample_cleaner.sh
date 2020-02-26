@@ -58,7 +58,7 @@ echo "Cleaning srst2"
 if [[ -f "${sample_folder}/srst2/${sample_name}_S1_L001_R1_001.fastq.gz" ]]; then
 	rm -r "${sample_folder}/srst2/${sample_name}_S1_L001_R1_001.fastq.gz"
 fi
-if [[ -f "${sample_folder}/srst2/${sample_name}_S1_L001_R2_001.fastq.gz"]]; then
+if [[ -f "${sample_folder}/srst2/${sample_name}_S1_L001_R2_001.fastq.gz" ]]; then
 	rm -r "${sample_folder}/srst2/${sample_name}_S1_L001_R2_001.fastq.gz"
 fi
 

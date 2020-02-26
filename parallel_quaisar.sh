@@ -227,7 +227,7 @@ log_dir="${Quaisar_H_log_directory}/${PROJECT}_on_${run_start_time}"
 outarray=()
 echo "Run started at ${run_start_time}; Log directory will be ${Quaisar_H_log_directory}/${PROJECT}_on_${run_start_time}"
 echo "Run started at ${run_start_time}" > "${log_dir}/${PROJECT}_on_${run_start_time}/${PROJECT}_on_${run_start_time}.log"
-outarray+=("${PROJECT} started at ${run_start_time} and saved to ${PROJECT}_on_${run_start_time}.log")
+outarray+=("${PROJECT} started at ${run_start_time} and saved to ${PROJECT}_on_${run_start_time}.log\n")
 
 
 #Each file in the list is put through the full pipeline

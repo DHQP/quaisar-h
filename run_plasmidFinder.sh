@@ -21,7 +21,7 @@ fi
 #
 # Modules required: PlasmidFinder/1.3
 #
-# v1.0 (10/3/2019)
+# v1.0.1 (02/25/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -58,10 +58,10 @@ OUTDATADIR=${processed}/${2}/${1}/${3}
 # if [[ "${3}" == "plasmid_on_plasFlow" ]]; then
 # 	inpath="plasmidAssembly/${1}_plasmid_scaffolds_trimmed.fasta"
 # el
-if [[ "${3}" == "plasmid" ]]; then
+if [[ "${3}" == "plasmidFinder" ]]; then
 	inpath="Assembly/${1}_scaffolds_trimmed.fasta"
-elif [[ "${3}" == "plasmid_on_plasFlow" ]]; then
-	if [[ -f "${processed}/${2}/${1}//plasFlow/Unicycler_assemblies/${1}_uni_assembly/assembly.fasta" ]]; then
+elif [[ "${3}" == "plasmidFinder_on_plasFlow" ]]; then
+	if [[ -f "${processed}/${2}/${1}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/assembly.fasta" ]]; then
 		mv "${processed}/${2}/${1}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/assembly.fasta" "${processed}/${2}/${1}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_assembly.fasta"
 		mv "${processed}/${2}/${1}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/assembly.gfa" "${processed}/${2}/${1}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_assembly.gfa"
 	fi
