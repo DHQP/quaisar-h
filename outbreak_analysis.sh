@@ -278,12 +278,14 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 			fi
 		else
 			echo "${project}	${sample_name}	NO CURRENT FILE" >> ${output_directory}/${4}-csstar_summary.txt
+			csstar_list="NO CURRENT FILE"
 		fi
 
-		GAMA_list=""
+		
 		# Extracts all AR genes from normal csstar output file and creates a lits of all genes that pass the filtering steps
 	 	#echo "^^^^^^^^^^^^^^^^^^^ ${OUTDATADIR}/GAMA/${sample_name}.${ResGANNCBI_srst2_filename}.GAMA"
 		if [[ -f "${OUTDATADIR}/GAMA/${sample_name}.${ResGANNCBI_srst2_filename}.GAMA" ]]; then
+		    GAMA_list=""
 			GARDB_full="${OUTDATADIR}/GAMA/${sample_name}.${ResGANNCBI_srst2_filename}.GAMA"
 			while IFS= read -r line; do
 				# exit if no genes were found for the sample
@@ -327,6 +329,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 			fi
 		else
 			echo "${project}	${sample_name}	NO CURRENT FILE" >> ${output_directory}/${4}-GAMA_summary.txt
+			GAMA_list="NO CURRENT FILE"
 		fi
 
 		# Adding in srst2 output in a similar fashion as to how the csstar genes are output to the file.
