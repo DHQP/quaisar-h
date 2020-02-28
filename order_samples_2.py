@@ -21,7 +21,7 @@ import os,sys,csv,pandas as pd,argparse
 def parseArgs(args=None):
 	parser = argparse.ArgumentParser(description='Script to trim contigs')
 	parser.add_argument('-i', '--input', required=True, help='input excel filename')
-	parser.add_argument('-r', '--run', required=True, help='Run ID to match t')
+	parser.add_argument('-r', '--run', required=True, help='Run ID to match to')
 	parser.add_argument('-s', '--sheet', required=True, help='sheetname')
 	parser.add_argument('-o', '--output', required=True, help='Output file to export to')
 	return parser.parse_args()
@@ -32,7 +32,7 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name):
 	for index, row in seqlog.iterrows():
 		#print(index,row)
 		if row['Output Folder Name'] == run_name:
-			matching_isolates.append(str(run_name)+"/"+str(row['CDC Aliquot ID (Miseq ID)']))
+			matching_isolates.append(str(run_name)+"/"+str(row['CDC Local Aliquot ID or Outbreak ID']))
 	print("Matching rows: {0}".format(len(matching_isolates)))
 	summary_out=open(output_name, 'w')
 	for match in matching_isolates:
