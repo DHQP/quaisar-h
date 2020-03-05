@@ -41,12 +41,11 @@ def create_sample_dict(list_in):
 			samples.append(str(line.split("/")[1]))
 			line = fp.readline().strip()
 			cnt += 1
-	return [samples,cnt]
+	return samples
 
 
 def do_conversion(excel_filename, sheetname_in, output_name, run_name, sample_list):
-	sample_count=sample_list[1]
-	sample_list=sample_list[0]
+	sample_count=len(sample_list)
 	if sample_count == 0:
 		print("No samples added from original list, cant compare nothing to Seqlog, exiting")
 		exit()
