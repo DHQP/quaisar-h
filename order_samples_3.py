@@ -46,12 +46,13 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name, sample_li
 	for index, row in seqlog.iterrows():
 		#print(index,row)
 		if row['Output Folder Name'] == run_name:
+			print("sample:", ," OSII:",str(row['OSII WGS ID (HQ)']), "CDC:", str(row['CDC Local Aliquot ID or Outbreak ID']))
 			if str(row['OSII WGS ID (HQ)']) in sample_list:
 				matching_isolates.append(str(run_name)+"/"+str(row['OSII WGS ID (HQ)']))
 			elif str(row['CDC Local Aliquot ID or Outbreak ID']) in sample_list:
 				matching_isolates.append(str(run_name)+"/"+str(row['CDC Local Aliquot ID or Outbreak ID']))
 			else:
-				print("sample:", ," OSII:",str(row['OSII WGS ID (HQ)']), "CDC:", str(row['CDC Local Aliquot ID or Outbreak ID']))
+				print("No match")
 	print("Matching rows: {0}".format(len(matching_isolates)))
 	summary_out=open(output_name, 'w')
 	for match in matching_isolates:
