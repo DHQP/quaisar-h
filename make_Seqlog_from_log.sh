@@ -21,7 +21,7 @@ fi
 #
 # Modules required: Python3/3.5.4
 #
-# v1.0.4 (12/17/2019)
+# v1.0.5 (03/05/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -71,20 +71,16 @@ cd "${processed}/${1}/"
 ls  *run_summary* | sort -n -t _  -k 10,10r -k 8,8r -k 9,9r > "sorted_summaries.txt"
 cd ${owd}
 
-rm -r "${processed}/${1}/sorted_summaries.txt"
+rm "${processed}/${1}/sorted_summaries.txt"
+rm "${processed}/${1}/${1}_list_ordered.txt"
 
 # Order samples (according to logsheet) in folder if not already done so
-if [[ ! -f ${processed}/${1}/${1}_list_ordered.txt ]]; then
-	# Copy the newest log file to the local directory
-	python3 ${shareScript}/order_samples_2.py -i "${local_DBs}/Seqlog_copies/2019_2020_MMBSeq_Log.xlsx" -r ${1} -s "Miseq Isolate Log" -o "${processed}/${1}/${1}_list_ordered.txt"
-	if [[ ! -s "${processed}/${1}/${1}_list_ordered.txt" ]]; then
-		echo "Isolates were not able to be sorted, something wrong with MiSeq Log entries or list file, or....?"
-		exit
-	else
-		echo "sorted file contains entries"
-	fi
+python3 ${shareScript}/order_samples_3.py -i "${local_DBs}/Seqlog_copies/2019_2020_MMBSeq_Log.xlsx" -r ${1} -s "Miseq Isolate Log" -o "${processed}/${1}/${1}_list_ordered.txt" -l "${processed}/${1}/${1}_list.txt"
+if [[ ! -s "${processed}/${1}/${1}_list_ordered.txt" ]]; then
+	echo "Isolates were not able to be sorted, something wrong with MiSeq Log entries or list file, or....?"
+	exit
 else
-	echo "${1}_list_ordered.txt already exists"
+	echo "sorted file contains entries"
 fi
 
 if [[ -f "${processed}/${1}/seqlog_output.txt" ]]; then
