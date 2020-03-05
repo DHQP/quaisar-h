@@ -35,11 +35,11 @@ def create_sample_dict(list_in):
 	#return samples
 
 	with open(list_in) as fp:
-		line = fp.readline()
+		line = fp.readline().strip()
 		cnt = 1
 		while line:
 			samples.append(str(line.split("/")[1]))
-			line = fp.readline()
+			line = fp.readline().strip()
 			cnt += 1
 	return samples
 
