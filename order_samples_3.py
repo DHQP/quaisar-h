@@ -49,7 +49,7 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name):
 			elif str(row['CDC Local Aliquot ID or Outbreak ID']) in samples:
 				matching_isolates.append(str(run_name)+"/"+str(row['CDC Local Aliquot ID or Outbreak ID']))
 			else:
-				print("sample OSII:",str(row['OSII WGS ID (HQ)']), "CDC:", str(row['CDC Local Aliquot ID or Outbreak ID'])))
+				print("sample OSII:",str(row['OSII WGS ID (HQ)']), "CDC:", str(row['CDC Local Aliquot ID or Outbreak ID']))
 	print("Matching rows: {0}".format(len(matching_isolates)))
 	summary_out=open(output_name, 'w')
 	for match in matching_isolates:
