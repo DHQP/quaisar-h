@@ -41,17 +41,20 @@ def create_sample_dict(list_in):
 			samples.append(str(line.split("/")[1]))
 			line = fp.readline().strip()
 			cnt += 1
-	return samples
+	return [samples,cnt]
 
 
 def do_conversion(excel_filename, sheetname_in, output_name, run_name, sample_list):
-	if len(sample_list) == 0:
+	sample_count=sample_list[1]
+	sample_list=sample_list[0]
+	if sample_count == 0:
 		print("No samples added from original list, cant compare nothing to Seqlog, exiting")
 		exit()
-	for id in range(0, len(sample_list)):
+	for id in range(0, sample_count):
 		print(id, sample_list[id])
 	seqlog = pd.read_excel(excel_filename, sheet_name=sheetname_in)  #usecols['CDC Aliquot ID (Miseq_ID)','Output Folder Name']
 	matching_isolates=[]
+	missing_samples=0
 	for index, row in seqlog.iterrows():
 		#print(index,row)
 		if row['Output Folder Name'] == run_name:
@@ -62,10 +65,14 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name, sample_li
 				matching_isolates.append(str(run_name)+"/"+str(row['CDC Local Aliquot ID or Outbreak ID']))
 			else:
 				print("No match")
+				missing_samples+=1
 	print("Matching rows: {0}".format(len(matching_isolates)))
+	print("Missing samples:", missing_samples)
 	summary_out=open(output_name, 'w')
 	for match in matching_isolates:
 		summary_out.write(match+"\n")
+	for i in range(0, missing_samples):
+		summary_out.write("MISSING_SAMPLE\n")
 	summary_out.close()
 
 args = parseArgs()
