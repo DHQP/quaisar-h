@@ -227,6 +227,16 @@ while IFS= read -r var || [ -n "$var" ]; do
 				notes="${notes},"
 			fi
 			notes="${notes}unexpected number of mlst-srst2 files"
+		elif [[ "${tool}" == "ANI_REFSEQ" ]]; then
+			if [[ "${notes}" != "" ]]; then
+				notes="${notes},"
+			fi
+			notes="${notes}ANI_REFSEQ is out of date"
+		elif [[ "${tool}" == "ANI_OSII" ]]; then
+			if [[ "${notes}" != "" ]]; then
+				notes="${notes},"
+			fi
+			notes="${notes}ANI_OSII is out of date"
 		fi
 	elif [[ "${tool_status}" == "WARNING" ]]; then
 		#echo "Found warning"
@@ -487,8 +497,35 @@ while IFS= read -r var || [ -n "$var" ]; do
 			fi
 		elif [[ "${tool}" == "ANI" ]]; then
 			#echo "${tool_details}"
-			if [[ "${tool_details}" == *"%-"* ]]; then
-				failure_flags="${failure_flags}-ANI_match_<95%"
+			if [[ "${tool_details}" == *"% identity"* ]]; then
+				failure_flags="${failure_flags}-ANI_identity<95%"
+				failures=$(( failures + 1 ))
+			elif [[ "${tool_details}" == *"% coverage"* ]]; then
+				failure_flags="${failure_flags}-ANI_coverage<${ani_coverage_threshold}%"
+				failures=$(( failures + 1 ))
+			else
+				failure_flags="${failure_flags}-NO_ANI_output"
+				failures=$(( failures + 1 ))
+			fi
+		elif [[ "${tool}" == "ANI_REFSEQ" ]]; then
+			#echo "${tool_details}"
+			if [[ "${tool_details}" == *"% identity"* ]]; then
+				failure_flags="${failure_flags}-ANI_identity<95%"
+				failures=$(( failures + 1 ))
+			elif [[ "${tool_details}" == *"% coverage"* ]]; then
+				failure_flags="${failure_flags}-ANI_coverage<${ani_coverage_threshold}%"
+				failures=$(( failures + 1 ))
+			else
+				failure_flags="${failure_flags}-NO_ANI_output"
+				failures=$(( failures + 1 ))
+			fi
+		elif [[ "${tool}" == "ANI_OSII" ]]; then
+			#echo "${tool_details}"
+			if [[ "${tool_details}" == *"% identity"* ]]; then
+				failure_flags="${failure_flags}-ANI_identity<95%"
+				failures=$(( failures + 1 ))
+			elif [[ "${tool_details}" == *"% coverage"* ]]; then
+				failure_flags="${failure_flags}-ANI_coverage<${ani_coverage_threshold}%"
 				failures=$(( failures + 1 ))
 			else
 				failure_flags="${failure_flags}-NO_ANI_output"

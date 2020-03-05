@@ -133,6 +133,9 @@ spades_cov_cutoff="auto"
 ##### ANI specific options #####
 #Max number of samples to be kept (not including source sample) when creating the mash tree
 max_ani_samples=20
+ani_coverage_threshold=70
+REFSEQ=$(find ${local_DBs}/ANI/REFSEQ_*.msh -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n | head -n 1)
+REFSEQ_date=$(echo ${REFSEQ} | rev | cut -d'/' -f1 | rev | cut -d'_' -f2 | cut -d'.' -f1,2)
 
 ##### c-SSTAR identity options #####
 csstar_perfect=100

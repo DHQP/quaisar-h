@@ -31,6 +31,7 @@ parser.add_argument('-t', '--title', help='header', required=False, type=str, de
 parser.add_argument('-r', '--reverse', help='reverse complement strand?', required=False, type=bool, dest='reverse', default=False)
 parser.add_argument('-b', '--begin', help='rev-comp begin position', required=False, type=int, dest='begin', default=0)
 parser.add_argument('-f', '--finish', help='rev-comp finish position', required=False, type=int, dest='finish', default=0)
+parser.add_argument('-o', '--header_out', help='header info to output', required=False, type=str, dest='header_out', default=0)
 parameters=parser.parse_args()
 
 # Counts the number of sequences in the file using > as the delimiter
@@ -95,4 +96,7 @@ if parameters.reverse:
         end_sub = parameters.finish
     print(reverse_record.seq)[start_sub:end_sub]
     exit()
-print(search_DNA_seq)
+if parameters.header_out is not None:
+    print(parameters.header_out+"\n"+search_DNA_seq)
+else:
+    print(search_DNA_seq)
