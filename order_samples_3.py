@@ -17,8 +17,6 @@
 #from __future__ import print_function
 import os,sys,csv,pandas as pd,argparse
 
-samples=[]
-
 # Parse all arguments from command line
 def parseArgs(args=None):
 	parser = argparse.ArgumentParser(description='Script to trim contigs')
@@ -30,9 +28,11 @@ def parseArgs(args=None):
 	return parser.parse_args()
 
 def create_sample_dict(list_in):
+	samples=[]
 	f = open(list_in, "r")
 	line=f.readline()
 	sample=samples.append(str(line.split("/")[1]))
+	return samples
 
 
 def do_conversion(excel_filename, sheetname_in, output_name, run_name):
@@ -57,4 +57,4 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name):
 	summary_out.close()
 
 args = parseArgs()
-do_conversion(args.input, args.sheet, args.output, args.run, args.list)
+do_conversion(args.input, args.sheet, args.output, args.run, create_sample_dict(args.list))
