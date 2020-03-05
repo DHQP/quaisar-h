@@ -28,7 +28,7 @@ def parseArgs(args=None):
 	return parser.parse_args()
 
 def create_sample_dict(list_in):
-	#samples=[]
+	samples=[]
 	#f = open(list_in, "r")
 	#line=f.readline()
 	#sample=samples.append(str(line.split("/")[1]))
@@ -38,10 +38,9 @@ def create_sample_dict(list_in):
 		line = fp.readline()
 		cnt = 1
 		while line:
-		samples.append(str(line.split("/")[1]))
-		line = fp.readline()
-		cnt += 1
-
+			samples.append(str(line.split("/")[1]))
+			line = fp.readline()
+			cnt += 1
 	return samples
 
 
