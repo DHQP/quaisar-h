@@ -49,15 +49,15 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name, sample_li
 	if sample_count == 0:
 		print("No samples added from original list, cant compare nothing to Seqlog, exiting")
 		exit()
-	for id in range(0, sample_count):
-		print(id, sample_list[id])
+	#for id in range(0, sample_count):
+	#	print(id, sample_list[id])
 	seqlog = pd.read_excel(excel_filename, sheet_name=sheetname_in)  #usecols['CDC Aliquot ID (Miseq_ID)','Output Folder Name']
 	matching_isolates=[]
 	missing_samples=0
 	for index, row in seqlog.iterrows():
 		#print(index,row)
 		if row['Output Folder Name'] == run_name:
-			print("OSII:",str(row['OSII WGS ID (HQ)']), "CDC:", str(row['CDC Local Aliquot ID or Outbreak ID']))
+			#print("OSII:",str(row['OSII WGS ID (HQ)']), "CDC:", str(row['CDC Local Aliquot ID or Outbreak ID']))
 			if str(row['OSII WGS ID (HQ)']) in sample_list:
 				matching_isolates.append(str(run_name)+"/"+str(row['OSII WGS ID (HQ)']))
 			elif str(row['CDC Local Aliquot ID or Outbreak ID']) in sample_list:
