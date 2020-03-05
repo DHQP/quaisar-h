@@ -97,6 +97,6 @@ if parameters.reverse:
     print(reverse_record.seq)[start_sub:end_sub]
     exit()
 if parameters.header_out is not None:
-    print(parameters.header_out+"\n"+search_DNA_seq)
+    print(">"+parameters.header_out+"\n"+search_DNA_seq)
 else:
     print(search_DNA_seq)
