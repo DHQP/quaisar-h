@@ -46,7 +46,7 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name):
 		if row['Output Folder Name'] == run_name:
 			if str(row['OSII WGS ID (HQ)']) in samples:
 				matching_isolates.append(str(run_name)+"/"+str(row['OSII WGS ID (HQ)']))
-			elif str(row['CDC Local Aliquot ID or Outbreak ID'])) in samples:
+			elif str(row['CDC Local Aliquot ID or Outbreak ID']) in samples:
 				matching_isolates.append(str(run_name)+"/"+str(row['CDC Local Aliquot ID or Outbreak ID']))
 			else:
 				print("sample OSII:",str(row['OSII WGS ID (HQ)']), "CDC:", str(row['CDC Local Aliquot ID or Outbreak ID'])))
