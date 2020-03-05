@@ -44,7 +44,7 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name):
 	for index, row in seqlog.iterrows():
 		#print(index,row)
 		if row['Output Folder Name'] == run_name:
-			if str(row['OSII WGS ID (HQ)']) in samples:is None or str(row['OSII WGS ID (HQ)') == "N/A" or str(row['OSII WGS ID (HQ)') == "":
+			if str(row['OSII WGS ID (HQ)']) in samples:
 				matching_isolates.append(str(run_name)+"/"+str(row['OSII WGS ID (HQ)']))
 			elif str(row['CDC Local Aliquot ID or Outbreak ID'])) in samples:
 				matching_isolates.append(str(run_name)+"/"+str(row['CDC Local Aliquot ID or Outbreak ID']))
