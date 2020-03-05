@@ -38,9 +38,9 @@ def create_sample_dict(list_in):
 		line = fp.readline()
 		cnt = 1
 		while line:
-    		samples.append(str(line.split("/")[1]))
-    		line = fp.readline()
-    		cnt += 1
+ 		samples.append(str(line.split("/")[1]))
+ 		line = fp.readline()
+ 		cnt += 1
 
 	return samples
 
