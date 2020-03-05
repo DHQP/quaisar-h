@@ -35,8 +35,8 @@ def create_sample_dict(list_in):
 	return samples
 
 
-def do_conversion(excel_filename, sheetname_in, output_name, run_name):
-	if len(samples) == 0:
+def do_conversion(excel_filename, sheetname_in, output_name, run_name, sample_list):
+	if len(sample_list) == 0:
 		print("No samples added from original list, cant compare nothing to Seqlog, exiting")
 		exit()
 	seqlog = pd.read_excel(excel_filename, sheet_name=sheetname_in)  #usecols['CDC Aliquot ID (Miseq_ID)','Output Folder Name']
@@ -44,9 +44,9 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name):
 	for index, row in seqlog.iterrows():
 		#print(index,row)
 		if row['Output Folder Name'] == run_name:
-			if str(row['OSII WGS ID (HQ)']) in samples:
+			if str(row['OSII WGS ID (HQ)']) in sample_list:
 				matching_isolates.append(str(run_name)+"/"+str(row['OSII WGS ID (HQ)']))
-			elif str(row['CDC Local Aliquot ID or Outbreak ID']) in samples:
+			elif str(row['CDC Local Aliquot ID or Outbreak ID']) in sample_list:
 				matching_isolates.append(str(run_name)+"/"+str(row['CDC Local Aliquot ID or Outbreak ID']))
 			else:
 				print("sample OSII:",str(row['OSII WGS ID (HQ)']), "CDC:", str(row['CDC Local Aliquot ID or Outbreak ID']))
