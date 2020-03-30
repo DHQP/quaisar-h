@@ -158,7 +158,7 @@ done < "${OUTDATADIR}/gottcha_S/${1}.gottcha.tsv"
 # Checks for the existence of the trimmed_counts file for the sample. If found true % classification is performed
 if [[ -s "${processed}/${2}/${1}/preQCcounts/${1}_trimmed_counts.txt" ]]; then
 	# The total reads is determined by pulling from the trimmed_counts
-	qc_reads=$(head -n 1 "${processed}/${2}/${1}/preQCcounts/${1}_trimmed_counts.txt" | cut -d'	' -f13)
+	qc_reads=$(tail -n 1 "${processed}/${2}/${1}/preQCcounts/${1}_trimmed_counts.txt" | cut -d'	' -f13)
 	qc_reads=$((qc_reads/2))
 	# Unclassified reads are calculated by subtracting the sum of all phylum reads from the total possible reads
 	unclass_reads=$(( qc_reads - sum_reads ))

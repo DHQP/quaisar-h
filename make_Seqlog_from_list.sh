@@ -134,7 +134,7 @@ while IFS= read -r var || [ -n "$var" ]; do
 	read_qc_info="N/A	N/A	N/A	N/A	N/A	N/A	N/A	N/A	N/A	N/A	N/A	N/A"
 	# If the counts file exists take the header line (the only one) and copy all but the first entry (which is the sample name) and store in an array
 	if [[ -s "${OUTDATADIR}/preQCcounts/${sample_name}_counts.txt" ]]; then
-		line=$(head -n 1 "${OUTDATADIR}/preQCcounts/${sample_name}_counts.txt")
+		line=$(tail -n 1 "${OUTDATADIR}/preQCcounts/${sample_name}_counts.txt")
 		IFS='	' read -r -a qcs <<< "${line}"
 		read_qc_info=${qcs[@]:1}
 		#echo "${read_qc_info}"
@@ -166,19 +166,19 @@ while IFS= read -r var || [ -n "$var" ]; do
 				num_contigs=$(sed -n '14p' "${OUTDATADIR}/Assembly_Stats/${sample_name}_report.tsv"| sed -r 's/[\t]+/ /g' | cut -d' ' -f3 )
 			elif [ ${counter} -eq 1 ]
 			then
-				ass_length=$(sed -n '16p' "${OUTDATADIR}/Assembly_Stats/${sample_name}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
+				assembly_length=$(sed -n '16p' "${OUTDATADIR}/Assembly_Stats/${sample_name}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
 				#Check Assembly ratio against expected size to see if it is missing a large portion or if there is contamination/double genome
 				dec_genus_initial="${dec_genus:0:1}"
 				if [[ "${dec_genus_initial}" = "[" ]] || [[ "${dec_genus_initial}" = "(" ]]; then
 					dec_genus_initial="${dec_genus:1:1}"
 				fi
-				ass_ID="${dec_genus_initial}.${dec_species}"
-				echo "About to check mmb_bugs[${ass_ID}]"
-				if [[ ! -z "${mmb_bugs[${ass_ID}]}" ]]; then
-					#echo "Found Bug in DB: ${ass_ID}-${mmb_bugs[${ass_ID}]}"
-					ass_ratio=$(awk -v p="${ass_length}" -v q="${mmb_bugs[${ass_ID}]}" 'BEGIN{printf("%.2f",p/q)}')
+				assembly_ID="${dec_genus_initial}.${dec_species}"
+				echo "About to check mmb_bugs[${assembly_ID}]"
+				if [[ ! -z "${mmb_bugs[${assembly_ID}]}" ]]; then
+					#echo "Found Bug in DB: ${assembly_ID}-${mmb_bugs[${assembly_ID}]}"
+					assembly_ratio=$(awk -v p="${assembly_length}" -v q="${mmb_bugs[${assembly_ID}]}" 'BEGIN{printf("%.2f",p/q)}')
 				else
-					ass_ratio="Not_in_DB"
+					assembly_ratio="Not_in_DB"
 				fi
 			elif [ ${counter} -eq 3 ]
 			then
@@ -186,9 +186,9 @@ while IFS= read -r var || [ -n "$var" ]; do
 			fi
 			counter=$((counter+1))
 		done < ${OUTDATADIR}/Assembly_Stats/${sample_name}_report.tsv
-		contig_info=$(echo -e "${num_contigs}\\t${ass_length}\\t${ass_ratio}")
+		contig_info=$(echo -e "${num_contigs}\\t${assembly_length}\\t${assembly_ratio}")
 		#with N50 size
-		#contig_info=$(echo -e "${num_contigs}(${n50_length})\\t${ass_length}")
+		#contig_info=$(echo -e "${num_contigs}(${n50_length})\\t${assembly_length}")
 	fi
 
 	# Pulls busco info from summary file
@@ -242,8 +242,8 @@ while IFS= read -r var || [ -n "$var" ]; do
 	# Extract q30 reads from qcCounts to calculate average coverage as q30_reads/assembly_length
 	q30_reads=$(echo "${read_qc_info}" | awk -F ' ' '{print $2}')
 	# Change later to AWK as this wont work on ASPEN, but consolidate won't likely be run on cluster
-	if [[ ${ass_length} -gt 0 ]]; then
-		avg_coverage=$(bc <<<"scale=2 ; ${q30_reads} / ${ass_length}")
+	if [[ ${assembly_length} -gt 0 ]]; then
+		avg_coverage=$(bc <<<"scale=2 ; ${q30_reads} / ${assembly_length}")
 	else
 		avg_coverage="N/A"
 	fi

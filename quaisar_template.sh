@@ -126,7 +126,8 @@ if [ ! -d "${OUTDATADIR}/${filename}/preQCcounts" ]; then
 	mkdir -p "${OUTDATADIR}/${filename}/preQCcounts"
 fi
 # Run qc count check on raw reads
-python3 "${shareScript}/Fastq_Quality_Printer.py" -1 "${OUTDATADIR}/${filename}/FASTQs/${filename}_R1_001.fastq" -2 "${OUTDATADIR}/${filename}/FASTQs/${filename}_R2_001.fastq" > "${OUTDATADIR}/${filename}/preQCcounts/${filename}_counts.txt"
+echo -e "Q20_Total_[bp]	Q30_Total_[bp]	Q20_R1_[bp]	Q20_R2_[bp]	Q20_R1_[%]	Q20_R2_[%]	Q30_R1_[bp]	Q30_R2_[bp]	Q30_R1_[%]	Q30_R2_[%]	Total_Sequenced_[bp]	Total_Sequenced_[reads]" > "${OUTDATADIR}/${filename}/preQCcounts/${filename}_counts.txt"
+python3 "${shareScript}/Fastq_Quality_Printer.py" -1 "${OUTDATADIR}/${filename}/FASTQs/${filename}_R1_001.fastq" -2 "${OUTDATADIR}/${filename}/FASTQs/${filename}_R2_001.fastq" >> "${OUTDATADIR}/${filename}/preQCcounts/${filename}_counts.txt"
 
 	# Get end time of qc count and calculate run time and append to time summary (and sum to total time used)
 end=$SECONDS
@@ -190,7 +191,8 @@ if [ ! -d "${OUTDATADIR}/${filename}/preQCcounts" ]; then
 	mkdir -p "${OUTDATADIR}/${filename}/preQCcounts"
 fi
 # Run qc count check on filtered reads
-python3 "${shareScript}/Fastq_Quality_Printer.py" -1 "${OUTDATADIR}/${filename}/trimmed/${filename}_R1_001.paired.fq" -2 "${OUTDATADIR}/${filename}/trimmed/${filename}_R2_001.paired.fq" > "${OUTDATADIR}/${filename}/preQCcounts/${filename}_trimmed_counts.txt"
+echo -e "Q20_Total_[bp]	Q30_Total_[bp]	Q20_R1_[bp]	Q20_R2_[bp]	Q20_R1_[%]	Q20_R2_[%]	Q30_R1_[bp]	Q30_R2_[bp]	Q30_R1_[%]	Q30_R2_[%]	Total_Sequenced_[bp]	Total_Sequenced_[reads]" > "${OUTDATADIR}/${filename}/preQCcounts/${filename}_trimmed_counts.txt"
+python3 "${shareScript}/Fastq_Quality_Printer.py" -1 "${OUTDATADIR}/${filename}/trimmed/${filename}_R1_001.paired.fq" -2 "${OUTDATADIR}/${filename}/trimmed/${filename}_R2_001.paired.fq" >> "${OUTDATADIR}/${filename}/preQCcounts/${filename}_trimmed_counts.txt"
 
 # Merge both unpaired fq files into one for GOTTCHA
 cat "${OUTDATADIR}/${filename}/trimmed/${filename}_R1_001.unpaired.fq" "${OUTDATADIR}/${filename}/trimmed/${filename}_R2_001.unpaired.fq" > "${OUTDATADIR}/${filename}/trimmed/${filename}.single.fq"

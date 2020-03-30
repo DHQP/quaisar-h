@@ -79,10 +79,10 @@ owd=$(pwd)
 cd ${OUTDATADIR}/16s
 
 # Run barrnap to discover ribosomal sequences
-barrnap --kingdom bac --threads ${procs} "${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta" > ${OUTDATADIR}/16s/${sample_name}_scaffolds_trimmed.fasta_rRNA_seqs.fasta
+barrnap --kingdom bac --threads ${procs} "${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta" > ${OUTDATADIR}/16s/${sample_name}_rRNA_finds.txt
 
 # Checks for successful output from barrnap, *rRNA_seqs.fasta
-if [[ ! -s ${OUTDATADIR}/16s/${sample_name}_scaffolds_trimmed.fasta_rRNA_seqs.fasta ]]; then
+if [[ ! -s ${OUTDATADIR}/16s/${sample_name}_rRNA_finds.txt ]]; then
 	echo "rNA_seqs.fasta does NOT exist"
 	exit 1
 fi
@@ -90,7 +90,7 @@ fi
 # Checks barrnap output and finds all 16s hits and creates a multi-fasta file to list all possible matches
 lines=-1
 found_16s="false"
-if [[ -f "${OUTDATADIR}/16s/${sample_name}_scaffolds_trimmed.fasta_rRNA_seqs.fasta" ]]; then
+if [[ -f "${OUTDATADIR}/16s/${sample_name}_rRNA_finds.txt" ]]; then
 	while IFS='' read -r line; do
 		contig=$(echo ${line} | cut -d' ' -f1)
 		cstart=$(echo ${line} | cut -d' ' -f4)
@@ -100,11 +100,11 @@ if [[ -f "${OUTDATADIR}/16s/${sample_name}_scaffolds_trimmed.fasta_rRNA_seqs.fas
 			# Replace with subsequence once it can handle multi-fastas
 			#make_fasta $1 $2 $contig $cstart $cstop
 			lines=$((lines + 1))
-			echo "About to make ${sample_name}_16s_rna_seq_${lines}.txt"
-			python3 ${shareScript}/get_subsequence.py -i "${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta" -s ${cstart} -e ${cstop} -t ${contig} -o "${contig} 16s-${lines}" >> ${processed}/${project}/${sample_name}/16s/${sample_name}_16s_rna_seq_${lines}.txt
+			echo "About to make ${sample_name}_16s_rna_seq_${lines}.fasta"
+			python3 ${shareScript}/get_subsequence.py -i "${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta" -s ${cstart} -e ${cstop} -t ${contig} -o "${contig} 16s-${lines}" >> ${processed}/${project}/${sample_name}/16s/${sample_name}_16s_rna_seq_${lines}.fasta
 			found_16s="true"
 		fi
-	done < "${OUTDATADIR}/16s/${sample_name}_scaffolds_trimmed.fasta_rRNA_seqs.fasta"
+	done < "${OUTDATADIR}/16s/${sample_name}_rRNA_finds.txt"
 else
 	echo "Barrnap Failed maybe??!??"
 fi
@@ -119,9 +119,9 @@ fi
 # Blasts the NCBI database to find the closest hit to every entry in the 16s fasta list
 ###### MAX_TARGET_SEQS POSSIBLE ERROR
 line_inc=0
-while [[ -f ${sample_name}_16s_rna_seq_${line_inc}.txt ]]; do
-	echo "Blasting ${sample_name}_16s_rna_seq_${line_inc}.txt"
-	blastn -word_size 10 -task blastn -remote -db nt -max_hsps 1 -max_target_seqs 10 -query ${processed}/${project}/${sample_name}/16s/${sample_name}_16s_rna_seq_${line_inc}.txt -out ${OUTDATADIR}/16s/${sample_name}.nt.RemoteBLASTN_${line_inc} -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen ssciname";
+while [[ -f ${sample_name}_16s_rna_seq_${line_inc}.fasta ]]; do
+	echo "Blasting ${sample_name}_16s_rna_seq_${line_inc}.fasta"
+	blastn -word_size 10 -task blastn -remote -db nt -max_hsps 1 -max_target_seqs 10 -query ${processed}/${project}/${sample_name}/16s/${sample_name}_16s_rna_seq_${line_inc}.fasta -out ${OUTDATADIR}/16s/${sample_name}.nt.RemoteBLASTN_${line_inc} -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen ssciname";
 	line_inc=$(( line_inc + 1 ))
 done
 
