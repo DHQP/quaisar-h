@@ -179,7 +179,7 @@ if [[ "${2}" = "pre" ]]; then
 	# Checks for the existence of the preQC counts file to get total possible reads
 	if [[ -s "${processed}/${4}/${1}/preQCcounts/${1}_trimmed_counts.txt" ]]; then
 		# Pulls the total number of possible reads from the preQC counts file
-		file_reads=$(head -n 1 "${processed}/${4}/${1}/preQCcounts/${1}_trimmed_counts.txt" | cut -d'	' -f13)
+		file_reads=$(tail -n 1 "${processed}/${4}/${1}/preQCcounts/${1}_trimmed_counts.txt" | cut -d'	' -f13)
 		# Calculates the true count of unclassified reads rather than the reported value from kraken
 		unclass_reads=$(( file_reads - classified_reads ))
 		# Calculates the percent of unclassified reads using the total possible reads

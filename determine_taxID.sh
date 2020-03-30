@@ -20,7 +20,7 @@ fi
 #
 # Modules required: None
 #
-# v1.0.2 (1/17/2020)
+# v1.0.4 (03/12/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -170,7 +170,7 @@ do_GOTTCHA() {
 		# Grab first letter of line (indicating taxonomic level)
 		first=${line::1}
 		# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken, 3rd-true % of total reads, 4th-identifier)
-		if [ "${first}" = "S" ]
+		if [ "${first}" = "s" ]
 		then
 			species=$(echo "${line}" | awk -F ' ' '{print $5}')
 		elif [ "${first}" = "G" ]

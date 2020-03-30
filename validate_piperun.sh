@@ -94,12 +94,12 @@ else
 fi
 #Checking QC counts
 if [[ -s "${OUTDATADIR}/preQCcounts/${1}_counts.txt" ]]; then
-	reads_pre=$(head -n 1 "${OUTDATADIR}/preQCcounts/${1}_counts.txt" | cut -d'	' -f13)
+	reads_pre=$(tail -n1 "${OUTDATADIR}/preQCcounts/${1}_counts.txt" | cut -d'	' -f13)
 	pairs_pre=$((reads_pre/2))
-	Q30_R1=$(head -n 1 "${OUTDATADIR}/preQCcounts/${1}_counts.txt" | cut -d'	' -f10)
+	Q30_R1=$(tail -n1 "${OUTDATADIR}/preQCcounts/${1}_counts.txt" | cut -d'	' -f10)
 	Q30_R1_rounded=$(echo "${Q30_R1}"  | cut -d'.' -f2)
 	Q30_R1_rounded=$(echo "${Q30_R1_rounded::2}")
-	Q30_R2=$(head -n 1 "${OUTDATADIR}/preQCcounts/${1}_counts.txt" | cut -d'	' -f11)
+	Q30_R2=$(tail -n1 "${OUTDATADIR}/preQCcounts/${1}_counts.txt" | cut -d'	' -f11)
 	Q30_R2_rounded=$(echo "${Q30_R2}"  | cut -d'.' -f2)
 	Q30_R2_rounded=$(echo "${Q30_R2_rounded::2}")
 	if [[ "${reads_pre}" -le 1000000 ]]; then
@@ -184,7 +184,7 @@ else
 fi
 #Checking QC counts after trimming
 if [[ -s "${OUTDATADIR}/preQCcounts/${1}_trimmed_counts.txt" ]]; then
-	reads_post=$(head -n 1 "${OUTDATADIR}/preQCcounts/${1}_trimmed_counts.txt" | cut -d'	' -f13)
+	reads_post=$(tail -n1 "${OUTDATADIR}/preQCcounts/${1}_trimmed_counts.txt" | cut -d'	' -f13)
 	pairs_post=$((reads_post/2))
 	loss=$(echo "scale=2; 100*(${reads_pre} - ${reads_post}) / ${reads_pre}" | bc )
 	if [[ "${reads_post}" -le 500000 ]]; then
@@ -649,10 +649,10 @@ fi
 if [[ -s "${OUTDATADIR}/Assembly_Stats/${1}_report.tsv" ]]; then
 	# Extract the useful bits and report (to compare to Toms)
 	contig_num=$(sed -n '14p' "${OUTDATADIR}/Assembly_Stats/${1}_report.tsv"| sed -r 's/[\t]+/ /g' | cut -d' ' -f3 )
-	ass_length=$(sed -n '16p' "${OUTDATADIR}/Assembly_Stats/${1}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
+	assembly_length=$(sed -n '16p' "${OUTDATADIR}/Assembly_Stats/${1}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
 	N50=$(sed -n '18p' "${OUTDATADIR}/Assembly_Stats/${1}_report.tsv"  | sed -r 's/[\t]+/ /g'| cut -d' ' -f2)
 	GC_con=$(sed -n '17p' "${OUTDATADIR}/Assembly_Stats/${1}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
-	printf "%-20s: %-8s : %s\\n" "QUAST" "SUCCESS" "#-${contig_num} length-${ass_length} n50-${N50} %GC-${GC_con}"
+	printf "%-20s: %-8s : %s\\n" "QUAST" "SUCCESS" "#-${contig_num} length-${assembly_length} n50-${N50} %GC-${GC_con}"
 else
 	printf "%-20s: %-8s : %s\\n" "QUAST" "FAILED" "/Assembly_Stats/report.tsv does not exist"
 	status="FAILED"
@@ -663,10 +663,10 @@ if [[ "${plasmidsFoundviaplasFlow}" -eq 1 ]]; then
 	if [[ -s "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv" ]]; then
 		# Extract the useful bits and report (to compare to Toms)
 		contig_num_plas=$(sed -n '14p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv"| sed -r 's/[\t]+/ /g' | cut -d' ' -f3 )
-		ass_length_plas=$(sed -n '16p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
+		assembly_length_plas=$(sed -n '16p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
 		N50_plas=$(sed -n '18p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv"  | sed -r 's/[\t]+/ /g'| cut -d' ' -f2)
 		GC_con_plas=$(sed -n '17p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
-		printf "%-20s: %-8s : %s\\n" "QUAST_plasFlow" "SUCCESS" "#-${contig_num_plas} length-${ass_length_plas} n50-${N50_plas} %GC-${GC_con_plas}"
+		printf "%-20s: %-8s : %s\\n" "QUAST_plasFlow" "SUCCESS" "#-${contig_num_plas} length-${assembly_length_plas} n50-${N50_plas} %GC-${GC_con_plas}"
 	else
 		printf "%-20s: %-8s : %s\\n" "QUAST_plasFlow" "FAILED" "/Assembly_Stats_plasFlow/report.tsv does not exist"
 		status="FAILED"
@@ -716,23 +716,23 @@ while IFS= read -r bug_lines || [ -n "$bug_lines" ]; do
 	mmb_bugs["${bug_name}"]="${bug_size}"
 done < ${local_DBs}/MMB_Bugs.txt
 genus_initial="${dec_genus:0:1}"
-ass_ID="${genus_initial}.${dec_species}"
+assembly_ID="${genus_initial}.${dec_species}"
 #echo "${mmb_bugs[@]}"
-#echo "${ass_ID}"
-if [[ ! -z "${mmb_bugs[${ass_ID}]}" ]]; then
-	#echo "Found Bug in DB: ${ass_ID}-${mmb_bugs[${ass_ID}]}"
-	ass_ratio=$(awk -v p="${ass_length}" -v q="${mmb_bugs[${ass_ID}]}" 'BEGIN{printf("%.2f",p/q)}')
-	if (( $(echo "$ass_ratio > 1.2" | bc -l) )); then
-		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "FAILED" "Too large - ${ass_ratio}x against ${ass_ID}"
+#echo "${assembly_ID}"
+if [[ ! -z "${mmb_bugs[${assembly_ID}]}" ]]; then
+	#echo "Found Bug in DB: ${assembly_ID}-${mmb_bugs[${assembly_ID}]}"
+	assembly_ratio=$(awk -v p="${assembly_length}" -v q="${mmb_bugs[${assembly_ID}]}" 'BEGIN{printf("%.2f",p/q)}')
+	if (( $(echo "$assembly_ratio > 1.2" | bc -l) )); then
+		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "FAILED" "Too large - ${assembly_ratio}x against ${assembly_ID}"
 		status="FAILED"
-	elif (( $(echo "$ass_ratio < 0.8" | bc -l) )); then
-		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "FAILED" "Too small - ${ass_ratio}x against ${ass_ID}"
+	elif (( $(echo "$assembly_ratio < 0.8" | bc -l) )); then
+		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "FAILED" "Too small - ${assembly_ratio}x against ${assembly_ID}"
 		status="FAILED"
 	else
-		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "SUCCESS" "${ass_ratio}x against ${ass_ID}"
+		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "SUCCESS" "${assembly_ratio}x against ${assembly_ID}"
 	fi
 else
-	printf "%-20s: %-8s : %s\\n" "Assembly ratio" "WARNING" "${ass_ID} does not exist in the DB"
+	printf "%-20s: %-8s : %s\\n" "Assembly ratio" "WARNING" "${assembly_ID} does not exist in the DB"
 	if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 		status="WARNING"
 	fi
@@ -740,14 +740,14 @@ fi
 
 # check coverage
 if [[ -s "${OUTDATADIR}/preQCcounts/${1}_counts.txt" ]]; then
-	line=$(head -n 1 "${OUTDATADIR}/preQCcounts/${1}_counts.txt")
+	line=$(tail -n1 "${OUTDATADIR}/preQCcounts/${1}_counts.txt")
 	IFS='	' read -r -a qcs <<< "${line}"
 	read_qc_info=${qcs[@]:1}
 	# Extract q30 reads from qcCounts to calculate average coverage as q30_reads/assembly_length
 	q30_reads=$(echo "${read_qc_info}" | awk -F ' ' '{print $2}')
 	# Change later to AWK as this wont work on ASPEN, but consolidate won't likely be run on cluster
-	if [[ ${ass_length} -gt 0 ]] && [[ ${q30_reads} -gt 0 ]]; then
-		avg_coverage=$(bc <<<"scale=2 ; ${q30_reads} / ${ass_length}")
+	if [[ ${assembly_length} -gt 0 ]] && [[ ${q30_reads} -gt 0 ]]; then
+		avg_coverage=$(bc <<<"scale=2 ; ${q30_reads} / ${assembly_length}")
 	else
 		avg_coverage=0
 	fi
@@ -767,14 +767,14 @@ if [[ -s "${OUTDATADIR}/preQCcounts/${1}_counts.txt" ]]; then
 	fi
 fi
 if [[ -s "${OUTDATADIR}/preQCcounts/${1}_trimmed_counts.txt" ]]; then
-	line=$(head -n 1 "${OUTDATADIR}/preQCcounts/${1}_trimmed_counts.txt")
+	line=$(tail -n1 "${OUTDATADIR}/preQCcounts/${1}_trimmed_counts.txt")
 	IFS='	' read -r -a qcs <<< "${line}"
 	read_qc_info=${qcs[@]:1}
 	# Extract q30 reads from qcCounts to calculate average coverage as q30_reads/assembly_length
 	q30_reads=$(echo "${read_qc_info}" | awk -F ' ' '{print $2}')
 	# Change later to AWK as this wont work on ASPEN, but consolidate won't likely be run on cluster
-	if [[ ${ass_length} -gt 0 ]] && [[ ${q30_reads} -gt 0 ]]; then
-		avg_coverage=$(bc <<<"scale=2 ; ${q30_reads} / ${ass_length}")
+	if [[ ${assembly_length} -gt 0 ]] && [[ ${q30_reads} -gt 0 ]]; then
+		avg_coverage=$(bc <<<"scale=2 ; ${q30_reads} / ${assembly_length}")
 	else
 		avg_coverage=0
 	fi
@@ -1318,6 +1318,13 @@ else
 fi
 # check 16s Identification
 if [[ -d "${OUTDATADIR}/16s/" ]]; then
+	blast_files=0
+	while [[ -f ${OUTDATADIR}/16s/${1}.nt.RemoteBLASTN_${blast_files} ]]; do
+		blast_files=$(( blast_files + 1 ))
+	done
+	if [[ "${blast_files}" -gt 0 ]]; then
+		multi_16s="true"
+	fi
 	if [[ -s "${OUTDATADIR}/16s/${1}_16s_blast_id.txt" ]]; then
 		info_b=$(head -n 1 "${OUTDATADIR}/16s/${1}_16s_blast_id.txt")
 		genus_b=$(echo ${info_b} | cut -d' ' -f3)
