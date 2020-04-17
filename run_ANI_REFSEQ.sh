@@ -87,8 +87,11 @@ while IFS= read -r var; do
 	echo "${var}"
 	dist=$(echo ${var} | cut -d' ' -f3)
 	kmers=$(echo ${var} | cut -d' ' -f5 | cut -d'/' -f1)
+	comparison_files=$(ls -lh "${OUTDATADIR}/ANI/localANIDB_REFSEQ/" | wc -l)
+	# Subtract one for size and one for sample.fasta
+	comparison_files=$(( comparison_files - 2 ))
 	echo "dist-${dist}"
-	if (( $(echo "$dist <= $cutoff" | bc -l) )) && [ ${kmers} -gt 0 ]; then
+	if (( $(echo "$dist <= $cutoff" | bc -l) )) && [ ${kmers} -gt 0 ] || [[ "${comparison_files}" -lt "${max_ani_samples}" ]]; then
 		filename=$(echo ${var} | cut -d' ' -f2 | rev | cut -d'/' -f1 | rev | cut -d'_' -f3- | rev | cut -d'_' -f2,3,4 | rev)
 		alpha=${filename:4:3}
 		beta=${filename:7:3}
