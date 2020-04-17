@@ -33,15 +33,15 @@ if [[ $# -eq 0 ]]; then
 	echo "No argument supplied to $0, exiting"
 	exit 1
 elif [[ -z "${1}" ]]; then
-	echo "Empty sample name supplied to run_ANI.sh, exiting"
+	echo "Empty sample name supplied to run_ANI_REFSEQ.sh, exiting"
 	exit 1
 # Gives the user a brief usage and help section if requested with the -h option argument
 elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./run_ANI.sh sample_name ani_database(which is also genus) species run_ID list_of_samples_to_include(optional)"
+	echo "Usage is ./run_ANI_REFSEQ.sh sample_name run_ID"
 	echo "Output is saved to in ${processed}/sample_name/ANI"
 	exit 0
 elif [ -z "${2}" ]; then
-	echo "Empty miseq_run_ID name supplied to run_ANI.sh. Fourth argument should be the run id. Exiting"
+	echo "Empty miseq_run_ID name supplied to run_ANI_REFSEQ.sh. Fourth argument should be the run id. Exiting"
 	exit 1
 fi
 
