@@ -72,7 +72,7 @@ echo "${2}"
 for file in ${2}/*
 do
 	# Check if file is a zipped reads file
-	if [[ "${file}" = *.gz ]] || [[ "${file}" = *.fastq ]]; then
+	if [[ "${file}" = *.gz ]] || [[ "${file}" = *.fastq ]] && [[ "${file}" != *_L001_I1_,fastq.gz ]]; then
 		echo "filename: ${file}"
 		# Gets full file name from path
 		full_sample_name=${file##*/}
