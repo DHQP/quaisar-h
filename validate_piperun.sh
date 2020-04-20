@@ -17,11 +17,11 @@ fi
 #
 # Usage: ./validate_piprun.sh   sample_name   miseq run id [gapping (gapped|ungapped)] [sim (40|80|95|998|99|100)]
 #
-# Output location: default_config.sh_output_location/run_ID/sample_name/
+# Output location: default_config.sh_output_location/run_ID/1/
 #
 # Modules required: None
 #
-# v1.0.2 (12/18/2019)
+# v1.0.3 (04/03/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -34,7 +34,7 @@ elif [[ -z "${1}" ]]; then
 	echo "Empty sample name supplied to validate_piperun.sh, exiting"
 	exit 1
 elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./validate_piperun.sh   sample_name   miseq_run_ID [gapping (gapped|ungapped)] [sim (40|80|95|998|99|100)]"
+	echo "Usage is ./validate_piperun.#!/bin/#!/bin/sh   sample_name	miseq_run_ID [gapping (gapped|ungapped)] [sim (40|80|95|998|99|100)]"
 	echo "Output is only printed to screen, Pipe to file if desired"
 	exit 0
 elif [ -z "$2" ]; then
@@ -47,7 +47,7 @@ OUTDATADIR=${processed}/${2}/${1}
 # Creates and prints header info for the sample being processed
 today=$(date)
 echo "----------Checking ${2}/${1} for successful completion on ----------"
-echo "Sample output folder starts at: " "${processed}/${2}/${1}"
+echo "Sample output folder starts at: " "${OUTDATADIR}"
 status="SUCCESS"
 # Checks to see if the sample has a time summary file associated with it
 if [[ -s "${OUTDATADIR}/time_summary.txt" ]]; then
@@ -62,31 +62,74 @@ else
 	status="ALERT"
 fi
 #Checking existence of FASTQ files
+raw_length_R1=-1
+raw_length_R2=-1
 if [[ -s "${OUTDATADIR}/FASTQs/${1}_R1_001.fastq" ]] && [[ -s "${OUTDATADIR}/FASTQs/${1}_R2_001.fastq" ]]; then
-	printf "%-20s: %-8s : %s\\n" "FASTQs" "SUCCESS" "Unzipped"
-	:
+	raw_length_R1=$(cat ${SAMPDATADIR}/FASTQs/${1}_R1_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	raw_length_R2=$(cat ${SAMPDATADIR}/FASTQs/${1}_R2_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	if [[ "${raw_length_R1}" -gt 0 ]] && [[ "${raw_length_R2}" -gt 0 ]]; then
+		printf "%-20s: %-8s : %s\\n" "FASTQs" "SUCCESS" "Unzipped - R1: ${raw_length_R1}bps R2: ${raw_length_R2}bps"
+	else
+		if [[ "${raw_length_R1}" -le 0 ]]; then
+			printf "%-20s: %-8s : %s\\n" "FASTQs R1" "FAILED" "Unzipped - File has no contents"
+			status="FAILED"
+		else
+			printf "%-20s: %-8s : %s\\n" "FASTQs R1" "SUCCESS" "Unzipped - ${raw_length_R1}bps"
+		fi
+		if [[ "${raw_length_R2}" -le 0 ]]; then
+			printf "%-20s: %-8s : %s\\n" "FASTQs R2" "FAILED" "Unzipped - File has no contents"
+			status="FAILED"
+		else
+			printf "%-20s: %-8s : %s\\n" "FASTQs R2" "SUCCESS" "Unzipped - ${raw_length_R2}bps"
+		fi
+	fi
 elif [[ -s "${OUTDATADIR}/FASTQs/${1}_R1_001.fastq" ]]; then
-	printf "%-20s: %-8s : %s\\n" "FASTQs" "WARNING" "Only R1 found"
-	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
-		status="WARNING"
+	raw_length_R1=$(cat ${SAMPDATADIR}/FASTQs/${1}_R1_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	if [[ "${raw_length_R1}" -le 0 ]]; then
+		printf "%-20s: %-8s : %s\\n" "FASTQs R1" "FAILED" "Unzipped - File has no base pairs"
+		status="FAILED"
+	else
+		printf "%-20s: %-8s : %s\\n" "FASTQs R1" "WARNING" "Only R1 found, Unzipped: ${raw_length_R1}bps"
+		if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
+			status="WARNING"
+		fi
 	fi
 elif [[ -s "${OUTDATADIR}/FASTQs/${1}_R2_001.fastq" ]]; then
-	printf "%-20s: %-8s : %s\\n" "FASTQs" "WARNING" "Only R2 found"
-	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
-		status="WARNING"
+	raw_length_R2=$(cat ${SAMPDATADIR}/FASTQs/${1}_R2_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	if [[ "${raw_length_R2}" -le 0 ]]; then
+		printf "%-20s: %-8s : %s\\n" "FASTQs R2" "FAILED" "Unzipped - File has no base pairs"
+		status="FAILED"
+	else
+		printf "%-20s: %-8s : %s\\n" "FASTQs R2" "WARNING" "Only R2 found, Unzipped: ${raw_length_R2}bps"
+		if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
+			status="WARNING"
+		fi
 	fi
 elif [[ -s "${OUTDATADIR}/FASTQs/${1}_R1_001.fastq.gz" ]] && [[ -s "${OUTDATADIR}/FASTQs/${1}_R2_001.fastq.gz" ]]; then
-	printf "%-20s: %-8s : %s\\n" "FASTQs" "SUCCESS" "Zipped"
-	:
+	raw_length_R1=$(zcat ${OUTDATADIR}/FASTQs/${1}_R1_001.fastq.gz | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	raw_length_R2=$(zcat ${OUTDATADIR}/FASTQs/${1}_R2_001.fastq.gz | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	printf "%-20s: %-8s : %s\\n" "FASTQs" "SUCCESS" "Zipped - R1: ${raw_length_R1}bps R2: ${raw_length_R2}bps"
 elif [[ -s "${OUTDATADIR}/FASTQs/${1}_R1_001.fastq" ]]; then
-	printf "%-20s: %-8s : %s\\n" "FASTQs" "WARNING" "Zipped, but only R1 found"
-	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
-		status="WARNING"
+	raw_length_R1=$(zcat ${SAMPDATADIR}/FASTQs/${1}_R1_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	if [[ "${raw_length_R1}" -le 0 ]]; then
+		printf "%-20s: %-8s : %s\\n" "FASTQs R1" "FAILED" "Zipped - File has no contents"
+		status="FAILED"
+	else
+		printf "%-20s: %-8s : %s\\n" "FASTQs R1" "WARNING" "Only R1 found, Zipped: ${raw_length_R1}bps"
+		if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
+			status="WARNING"
+		fi
 	fi
 elif [[ -s "${OUTDATADIR}/FASTQs/${1}_R2_001.fastq" ]]; then
-	printf "%-20s: %-8s : %s\\n" "FASTQs" "WARNING" "Zipped, but only R2 found"
-	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
-		status="WARNING"
+	raw_length_R2=$(zcat ${SAMPDATADIR}/FASTQs/${1}_R2_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	if [[ "${raw_length_R2}" -le 0 ]]; then
+		printf "%-20s: %-8s : %s\\n" "FASTQs R2" "FAILED" "Zipped - File has no contents"
+		status="FAILED"
+	else
+		printf "%-20s: %-8s : %s\\n" "FASTQs R2" "WARNING" "Only R2 found, Zipped: ${raw_length_R2}bps"
+		if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
+			status="WARNING"
+		fi
 	fi
 else
 	printf "%-20s: %-8s : %s\\n" "FASTQs" "FAILED" "No reads found"
@@ -131,57 +174,113 @@ else
 	status="FAILED"
 fi
 
-### This folder is now deleted afterwards and therefore is no longer checked
-#Checking BBDUK output folder
-#if [[ -s "${OUTDATADIR}/removedAdapters/${1}-noPhiX-R1.fsq" ]] && [[ -s "${OUTDATADIR}/removedAdapters/${1}-noPhiX-R2.fsq" ]]; then
-#	#printf "%-20s: %-8s : %s\\n" "Adapter Removal" "SUCCESS" "Found"
-#	:
-#elif [[ -s "${OUTDATADIR}/removedAdapters/${1}-noPhiX-R1.fsq" ]]; then
-#	printf "%-20s: %-8s : %s\\n" "Adapter Removal" "WARNING" "Only R1 found"
-#	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
-#		status="WARNING"
-#	fi
-#elif [[ -s "${OUTDATADIR}/removedAdapters/${1}-noPhiX-R2.fsq" ]]; then
-#	printf "%-20s: %-8s : %s\\n" "Adapter Removal" "WARNING" "Only R2 found"
-#	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
-#		status="WARNING"
-#	fi
-#else
-#	printf "%-20s: %-8s : %s\\n" "Adapter Removal" "FAILED" "/removedAdapters/${1}-noPhiX-R1.fsq & /removedAdapters/${1}-noPhiX-R2.fsq not found"
-#	status="FAILED"
-#fi
+## This folder is now deleted afterwards and therefore is no longer checked
+# Checking BBDUK output folder
+if [[ -d "${OUTDATADIR}/removedAdapters" ]]; then
+	#printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX" "SUCCESS" "Found"
+	nophi_length_R1=-2
+	nophi_length_R2=-2
+	if [[ -s "${OUTDATADIR}/removedAdapters/no_PhiX_total_lengths.txt" ]]; then
+		nophi_length_R1=$(head -n1 "${OUTDATADIR}/removedAdapters/no_PhiX_total_lengths.txt" | cut -d'	' -f2 )
+		nophi_length_R2=$(tail -n1 "${OUTDATADIR}/removedAdapters/no_PhiX_total_lengths.txt" | cut -d'	' -f2 )
+		R1_diff=$(( raw_length_R1 - nophi_length_R1 ))
+		R2_diff=$(( raw_length_R2 - nophi_length_R2 ))
+		if [[ "${nophi_length_R1}" -lt 0 ]]; then
+			printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX-R1" "WARNING" "No R1 size found"
+			if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
+				status="WARNING"
+			fi
+		elif [[ "${R1_diff}" -eq 0 ]]; then
+			printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX-R1" "ALERT" "R1: No PhiX bases removed (already done on machine etc?)"
+			if [ "${status}" = "SUCCESS" ]; then
+				status="ALERT"
+			fi
+		elif [[ "${R1_diff}" -lt 0 ]]; then
+			printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX-R1" "FAILED" "R1: More phiX-less bps found than raw FASTQ?"
+			status="FAILED"
+		else
+			R1_percent_loss=$(( R1_diff * 100 / ${raw_length_R1} ))
+			printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX-R1" "SUCCESS" "R1: ${nophi_length_R1} (${R1_percent_loss}% removed)"
+		fi
+		if [[ "${nophi_length_R2}" -lt 0 ]]; then
+			printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX-R2" "WARNING" "No R2 size found"
+			if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
+				status="WARNING"
+			fi
+		elif [[ "${R2_diff}" -eq 0 ]]; then
+			printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX-R2" "ALERT" "R2: No PhiX bases removed (already done on machine etc?)"
+			if [ "${status}" = "SUCCESS" ]; then
+				status="ALERT"
+			fi
+		elif [[ "${R2_diff}" -lt 0 ]]; then
+			printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX-R2" "FAILED" "R2: More phiX-less bps found than raw FASTQ?"
+			status="FAILED"
+		else
+			R2_percent_loss=$(( R2_diff * 100 / ${raw_length_R2} ))
+			printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX-R2" "SUCCESS" "R2: ${nophi_length_R2} (${R2_percent_loss}% removed)"
+		fi
+	else
+		printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX" "WARNING" "No total lengths found...did it run?"
+		if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
+			status="WARNING"
+		fi
+	fi
+else
+	printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX" "FAILED" "/removedAdapters does not exist"
+	status="FAILED"
+fi
 
 #Checking Trimmomatic output folder
+remAdapt_length_R1=-3
+remAdapt_length_R2=-3
 if [[ -s "${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq" ]] && [[ -s "${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq" ]]; then
-	printf "%-20s: %-8s : %s\\n" "Trimming" "SUCCESS" "Unzipped"
-	:
+	remAdapt_length_R1=$(cat ${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	remAdapt_length_R2=$(cat ${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	remAdapt_R1_diff=$(( nophi_length_R1 - remAdapt_length_R1 ))
+	remAdapt_R2_diff=$(( nophi_length_R2 - remAdapt_length_R2 ))
+	printf "%-20s: %-8s : %s\\n" "Trimming" "SUCCESS" "Unzipped - R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss)  R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss)"
+elif [[ -s "${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq.gz" ]] && [[ -s "${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq.gz" ]]; then
+	remAdapt_length_R1=$(zcat ${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq.gz | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	remAdapt_length_R2=$(zcat ${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq.gz | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	remAdapt_R1_diff=$(( nophi_length_R1 - remAdapt_length_R1 ))
+	remAdapt_R2_diff=$(( nophi_length_R2 - remAdapt_length_R2 ))
+	R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${nophi_length_R1} ))
+	R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${nophi_length_R2} ))
+	#echo "${raw_length_R1}-${nophi_length_R1}-${remAdapt_length_R1} ${raw_length_R2}-${nophi_length_R2}-${remAdapt_length_R2}"
+	printf "%-20s: %-8s : %s\\n" "Trimming" "SUCCESS" "Zipped - R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss)  R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss)"
 elif [[ -s "${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq" ]]; then
-	printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Only R1 found"
+	remAdapt_length_R1=$(cat ${OUTDATADIR}/trimmde/${1}_R1_001.paired.fq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${nophi_length_R1} ))
+	printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Unzipped - R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss)"
 	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 		status="WARNING"
 	fi
 elif [[ -s "${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq" ]]; then
-	printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Only R2 found"
+	remAdapt_length_R2=$(cat ${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${nophi_length_R2} ))
+	printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Unzipped - R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss)"
 	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 		status="WARNING"
 	fi
-elif [[ -s "${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq.gz" ]] && [[ -s "${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq.gz" ]]; then
-	printf "%-20s: %-8s : %s\\n" "Trimming" "SUCCESS" "Zipped"
-	:
 elif [[ -s "${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq.gz" ]]; then
-	printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Zipped, but only R1 found"
+	remAdapt_length_R1=$(zcat ${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq.gz | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${nophi_length_R1} ))
+	printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Zipped - R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss)"
 	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 		status="WARNING"
 	fi
 elif [[ -s "${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq.gz" ]]; then
-	printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Zipped, but only R2 found"
+	remAdapt_length_R2=$(zcat ${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq.gz | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${nophi_length_R2} ))
+	printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Zipped - R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss)"
 	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 		status="WARNING"
 	fi
 else
-	printf "%-20s: %-8s : %s\\n" "Trimming" "FAILED" "/trimmed/${1}_R1_001.paired.fq & /trimmed/${1}_R2_001.paired.fq not found"
+	printf "%-20s: %-8s : %s\\n" "Trimming" "FAILED" "/trimmed/${1}_R1_001.paired.fq(.gz) & /trimmed/${1}_R2_001.paired.fq(.gz) not found"
 	status="FAILED"
 fi
+
 #Checking QC counts after trimming
 if [[ -s "${OUTDATADIR}/preQCcounts/${1}_trimmed_counts.txt" ]]; then
 	reads_post=$(tail -n1 "${OUTDATADIR}/preQCcounts/${1}_trimmed_counts.txt" | cut -d'	' -f13)
@@ -201,7 +300,7 @@ fi
 
 #Check kraken on preAssembly
 kraken_pre_success=false
-if [[ -s "${OUTDATADIR}/kraken/preAssembly/${1}_paired.kraken" ]]; then
+if [[ -s "${OUTDATADIR}/kraken/preAssembly/${1}_paired.kraken" ]] || [[ -s "${OUTDATADIR}/kraken/preAssembly/${1}_paired.kraken.gz" ]]; then
 	#printf "%-20s: %-8s : %s\\n" "kraken preassembly" "SUCCESS" "Found"
 	kraken_pre_success=true
 else
@@ -215,7 +314,7 @@ if [[ "${kraken_pre_success}" = true ]]; then
 		#printf "%-20s: %-8s : %s\\n" "krona-kraken-preasmb" "SUCCESS" "Found"
 		:
 	else
-		printf "%-20s: %-8s : %s\\n" "krona-kraken-preasmb" "FAILED" "/kraken/preAssembly/${1}_paired.krona & /kraken/preAssembly/${1}_paired.html not found"
+		printf "%-20s: %-8s : %s\\n" "krona-kraken-preasmb" "FAILED" "/kraken/preAssembly/${1}_paired.krona &&|| /kraken/preAssembly/${1}_paired.html not found"
 		status="FAILED"
 	fi
 else
@@ -384,35 +483,7 @@ else
 	status="FAILED"
 fi
 
-# #Check plasFlow plasmid assembly
-plasmidsFoundviaplasFlow=0
-if [[ -d "${OUTDATADIR}/plasFlow" ]]; then
-	if [[ -s "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_original.fasta" ]]  || [[ -s "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly.fasta" ]]; then
-		# Count the number of '>' in the assembly file before trimming
-		if [[ -s "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly.fasta" ]] && [[ ! -s "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_original.fasta" ]]; then
-			mv "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly.fasta" "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_original.fasta"
-		fi
-		plas_scaffolds=">"
-		plas_scaffolds=$(grep -c ${plas_scaffolds} "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_original.fasta")
-		if [ -z ${plas_scaffolds} ]; then
-			plas_scaffolds=0
-		fi
-		if [[ "${plas_scaffolds}" -gt 0 ]]; then
-			printf "%-20s: %-8s : %s\\n" "plasmid Assembly" "SUCCESS" "${plas_scaffolds} scaffolds found via plasFlow"
-			plasmidsFoundviaplasFlow=1
-		else
-			printf "%-20s: %-8s : %s\\n" "plasmid Assembly" "WARNING" "No plasmid scaffold found?"
-			if [[ "${status}" == "SUCCESS" ]]; then
-				status="WARNING"
-			fi
-		fi
-	else
-		printf "%-20s: %-8s : %s\\n" "plasmid Assembly" "SUCCESS" "No plasmid scaffold found using plasFlow"
-	fi
-elif [[ "${dec_family}" == "Enterobacteriaceae" ]]; then
-	printf "%-20s: %-8s : %s\\n" "plasmid Assembly" "FAILED" "/plasFlow not found"
-	status="FAILED"
-fi
+
 
 #Check short scaffolds reduction script
 if [[ -s "${OUTDATADIR}/Assembly/${1}_scaffolds_trimmed.fasta" ]]; then
@@ -438,38 +509,13 @@ else
 	status="FAILED"
 fi
 
-#Check short scaffolds reduction script for plasmid assembly
-#echo "${plasmidsFoundviaplasFlow}-Found?"
-if [[ "${plasmidsFoundviaplasFlow}" -eq 1 ]]; then
-	if [[ -s "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta" ]]; then
-		# Count the number of '>' still remaining after trimming the contig file
-		plas_longies=">"
-		plas_longies=$(grep -c ${plas_longies} "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta")
-		# Calculate the number of lost (short) scaffolds
-		plas_shorties=$(( plas_scaffolds - plas_longies ))
-		if [ -z ${plas_shorties} ]; then
-			plas_shorties=0
-		fi
-		if [[ "${plas_longies}" -gt 0 ]]; then
-			printf "%-20s: %-8s : %s\\n" "Plasmids Contig Trim" "SUCCESS" "${plas_longies} scaffolds remain. ${plas_shorties} were removed due to shortness"
-		else
-			printf "%-20s: %-8s : %s\\n" "Plasmids Contig Trim" "SUCCESS" "No plasmid scaffold found"
-		fi
-	elif [[ -f "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta" ]]; then
-		printf "%-20s: %-8s : %s\\n" "Plasmids Contig Trim" "SUCCESS" "No plasmid scaffolds found"
-	else
-		printf "%-20s: %-8s : %s\\n" "Plasmids Contig Trim" "FAILED" "plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta not found"
-		status="FAILED"
-	fi
-fi
-
 #Check kraken on assembly
 kraken_post_success=false
-if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.kraken" ]]; then
+if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.kraken" ]] || [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.kraken.gz" ]]; then
 	#printf "%-20s: %-8s : %s\\n" "kraken postassembly" "SUCCESS" "Found"
 	kraken_post_success=true
 else
-	printf "%-20s: %-8s : %s\\n" "kraken postassembly" "FAILED" "/kraken/postAssembly/${1}_paired.kraken not found"
+	printf "%-20s: %-8s : %s\\n" "kraken postassembly" "FAILED" "/kraken/postAssembly/${1}_assembled.kraken not found"
 	status="FAILED"
 fi
 #Check Krona output of assembly
@@ -478,11 +524,11 @@ if [[ "${kraken_post_success}" = true ]]; then
 		#printf "%-20s: %-8s : %s\\n" "krona-kraken-pstasmb" "SUCCESS" "Found"
 		:
 	else
-		printf "%-20s: %-8s : %s\\n" "krona-kraken-pstasmb" "FAILED" "/kraken/postAssembly/${1}_assembled.krona & /kraken/postAssembly/${1}_assembled.html not found"
+		printf "%-20s: %-8s : %s\\n" "krona-kraken-pstasmb" "FAILED" "/kraken/postAssembly/${1}_assembled.krona &&|| /kraken/postAssembly/${1}_assembled.html not found"
 		status="FAILED"
 	fi
 else
-	printf "%-20s: %-8s : %s\\n" "krona-kraken-pstasmb" "FAILED" "preassembly kraken did not complete successfully"
+	printf "%-20s: %-8s : %s\\n" "krona-kraken-pstasmb" "FAILED" "postassembly kraken did not complete successfully"
 	status="FAILED"
 fi
 #Check extraction and unclassified values for kraken post assembly
@@ -506,9 +552,9 @@ if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" ]
 			if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 				status="WARNING"
 			fi
-		elif (( $(echo "${speciespercent} < 50" | bc -l) )); then
+		elif (( $(echo "${speiespercent} < 50" | bc -l) )); then
 			printf "%-20s: %-8s : %s\\n" "post Classify" "WARNING" "${genuspost} ${speciespost} is under 50% (${speciespercent}), possibly contaminated or contigs are weighted unevenly"
-			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "SUCCESS" ]]; then
+			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 				status="WARNING"
 			fi
 		else
@@ -545,15 +591,15 @@ if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.list" ]]; then
 		fi
 	done < ${OUTDATADIR}/kraken/postAssembly/${1}_assembled.list
 	if [[ $number_of_species -gt 1 ]]; then
-		printf "%-20s: %-8s : %s\\n" "post Class Contam." "WARNING" "${number_of_species} species have been found above the ${contamination_threshold}% threshold"
-		if [[ "${status}" == "SUCCESS" ]] || [[ "${status}" == "ALERT" ]]; then
-			status="WARNING"
+		printf "%-20s: %-8s : %s\\n" "post Class Contam." "ALERT" "${number_of_species} species have been found above the ${contamination_threshold}% threshold"
+		if [[ "${status}" == "SUCCESS" ]]; then
+			status="ALERT"
 		fi
 	elif [[ "${number_of_species}" -eq 1 ]]; then
 		:
 	else
-		printf "%-20s: %-8s : %s\\n" "post Class Contam." "WARNING" "No species have been found above ${contamination_threshold}% abundance"
-		if [[ "${status}" == "SUCCESS" ]] || [[ "${status}" == "ALERT" ]]; then
+		printf "%-20s: %-8s : %s\\n" "post Class Contam." "ALERT" "No species have been found above ${contamination_threshold}% abundance"
+		if [[ "${status}" = "ALERT" ]] || [[ "${status}" = "SUCCESS" ]]; then
 			status="WARNING"
 		fi
 	fi
@@ -566,7 +612,7 @@ if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled_BP.kraken" ]]; then
 	#printf "%-20s: %-8s : %s\\n" "kraken weighted" "SUCCESS" "Found"
 	kraken_weighted_success=true
 else
-	printf "%-20s: %-8s : %s\\n" "kraken weighted" "FAILED" "Top match is under 50%, likely contaminated"
+	printf "%-20s: %-8s : %s\\n" "kraken weighted" "FAILED" "${1}_assembled_BP.kraken not found"
 	status="FAILED"
 fi
 #Check Krona output of weighted assembly
@@ -575,7 +621,7 @@ if [[ "${kraken_weighted_success}" = true ]]; then
 		#printf "%-20s: %-8s : %s\\n" "krona-kraken-weight" "SUCCESS" "Found"
 		:
 	else
-		printf "%-20s: %-8s : %s\\n" "krona-kraken-weight" "FAILED" "/kraken/postAssembly/${1}_assembled_weighted.krona & /kraken/postAssembly/${1}_assembled_weighted_BP_krona.html not found"
+		printf "%-20s: %-8s : %s\\n" "krona-kraken-weight" "FAILED" "/kraken/postAssembly/${1}_assembled_weighted.krona &&|| /kraken/postAssembly/${1}_assembled_weighted_BP_krona.html not found"
 		status="FAILED"
 	fi
 else
@@ -656,21 +702,6 @@ if [[ -s "${OUTDATADIR}/Assembly_Stats/${1}_report.tsv" ]]; then
 else
 	printf "%-20s: %-8s : %s\\n" "QUAST" "FAILED" "/Assembly_Stats/report.tsv does not exist"
 	status="FAILED"
-fi
-
-#Check QUAST on plasmid Assembly
-if [[ "${plasmidsFoundviaplasFlow}" -eq 1 ]]; then
-	if [[ -s "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv" ]]; then
-		# Extract the useful bits and report (to compare to Toms)
-		contig_num_plas=$(sed -n '14p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv"| sed -r 's/[\t]+/ /g' | cut -d' ' -f3 )
-		assembly_length_plas=$(sed -n '16p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
-		N50_plas=$(sed -n '18p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv"  | sed -r 's/[\t]+/ /g'| cut -d' ' -f2)
-		GC_con_plas=$(sed -n '17p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
-		printf "%-20s: %-8s : %s\\n" "QUAST_plasFlow" "SUCCESS" "#-${contig_num_plas} length-${assembly_length_plas} n50-${N50_plas} %GC-${GC_con_plas}"
-	else
-		printf "%-20s: %-8s : %s\\n" "QUAST_plasFlow" "FAILED" "/Assembly_Stats_plasFlow/report.tsv does not exist"
-		status="FAILED"
-	fi
 fi
 
 # Get determinde taxonomy
@@ -843,58 +874,60 @@ else
 fi
 #Check ANI
 ani_found=false
-# Goes through each file in the ANI folder to find if any match the proper format of the ANI output (this keeps old version and formats from sneaking in, pretty much uselss at this point)
-if [[ -s "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus,}).txt" ]]; then
-	mv "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus,}).txt" "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus^}).txt"
-		 #"${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus^}).txt"
-fi
-if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_All).txt" ]]; then
+#Check ANI REFSEQ. Not fully implemented yet, so not causing a failure in reporting
+if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ_${REFSEQ_date}).txt" ]]; then
 	#echo "ALL"
-	ani_info=$(head -n 1 "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_All).txt")
-	ani_found=true
-elif [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus^}).txt" ]]; then
-	ani_info=$(head -n 1 "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus^}).txt")
-	ani_found=true
-else
-	for file in "${OUTDATADIR}/ANI/"*
-	do
-		if [[ "${file}" == *"best_ANI_hits_ordered(${1}_vs_"* ]]; then
-			filename=${file}
-			#echo "${OUTDATADIR}"
-			#echo "${file}"
-			#echo "${dec_genus^}"
-			ani_info=$(head -n 1 "${file}")
-			ani_found=true
-			break
-		fi
-	done
-fi
-# Checks to see if the match boolean was toggled, if so it extracts the best match info and database from the string
-if [[ "${ani_found}" = true ]]; then
-	genusDB=$(echo "${filename##*/}" | cut -d'_' -f6 | cut -d')' -f1)
-	percent_match="${ani_info:0:2}"
+	ani_info=$(head -n 1 "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ_${REFSEQ_date}).txt")
+	percent_match=$(echo "${ani_info}" | cut -d'.' -f1)
+	coverage_match=$(echo "${ani_info}" | cut -d'-' -f2 | cut -d'.' -f1)
 	#echo "${percent_match--}"
 	if [[ "${percent_match}" = "0." ]]; then
-		printf "%-20s: %-8s : %s\\n" "ANI" "FAILED" "No assembly file to work with"
-		status="FAILED"
+		printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "No assembly file to work with"
+		#status="FAILED"
 	else
-		if [[ "${percent_match}" -ge 95 ]]; then
-			printf "%-20s: %-8s : %s\\n" "ANI" "SUCCESS" "${ani_info} against ${genusDB}"
+		if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
+			printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "SUCCESS" "${ani_info} against REFSEQ_${REFSEQ_date}"
 		else
-			printf "%-20s: %-8s : %s\\n" "ANI" "FAILED" "${percent_match}% is too low, ${ani_info}"
-			status="FAILED"
+			if [[ "${percent_match}" -lt 95 ]]; then
+				printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "${percent_match}% identity is too low, ${ani_info}"
+			elif [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
+				printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "${coverage_match}% coverage is too low, ${ani_info}"
+			fi
+			#status="FAILED"
 		fi
 	fi
 else
-	if [[ "${dec_genus}" == "" ]]; then
-		printf "%-20s: %-8s : %s\\n" "ANI" "FAILED" "Determine_TAXID did not discover a genus. Cant ANI on all samples, yet"
-		status="FAILED"
+	# Old version found, should still be good, but would mark as an ALERT, maybe Warning
+	if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ*).txt" ]]; then
+		old_ani_file=$(find ${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ*).txt -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n)
+		old_ani_date=$(echo "${old_ani_file}" | rev | cut -d'_' -f1,2 | rev | cut -d'.' -f1)
+		old_ani_info=$(head -n1 "${old_ani_file}")
+		percent_match=$(echo "${old_ani_info}" | cut -d'.' -f1)
+		coverage_match=$(echo "${old_ani_info}" | cut -d'-' -f2 | cut -d'.' -f1)
+		if [[ "${percent_match}" = "0." ]]; then
+			printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "No assembly file to work with (REFSEQ database is out of date (${old_ani_date}), not ${REFSEQ_date})"
+			#status="FAILED"
+		else
+			if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
+				printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "ALERT" "REFSEQ database is out of date (${old_ani_date}), not ${REFSEQ_date}. ${ani_info}"
+				if [[ "${status}" == "SUCCESS" ]]; then
+					status="ALERT"
+				fi
+			else
+				if [[ "${percent_match}" -lt 95 ]]; then
+					printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "% Identity too low and REFSEQ database is out of date (${old_ani_date}), ${percent_match}% identity is too low, ${ani_info}"
+				elif [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
+					printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "% coverage is too low and REFSEQ database is out of date (${old_ani_date}), ${coverage_match}% coverage is too low, ${ani_info}"
+				fi
+				status="FAILED"
+			fi
+		fi
 	elif [[ ! -d "${OUTDATADIR}/ANI/" ]]; then
-		printf "%-20s: %-8s : %s\\n" "ANI" "FAILED" "/ANI/ does not exist"
-		status="FAILED"
+		printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "/ANI/ does not exist"
+		#status="FAILED"
 	else
-		printf "%-20s: %-8s : %s\\n" "ANI" "FAILED" "Attempted to compare to ${dec_genus} but /ANI/ does not have a best_ANI_hits file"
-		status="FAILED"
+		printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "NO REFSEQ ANI best_hits file"
+		#status="FAILED"
 	fi
 fi
 
@@ -942,61 +975,7 @@ else
 	status="FAILED"
 fi
 
-# #Check c-SSTAR on plasmid Assembly
-if [[ "${plasmidsFoundviaplasFlow}" -eq 1 ]]; then
-	#Check c-SSTAR
-	if [[ -d "${OUTDATADIR}/c-sstar_plasFlow/" ]]; then
-		if [[ ! -z "${3}" ]]; then
-			gapping="${3}"
-		else
-			gapping="gapped"
-		fi
-		if [[ ! -z "${4}" ]]; then
-			sim="${4}"
-		else
-			sim="40"
-		fi
-		csstar_plasFlow_file=$(find ${OUTDATADIR}/c-sstar_plasFlow/${1}.ResGANNCBI*.${gapping}_${sim}_sstar_summary.txt -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n | head -n 1)
-		if [[ -z "${csstar_plasFlow_file}" ]]; then
-			printf "%-20s: %-8s : %s\\n" "c-SSTAR_plasFlow" "FAILED" "/c-sstar_plasFlow/ does not have an sstar_summary file"
-			echo "Looking for ${OUTDATADIR}/c-sstar_plasFlow/${1}.ResGANNCBI.${gapping}_${sim}_sstar_summary.txt"
-			status="FAILED"
-		else
-			header=$(head -n1 "${csstar_plasFlow_file}")
-			ResGANNCBI_DB=$(echo "${csstar_plasFlow_file}" | rev | cut -d'.' -f3 | rev)
-			if [[ ${header} = *"No anti-microbial genes were found"* ]]; then
-				if [[ "${ResGANNCBI_DB}" = "${ResGANNCBI_srst2_filename}" ]]; then
-					printf "%-20s: %-8s : %s\\n" "c-SSTAR_plasFlow" "ALERT" "Completed, but NO KNOWN AMR genes present from ${ResGANNCBI_DB} (DB up to date, as of ${today})"
-					if [[ "${status}" == "SUCCESS" ]]; then
-						status="ALERT"
-					fi
-				else
-					printf "%-20s: %-8s : %s\\n" "c-SSTAR_plasFlow" "ALERT" "Completed, but NO KNOWN AMR genes present from ${ResGANNCBI_DB} (DB NOT up to date! Most current DB: ${ResGANNCBI_srst2_filename})"
-					if [[ "${status}" == "SUCCESS" ]]; then
-						status="ALERT"
-					fi
-				fi
-			else
-				amr_genes_found=$(wc -l "${csstar_plasFlow_file}" | cut -d' ' -f1)
-				# Prints out the counts of AR gene hits
-				if [[ "${ResGANNCBI_DB}" = "${ResGANNCBI_srst2_filename}" ]]; then
-					printf "%-20s: %-8s : %s\\n" "c-SSTAR_plasFlow" "SUCCESS" "${amr_genes_found} genes found in ${ResGANNCBI_DB} (%ID defaults to 40) (DB up to date, as of ${today})"
-				else
-					printf "%-20s: %-8s : %s\\n" "c-SSTAR_plasFlow" "ALERT" "${amr_genes_found} genes found in ${ResGANNCBI_DB} (%ID defaults to 40) (DB NOT up to date! Most current DB: ${ResGANNCBI_srst2_filename})"
-					if [[ "${status}" == "SUCCESS" ]]; then
-						status="ALERT"
-					fi
-				fi
-			fi
-		fi
-	else
-		printf "%-20s: %-8s : %s\\n" "c-sstar_plasFlow" "FAILED" "/c-sstar_plasFlow/ does not exist"
-		status="FAILED"
-	# Signals that the current sample is completed with verification
-	fi
-fi
-
-#Check c-SSTAR
+#Check GAMA
 if [[ -d "${OUTDATADIR}/GAMA/" ]]; then
 	GAMA_file=$(find ${OUTDATADIR}/GAMA -maxdepth 1 -type f -name "${1}.ResGANNCBI*.GAMA"   -printf '%p\n' | sort -k2,2 -rt '_' -n | head -n 1)
 	if [[ -z "${GAMA_file}" ]]; then
@@ -1025,40 +1004,6 @@ if [[ -d "${OUTDATADIR}/GAMA/" ]]; then
 else
 	printf "%-20s: %-8s : %s\\n" "GAMA" "FAILED" "/GAMA/ does not exist"
 	status="FAILED"
-fi
-
-# #Check c-SSTAR on plasmid Assembly
-if [[ "${plasmidsFoundviaplasFlow}" -eq 1 ]]; then
-	if [[ -d  "${OUTDATADIR}/GAMA_plasFlow" ]]; then
-		#Check c-SSTAR
-		GAMA_plasFlow_file=$(find ${OUTDATADIR}/GAMA_plasFlow -maxdepth 1 -type f -name "${1}.ResGANNCBI*.GAMA"   -printf '%p\n' | sort -k2,2 -rt '_' -n | head -n 1)
-		if [[ -z "${GAMA_plasFlow_file}" ]]; then
-			printf "%-20s: %-8s : %s\\n" "GAMA_plasFlow" "FAILED" "/GAMA_plasFlow/ does not have a .GAMA file"
-			status="FAILED"
-		else
-			ResGANNCBI_DB=$(echo "${GAMA_plasFlow_file}" | rev | cut -d'.' -f2 | rev)
-			#echo "${ResGANNCBI_DB} = ${ResGANNCBI_srst2_filename} ?"
-			plasmid_amr_genes_found=$(wc -l "${GAMA_plasFlow_file}" | cut -d' ' -f1)
-			plasmid_amr_genes_found=$(( plasmid_amr_genes_found - 1))
-			if [[ ${plasmid_amr_genes_found} -le 0 ]]; then
-				if [[ "${ResGANNCBI_DB}" = "${ResGANNCBI_srst2_filename}" ]]; then
-					printf "%-20s: %-8s : %s\\n" "GAMA_plasFlow" "ALERT" "Completed, but NO KNOWN AMR genes were found in ${ResGANNCBI_DB} (DB up to date, as of ${today})"
-				else
-					printf "%-20s: %-8s : %s\\n" "GAMA_plasFlow" "ALERT" "Completed, but NO KNOWN AMR genes were found in ${ResGANNCBI_DB} (DB NOT up to date! Most current DB: ${ResGANNCBI_srst2_filename})"
-				fi
-			else
-				# Prints out the counts of AR gene hits
-				if [[ "${ResGANNCBI_DB}" = "${ResGANNCBI_srst2_filename}" ]]; then
-					printf "%-20s: %-8s : %s\\n" "GAMA_plasFlow" "SUCCESS" "${plasmid_amr_genes_found} genes found in ${ResGANNCBI_DB} (DB up to date, as of ${today})"
-				else
-					printf "%-20s: %-8s : %s\\n" "GAMA_plasFlow" "ALERT" "${plasmid_amr_genes_found} genes found in ${ResGANNCBI_DB} (DB NOT up to date, Most current DB: ${ResGANNCBI_srst2_filename})"
-				fi
-			fi
-		fi
-	else
-		printf "%-20s: %-8s : %s\\n" "GAMA_plasFlow" "FAILED" "/GAMA_plasFlow/ does not exist"
-		status="FAILED"
-	fi
 fi
 
 # check SRST2 output
@@ -1118,17 +1063,16 @@ if [[ -d "${OUTDATADIR}/MLST/" ]]; then
 		mlstdb="${mlstdb}(Pasteur)"
 		if [ "${mlstdb}" = "-" ]; then
 			if [ "${dec_genus}" ] && [ "${dec_species}" ]; then
-				printf "%-20s: %-8s : %s\\n" "MLST" "WARNING" "no scheme found, check pubmlst for ${dec_genus} ${dec_species}"
-				if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
+				printf "%-20s: %-8s : %s\\n" "MLST" "ALERT" "no scheme found, check pubmlst for ${dec_genus} ${dec_species}"
+				if [[ "${status}" = "SUCCESS" ]]; then
 					status="WARNING"
 				fi
 			else
 				printf "%-20s: %-8s : %s\\n" "MLST" "FAILED" "no scheme found, check upstream as no genus has been assigned"
 			fi
 		elif [ "${mlstype}" = "-" ] || [ "${mlstype}" = "SUB" ]; then
-			printf "%-20s: %-8s : %s\\n" "MLST" "WARNING" "no type found, possibly new type? Adding to maintenance_To_Do list"
+			printf "%-20s: %-8s : %s\\n" "MLST" "WARNING" "no type found, possibly new type?"
 			report_info=$(echo "${info}" | cut -d' ' -f2-)
-			echo "${2}/${1}: Possible new MLST type - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 				status="WARNING"
 			fi
@@ -1153,9 +1097,8 @@ if [[ -d "${OUTDATADIR}/MLST/" ]]; then
 			#echo "'${mlstdb}:${mlstype}'"
 			if [ "${mlstdb}" = "abaumannii" ]; then
 				if [ "${mlstype}" = "SUB" ] || [ "${mlstype}" = "-" ]; then
-					printf "%-20s: %-8s : %s\\n" "MLST" "WARNING" "no type found, possibly new type? Adding to maintenance_To_Do list"
+					printf "%-20s: %-8s : %s\\n" "MLST" "WARNING" "no type found, possibly new type?"
 					report_info=$(echo "${info}" | cut -d' ' -f2-)
-					echo "${2}/${1}: Possible new MLST type - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 					if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 						status="WARNING"
 					fi
@@ -1178,9 +1121,8 @@ if [[ -d "${OUTDATADIR}/MLST/" ]]; then
 			#echo "'${mlstdb}:${mlstype}'"
 			if [ "${mlstdb}" = "ecoli" ]; then
 				if [ "${mlstype}" = "SUB" ] || [ "${mlstype}" = "-" ]; then
-					printf "%-20s: %-8s : %s\\n" "MLST" "WARNING" "no type found, possibly new type? Adding to maintenance_To_Do list"
+					printf "%-20s: %-8s : %s\\n" "MLST" "WARNING" "no type found, possibly new type?"
 					report_info=$(echo "${info}" | cut -d' ' -f2-)
-					echo "${2}/${1}: Possible new MLST type - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 					if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 						status="WARNING"
 					fi
@@ -1212,9 +1154,8 @@ if [[ -d "${OUTDATADIR}/MLST/" ]]; then
 		mlstype=$(tail -n1 ${srst_mlst} | cut -d'	' -f2)
 		mlstdb=$(echo "${srst_mlst}" | rev | cut -d'-' -f1 | cut -d'.' -f2 | rev )
 		if [ "${mlstype}" = "SUB" ] || [ "${mlstype}" = "-" ]; then
-			printf "%-20s: %-8s : %s\\n" "MLST-srst2" "WARNING" "no type found, possibly new type? Adding to maintenance_To_Do list"
+			printf "%-20s: %-8s : %s\\n" "MLST-srst2" "WARNING" "no type found, possibly new type?"
 			report_info=$(echo "${info}" | cut -d' ' -f2-)
-			echo "${2}/${1}: Possible new MLST type - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 				status="WARNING"
 			fi
@@ -1231,9 +1172,8 @@ if [[ -d "${OUTDATADIR}/MLST/" ]]; then
 				mlstype=$(tail -n1 ${srst_mlst} | cut -d'	' -f2)
 				mlstdb="abaumannii(Oxford)"
 				if [ "${mlstype}" = "SUB" ] || [ "${mlstype}" = "-" ]; then
-					printf "%-20s: %-8s : %s\\n" "MLST-srst2" "WARNING" "no type found, possibly new type? Adding to maintenance_To_Do list"
+					printf "%-20s: %-8s : %s\\n" "MLST-srst2" "WARNING" "no type found, possibly new type?"
 					report_info=$(echo "${info}" | cut -d' ' -f2-)
-					echo "${2}/${1}: Possible new MLST type - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 					if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 						status="WARNING"
 					fi
@@ -1249,9 +1189,8 @@ if [[ -d "${OUTDATADIR}/MLST/" ]]; then
 				mlstype=$(tail -n1 ${srst_mlst} | cut -d'	' -f2)
 				mlstdb="abaumannii_2(Pasteur)"
 				if [ "${mlstype}" = "SUB" ] || [ "${mlstype}" = "-" ]; then
-					printf "%-20s: %-8s : %s\\n" "MLST-srst2" "WARNING" "no type found, possibly new type? Adding to maintenance_To_Do list"
+					printf "%-20s: %-8s : %s\\n" "MLST-srst2" "WARNING" "no type found, possibly new type?"
 					report_info=$(echo "${info}" | cut -d' ' -f2-)
-					echo "${2}/${1}: Possible new MLST type - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 					if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 						status="WARNING"
 					fi
@@ -1268,9 +1207,8 @@ if [[ -d "${OUTDATADIR}/MLST/" ]]; then
 				mlstype=$(tail -n1 ${srst_mlst} | cut -d'	' -f2)
 				mlstdb="ecoli(Achtman)"
 				if [ "${mlstype}" = "SUB" ] || [ "${mlstype}" = "-" ]; then
-					printf "%-20s: %-8s : %s\\n" "MLST-srst2" "WARNING" "no type found, possibly new type? Adding to maintenance_To_Do list"
+					printf "%-20s: %-8s : %s\\n" "MLST-srst2" "WARNING" "no type found, possibly new type?"
 					report_info=$(echo "${info}" | cut -d' ' -f2-)
-					echo "${2}/${1}: Possible new MLST type - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 					if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 						status="WARNING"
 					fi
@@ -1286,9 +1224,8 @@ if [[ -d "${OUTDATADIR}/MLST/" ]]; then
 				mlstype=$(tail -n1 ${srst_mlst} | cut -d'	' -f2)
 				mlstdb="ecoli_2(Pasteur)"
 				if [ "${mlstype}" = "SUB" ] || [ "${mlstype}" = "-" ]; then
-					printf "%-20s: %-8s : %s\\n" "MLST-srst2" "WARNING" "no type found, possibly new type? Adding to maintenance_To_Do list"
+					printf "%-20s: %-8s : %s\\n" "MLST-srst2" "WARNING" "no type found, possibly new type?"
 					report_info=$(echo "${info}" | cut -d' ' -f2-)
-					echo "${2}/${1}: Possible new MLST type - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 					if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 						status="WARNING"
 					fi
@@ -1313,18 +1250,11 @@ if [[ -d "${OUTDATADIR}/MLST/" ]]; then
 	fi
 	# No MLST folder exists (pipeline must have failed as it would create a default one otherwise)
 else
-	printf "%-20s: %-8s : %s\\n" "MLST" "FAILED" "/MLST/ does not exist"
+	printf "%-20s: %-8s : %s\\n" "MLST-srst2" "SUCCESS" "No MLST-srst2 requested"
 	status="FAILED"
 fi
 # check 16s Identification
 if [[ -d "${OUTDATADIR}/16s/" ]]; then
-	blast_files=0
-	while [[ -f ${OUTDATADIR}/16s/${1}.nt.RemoteBLASTN_${blast_files} ]]; do
-		blast_files=$(( blast_files + 1 ))
-	done
-	if [[ "${blast_files}" -gt 0 ]]; then
-		multi_16s="true"
-	fi
 	if [[ -s "${OUTDATADIR}/16s/${1}_16s_blast_id.txt" ]]; then
 		info_b=$(head -n 1 "${OUTDATADIR}/16s/${1}_16s_blast_id.txt")
 		genus_b=$(echo ${info_b} | cut -d' ' -f3)
@@ -1352,23 +1282,19 @@ if [[ -d "${OUTDATADIR}/16s/" ]]; then
 				printf "%-20s: %-8s : %s\\n" "16s_best_hit" "FAILED" "16s sequences were found but were not able to be classified"
 				status="FAILED"
 			else
-				printf "%-20s: %-8s : %s\\n" "16s_best_hit" "Warning" "Genus=${genus_b}, but no species found, Adding to maintenance_To_Do list"
+				printf "%-20s: %-8s : %s\\n" "16s_best_hit" "Warning" "Genus=${genus_b}, but no species found,"
 				if [ "$status" = "SUCCESS" ]; then
 					status="Warning"
 				fi
 			fi
-			#report_info=$(echo "${info_b}" | cut -d' ' -f2-)
-			#echo "${2}/${1}: 16s ID Warning - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 
 		elif [ -z "${genus_b}" ]; then
-			printf "%-20s: %-8s : %s\\n" "16s_best_hit" "FAILED" "No genus found, Adding to maintenance_To_Do list"
+			printf "%-20s: %-8s : %s\\n" "16s_best_hit" "FAILED" "No genus found,"
 			report_info=$(echo "${info_b}" | cut -d' ' -f2-)
-			echo "${2}/${1}: 16s ID Failure - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 			status="FAILED"
 		else
-			printf "%-20s: %-8s : %s\\n" "16s_best_hit" "FAILED" "Nothing found in ${1}_16s_blast_id.txt, Adding to maintenance_To_Do list"
+			printf "%-20s: %-8s : %s\\n" "16s_best_hit" "FAILED" "Nothing found in ${1}_16s_blast_id.txt,"
 			report_info=$(echo "${info_l}" | cut -d' ' -f2-)
-			echo "${2}/${1}: 16s ID Failure - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 			status="FAILED"
 		fi
 		info_l=$(tail -n 1 "${OUTDATADIR}/16s/${1}_16s_blast_id.txt")
@@ -1397,23 +1323,18 @@ if [[ -d "${OUTDATADIR}/16s/" ]]; then
 				printf "%-20s: %-8s : %s\\n" "16s_largest_hit" "FAILED" "16s sequences were found but were not able to be classified"
 				status="FAILED"
 			else
-				printf "%-20s: %-8s : %s\\n" "16s_largest_hit" "Warning" "Genus=${genus_l}, but no species found, Adding to maintenance_To_Do list"
+				printf "%-20s: %-8s : %s\\n" "16s_largest_hit" "Warning" "Genus=${genus_l}, but no species found,"
 				if [ "$status" = "SUCCESS" ]; then
 					status="Warning"
 				fi
-			#printf "%-20s: %-8s : %s\\n" "16s_largest_hit" "Warning" "Genus=${genus_l}, but no species found, Adding to maintenance_To_Do list"
-			#report_info=$(echo "${info_l}" | cut -d' ' -f2-)
-			#echo "${2}/${1}: 16s ID Warning - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 			fi
 		elif [ -z "${genus_l}" ]; then
-			printf "%-20s: %-8s : %s\\n" "16s_largest_hit" "FAILED" "no genus found, Adding to maintenance_To_Do list"
+			printf "%-20s: %-8s : %s\\n" "16s_largest_hit" "FAILED" "no genus found,"
 			report_info=$(echo "${info_l}" | cut -d' ' -f2-)
-			echo "${2}/${1}: 16s ID Failure - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 			status="FAILED"
 		else
-			printf "%-20s: %-8s : %s\\n" "16s_largest_hit" "FAILED" "nothing found in ${1}_16s_blast_id.txt, Adding to maintenance_To_Do list"
+			printf "%-20s: %-8s : %s\\n" "16s_largest_hit" "FAILED" "nothing found in ${1}_16s_blast_id.txt,"
 			report_info=$(echo "${info_l}" | cut -d' ' -f2-)
-			echo "${2}/${1}: 16s ID Failure - ${report_info}" >> "${shareScript}/maintenance_To_Do.txt"
 			status="FAILED"
 		fi
 	else
@@ -1438,19 +1359,170 @@ if [[ -d "${OUTDATADIR}/plasmidFinder/" ]]; then
 				number_of_plasmids=$(( number_of_plasmids + 1 ))
 			fi
 		done < "${OUTDATADIR}/plasmidFinder/${1}_results_table_summary.txt"
-		printf "%-20s: %-8s : %s\\n" "plasmid" "SUCCESS" "${number_of_plasmids} replicons were found in the full scaffold"
+		printf "%-20s: %-8s : %s\\n" "plasmidFinder" "SUCCESS" "${number_of_plasmids} replicons were found in the full scaffold"
 	else
-		printf "%-20s: %-8s : %s\\n" "plasmid" "FAILED" "results_table_summary.txt does not exist"
+		printf "%-20s: %-8s : %s\\n" "plasmidFinder" "FAILED" "results_table_summary.txt does not exist"
 		status="FAILED"
 	fi
 # No plasmid folder exists
 else
-	printf "%-20s: %-8s : %s\\n" "plasmid" "FAILED" "/plasmidFinder/ does not exist"
+	printf "%-20s: %-8s : %s\\n" "plasmidFinder" "FAILED" "/plasmidFinder/ does not exist"
 	status="FAILED"
 fi
 
-# # check plasmids (on plasmidAssembly)
-if [[ "plasmidsFoundviaplasFlow" -eq 1 ]]; then
+#
+# #Check plasFlow plasmid assembly
+plasmidsFoundviaplasFlow=0
+if [[ -d "${OUTDATADIR}/plasFlow" ]]; then
+	if [[ -s "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_original.fasta" ]]; then
+		# Count the number of '>' in the assembly file before trimming
+		plas_scaffolds=">"
+		plas_scaffolds=$(grep -c ${plas_scaffolds} "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_original.fasta")
+		if [ -z ${plas_scaffolds} ]; then
+			plas_scaffolds=0
+		fi
+		if [[ "${plas_scaffolds}" -gt 0 ]]; then
+			printf "%-20s: %-8s : %s\\n" "plasFlow Assembly" "SUCCESS" "${plas_scaffolds} scaffolds found via plasFlow"
+			plasmidsFoundviaplasFlow=1
+		#else
+		#	printf "%-20s: %-8s : %s\\n" "plasFlow Assembly" "ALERT" "No plasmid scaffold found?"
+		#	if [[ "${status}" == "SUCCESS" ]]; then
+		#		status="ALERT"
+		#	fi
+		fi
+	# Needs a better catch of if it ran and failed vs ran and succeeded but with nothing to find
+	else
+		printf "%-20s: %-8s : %s\\n" "plasFlow Assembly" "WARNING" "No plasmid scaffold found using plasFlow"
+		if [[ "${status}" == "SUCCESS" ]] || [[ "${status}" == "ALERT" ]]; then
+			status="Warning"
+		fi
+	fi
+elif [[ "${dec_family}" == "Enterobacteriaceae" ]]; then
+	printf "%-20s: %-8s : %s\\n" "plasFlow Assembly" "FAILED" "/plasFlow not found"
+	status="FAILED"
+else
+	printf "%-20s: %-8s : %s\\n" "plasFlow" "SUCCESS" "Not correct TAXA for plasFlow analysis"
+fi
+
+#Check short scaffolds reduction script for plasmid assembly
+#echo "${plasmidsFoundviaplasFlow}-Found?"
+if [[ "${plasmidsFoundviaplasFlow}" -eq 1 ]]; then
+	if [[ -s "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta" ]]; then
+		# Count the number of '>' still remaining after trimming the contig file
+		plas_longies=">"
+		plas_longies=$(grep -c ${plas_longies} "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta")
+		# Calculate the number of lost (short) scaffolds
+		plas_shorties=$(( plas_scaffolds - plas_longies ))
+		if [ -z ${plas_shorties} ]; then
+			plas_shorties=0
+		fi
+		if [[ "${plas_longies}" -gt 0 ]]; then
+			printf "%-20s: %-8s : %s\\n" "plasFlow contig Trim" "SUCCESS" "${plas_longies} scaffolds remain. ${plas_shorties} were removed due to shortness"
+		else
+			printf "%-20s: %-8s : %s\\n" "plasFlow contig Trim" "SUCCESS" "No plasmid scaffold found"
+		fi
+	elif [[ -f "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta" ]]; then
+		printf "%-20s: %-8s : %s\\n" "plasFlow contig Trim" "SUCCESS" "No plasmid scaffolds found"
+	else
+		printf "%-20s: %-8s : %s\\n" "plasFlow contig Trim" "FAILED" "plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta not found"
+		status="FAILED"
+	fi
+
+	# Check quality of plasmid Assembly
+	if [[ -s "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv" ]]; then
+		# Extract the useful bits and report (to compare to Toms)
+		contig_num_plas=$(sed -n '14p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv"| sed -r 's/[\t]+/ /g' | cut -d' ' -f3 )
+		assembly_length_plas=$(sed -n '16p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
+		N50_plas=$(sed -n '18p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv"  | sed -r 's/[\t]+/ /g'| cut -d' ' -f2)
+		GC_con_plas=$(sed -n '17p' "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
+		printf "%-20s: %-8s : %s\\n" "QUAST_plasFlow" "SUCCESS" "#-${contig_num_plas} length-${assembly_length_plas} n50-${N50_plas} %GC-${GC_con_plas}"
+	else
+		printf "%-20s: %-8s : %s\\n" "QUAST_plasFlow" "FAILED" "/Assembly_Stats_plasFlow/report.tsv does not exist"
+		status="FAILED"
+	fi
+
+	#Check c-SSTAR of plasmid assembly
+	if [[ -d "${OUTDATADIR}/c-sstar_plasFlow/" ]]; then
+		if [[ ! -z "${3}" ]]; then
+			gapping="${3}"
+		else
+			gapping="gapped"
+		fi
+		if [[ ! -z "${4}" ]]; then
+			sim="${4}"
+		else
+			sim="40"
+		fi
+		csstar_plasFlow_file=$(find ${OUTDATADIR}/c-sstar_plasFlow/${1}.ResGANNCBI*.${gapping}_${sim}_sstar_summary.txt -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n | head -n 1)
+		if [[ -z "${csstar_plasFlow_file}" ]]; then
+			printf "%-20s: %-8s : %s\\n" "c-SSTAR_plasFlow" "FAILED" "/c-sstar_plasFlow/ does not have an sstar_summary file"
+			echo "Looking for ${OUTDATADIR}/c-sstar_plasFlow/${1}.ResGANNCBI.${gapping}_${sim}_sstar_summary.txt"
+			status="FAILED"
+		else
+			header=$(head -n1 "${csstar_plasFlow_file}")
+			ResGANNCBI_DB=$(echo "${csstar_plasFlow_file}" | rev | cut -d'.' -f3 | rev)
+			if [[ ${header} = *"No anti-microbial genes were found"* ]]; then
+				if [[ "${ResGANNCBI_DB}" = "${ResGANNCBI_srst2_filename}" ]]; then
+					printf "%-20s: %-8s : %s\\n" "c-SSTAR_plasFlow" "ALERT" "Completed, but NO KNOWN AMR genes present from ${ResGANNCBI_DB} (DB up to date, as of ${today})"
+					if [[ "${status}" == "SUCCESS" ]]; then
+						status="ALERT"
+					fi
+				else
+					printf "%-20s: %-8s : %s\\n" "c-SSTAR_plasFlow" "ALERT" "Completed, but NO KNOWN AMR genes present from ${ResGANNCBI_DB} (DB NOT up to date! Most current DB: ${ResGANNCBI_srst2_filename})"
+					if [[ "${status}" == "SUCCESS" ]]; then
+						status="ALERT"
+					fi
+				fi
+			else
+				amr_genes_found=$(wc -l "${csstar_plasFlow_file}" | cut -d' ' -f1)
+				# Prints out the counts of AR gene hits
+				if [[ "${ResGANNCBI_DB}" = "${ResGANNCBI_srst2_filename}" ]]; then
+					printf "%-20s: %-8s : %s\\n" "c-SSTAR_plasFlow" "SUCCESS" "${amr_genes_found} genes found in ${ResGANNCBI_DB} (%ID defaults to 40) (DB up to date, as of ${today})"
+				else
+					printf "%-20s: %-8s : %s\\n" "c-SSTAR_plasFlow" "ALERT" "${amr_genes_found} genes found in ${ResGANNCBI_DB} (%ID defaults to 40) (DB NOT up to date! Most current DB: ${ResGANNCBI_srst2_filename})"
+					if [[ "${status}" == "SUCCESS" ]]; then
+						status="ALERT"
+					fi
+				fi
+			fi
+		fi
+	else
+		printf "%-20s: %-8s : %s\\n" "c-sstar_plasFlow" "FAILED" "/c-sstar_plasFlow/ does not exist"
+		status="FAILED"
+	fi
+
+	if [[ -d  "${OUTDATADIR}/GAMA_plasFlow" ]]; then
+		#Check c-SSTAR
+		GAMA_plasFlow_file=$(find ${OUTDATADIR}/GAMA_plasFlow -maxdepth 1 -type f -name "${1}.ResGANNCBI*.GAMA"   -printf '%p\n' | sort -k2,2 -rt '_' -n | head -n 1)
+		if [[ -z "${GAMA_plasFlow_file}" ]]; then
+			printf "%-20s: %-8s : %s\\n" "GAMA_plasFlow" "FAILED" "/GAMA_plasFlow/ does not have a .GAMA file"
+			status="FAILED"
+		else
+			ResGANNCBI_DB=$(echo "${GAMA_plasFlow_file}" | rev | cut -d'.' -f2 | rev)
+			#echo "${ResGANNCBI_DB} = ${ResGANNCBI_srst2_filename} ?"
+			plasmid_amr_genes_found=$(wc -l "${GAMA_plasFlow_file}" | cut -d' ' -f1)
+			plasmid_amr_genes_found=$(( plasmid_amr_genes_found - 1))
+			if [[ ${plasmid_amr_genes_found} -le 0 ]]; then
+				if [[ "${ResGANNCBI_DB}" = "${ResGANNCBI_srst2_filename}" ]]; then
+					printf "%-20s: %-8s : %s\\n" "GAMA_plasFlow" "ALERT" "Completed, but NO KNOWN AMR genes were found in ${ResGANNCBI_DB} (DB up to date, as of ${today})"
+				else
+					printf "%-20s: %-8s : %s\\n" "GAMA_plasFlow" "ALERT" "Completed, but NO KNOWN AMR genes were found in ${ResGANNCBI_DB} (DB NOT up to date! Most current DB: ${ResGANNCBI_srst2_filename})"
+				fi
+			else
+				# Prints out the counts of AR gene hits
+				if [[ "${ResGANNCBI_DB}" = "${ResGANNCBI_srst2_filename}" ]]; then
+					printf "%-20s: %-8s : %s\\n" "GAMA_plasFlow" "SUCCESS" "${plasmid_amr_genes_found} genes found in ${ResGANNCBI_DB} (DB up to date, as of ${today})"
+				else
+					printf "%-20s: %-8s : %s\\n" "GAMA_plasFlow" "ALERT" "${plasmid_amr_genes_found} genes found in ${ResGANNCBI_DB} (DB NOT up to date, Most current DB: ${ResGANNCBI_srst2_filename})"
+				fi
+			fi
+		fi
+	else
+		printf "%-20s: %-8s : %s\\n" "GAMA_plasFlow" "FAILED" "/GAMA_plasFlow/ does not exist"
+		status="FAILED"
+	fi
+
+	# check plasmids (on plasmidAssembly)
 	if [[ -d "${OUTDATADIR}/plasmidFinder_on_plasFlow/" ]]; then
 		if [[ -s "${OUTDATADIR}/plasmidFinder_on_plasFlow/${1}_results_table_summary.txt" ]]; then
 			number_of_plasmids=0
@@ -1462,29 +1534,19 @@ if [[ "plasmidsFoundviaplasFlow" -eq 1 ]]; then
 					number_of_plasmids=$(( number_of_plasmids + 1 ))
 				fi
 			done < "${OUTDATADIR}/plasmidFinder/${1}_results_table_summary.txt"
-			printf "%-20s: %-8s : %s\\n" "plasmid-plasmidAsmb" "SUCCESS" "${number_of_plasmids} replicons were found in the plasmid scaffold"
+			printf "%-20s: %-8s : %s\\n" "plasmidFndr-plasFlow" "SUCCESS" "${number_of_plasmids} replicons were found in the plasmid scaffold"
 		else
-			printf "%-20s: %-8s : %s\\n" "plasmid-plasmidAsmb" "FAILED" "results_table_summary.txt does not exist"
+			printf "%-20s: %-8s : %s\\n" "plasmidFndr-plasFlow" "FAILED" "results_table_summary.txt does not exist"
 			status="FAILED"
 		fi
 	# No plasmid folder exists
 	else
-		printf "%-20s: %-8s : %s\\n" "plasmid-plasmidAsmb" "FAILED" "/plasmidFinder_on_plasFlow/ does not exist"
+		printf "%-20s: %-8s : %s\\n" "plasmidFndr-plasFlow" "FAILED" "/plasmidFinder_on_plasFlow/ does not exist"
 		status="FAILED"
 	fi
 fi
+
 echo "---------- ${1} completed as ${status} ----------"
-
-if [ "${status}" = "WARNING" ] || [ "${status}" = "FAILED" ]; then
-	echo "${2}/${1}: ${status}" >> "${shareScript}/maintenance_To_Do.txt"
-fi
-
-
-
-
-
-
-
 
 #Script exited gracefully (unless something else inside failed)
 exit 0
