@@ -525,8 +525,10 @@ if [[ "${kraken_post_success}" = true ]]; then
 	echo 3
 	if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.krona" ]] && [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.html" ]]; then
 		#printf "%-20s: %-8s : %s\\n" "krona-kraken-pstasmb" "SUCCESS" "Found"
+		echo "4a"
 		:
 	else
+		echo "4b"
 		printf "%-20s: %-8s : %s\\n" "krona-kraken-pstasmb" "FAILED" "/kraken/postAssembly/${1}_assembled.krona &&|| /kraken/postAssembly/${1}_assembled.html not found"
 		status="FAILED"
 	fi
