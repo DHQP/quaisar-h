@@ -554,7 +554,7 @@ if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" ]
 			if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 				status="WARNING"
 			fi
-		elif (( $(echo "${speiespercent} < 50" | bc -l) )); then
+		elif (( $(echo "${speciespercent} < 50" | bc -l) )); then
 			echo 13
 			printf "%-20s: %-8s : %s\\n" "post Classify" "WARNING" "${genuspost} ${speciespost} is under 50% (${speciespercent}), possibly contaminated or contigs are weighted unevenly"
 			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
