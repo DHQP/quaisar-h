@@ -511,7 +511,6 @@ fi
 
 #Check kraken on assembly
 kraken_post_success=false
-echo 1
 if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.kraken" ]] || [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.kraken.gz" ]]; then
 	#printf "%-20s: %-8s : %s\\n" "kraken postassembly" "SUCCESS" "Found"
 	kraken_post_success=true
@@ -519,16 +518,12 @@ else
 	printf "%-20s: %-8s : %s\\n" "kraken postassembly" "FAILED" "/kraken/postAssembly/${1}_assembled.kraken not found"
 	status="FAILED"
 fi
-echo 2
 #Check Krona output of assembly
 if [[ "${kraken_post_success}" = true ]]; then
-	echo 3
 	if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.krona" ]] && [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.html" ]]; then
 		#printf "%-20s: %-8s : %s\\n" "krona-kraken-pstasmb" "SUCCESS" "Found"
-		echo "4a"
 		:
 	else
-		echo "4b"
 		printf "%-20s: %-8s : %s\\n" "krona-kraken-pstasmb" "FAILED" "/kraken/postAssembly/${1}_assembled.krona &&|| /kraken/postAssembly/${1}_assembled.html not found"
 		status="FAILED"
 	fi
@@ -539,24 +534,21 @@ fi
 #Check extraction and unclassified values for kraken post assembly
 if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" ]]; then
 	# Extracts many elements of the summary file to report unclassified and species classified reads and percentages
-	echo 5
 	unclass=$(head -n 1 "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f2)
-	echo 6
 	#true_unclass=$(head -n 1 "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
 	domain=$(sed -n '2p' "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f2)
-	echo 7
 	genuspost=$(sed -n '7p' "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f4)
-	echo 8
 	speciespost=$(sed -n '8p' "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f4)
-	echo 9
 	speciespercent=$(sed -n '8p' "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f2)
 	#true_speciespercent=$(sed -n '8p' "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
 	# If there are no reads at the domain level, then report no classified reads
 	if (( $(echo "${domain} <= 0" | bc -l) )); then
+		echo 10
 		printf "%-20s: %-8s : %s\\n" "post Classify" "FAILED" "There are no classified reads (Did post assembly kraken fail too?)"
 		status="FAILED"
 	# If there are classified reads then check to see if percent unclassifed falls above the threshold limit. Report warning if too high or success and stats if below
 	else
+		echo 11
 		if (( $(echo "${unclass} > ${unclass_flag}" | bc -l) )); then
 			printf "%-20s: %-8s : %s\\n" "post Classify" "WARNING" "unclassified reads comprise ${unclass}% of total ${true_unclass}%"
 			if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
