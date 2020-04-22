@@ -539,11 +539,16 @@ fi
 #Check extraction and unclassified values for kraken post assembly
 if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" ]]; then
 	# Extracts many elements of the summary file to report unclassified and species classified reads and percentages
+	echo 5
 	unclass=$(head -n 1 "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f2)
+	echo 6
 	#true_unclass=$(head -n 1 "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
 	domain=$(sed -n '2p' "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f2)
+	echo 7
 	genuspost=$(sed -n '7p' "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f4)
+	echo 8
 	speciespost=$(sed -n '8p' "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f4)
+	echo 9
 	speciespercent=$(sed -n '8p' "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f2)
 	#true_speciespercent=$(sed -n '8p' "${OUTDATADIR}/kraken/postAssembly/${1}_kraken_summary_assembled.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
 	# If there are no reads at the domain level, then report no classified reads
