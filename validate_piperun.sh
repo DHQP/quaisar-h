@@ -511,6 +511,7 @@ fi
 
 #Check kraken on assembly
 kraken_post_success=false
+echo 1
 if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.kraken" ]] || [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.kraken.gz" ]]; then
 	#printf "%-20s: %-8s : %s\\n" "kraken postassembly" "SUCCESS" "Found"
 	kraken_post_success=true
@@ -518,8 +519,10 @@ else
 	printf "%-20s: %-8s : %s\\n" "kraken postassembly" "FAILED" "/kraken/postAssembly/${1}_assembled.kraken not found"
 	status="FAILED"
 fi
+echo 2
 #Check Krona output of assembly
 if [[ "${kraken_post_success}" = true ]]; then
+	echo 3
 	if [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.krona" ]] && [[ -s "${OUTDATADIR}/kraken/postAssembly/${1}_assembled.html" ]]; then
 		#printf "%-20s: %-8s : %s\\n" "krona-kraken-pstasmb" "SUCCESS" "Found"
 		:
