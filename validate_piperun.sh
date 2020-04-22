@@ -65,8 +65,8 @@ fi
 raw_length_R1=-1
 raw_length_R2=-1
 if [[ -s "${OUTDATADIR}/FASTQs/${1}_R1_001.fastq" ]] && [[ -s "${OUTDATADIR}/FASTQs/${1}_R2_001.fastq" ]]; then
-	raw_length_R1=$(cat ${SAMPDATADIR}/FASTQs/${1}_R1_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
-	raw_length_R2=$(cat ${SAMPDATADIR}/FASTQs/${1}_R2_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	raw_length_R1=$(cat ${OUTDATADIR}/FASTQs/${1}_R1_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	raw_length_R2=$(cat ${OUTDATADIR}/FASTQs/${1}_R2_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
 	if [[ "${raw_length_R1}" -gt 0 ]] && [[ "${raw_length_R2}" -gt 0 ]]; then
 		printf "%-20s: %-8s : %s\\n" "FASTQs" "SUCCESS" "Unzipped - R1: ${raw_length_R1}bps R2: ${raw_length_R2}bps"
 	else
@@ -84,7 +84,7 @@ if [[ -s "${OUTDATADIR}/FASTQs/${1}_R1_001.fastq" ]] && [[ -s "${OUTDATADIR}/FAS
 		fi
 	fi
 elif [[ -s "${OUTDATADIR}/FASTQs/${1}_R1_001.fastq" ]]; then
-	raw_length_R1=$(cat ${SAMPDATADIR}/FASTQs/${1}_R1_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	raw_length_R1=$(cat ${OUTDATADIR}/FASTQs/${1}_R1_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
 	if [[ "${raw_length_R1}" -le 0 ]]; then
 		printf "%-20s: %-8s : %s\\n" "FASTQs R1" "FAILED" "Unzipped - File has no base pairs"
 		status="FAILED"
@@ -95,7 +95,7 @@ elif [[ -s "${OUTDATADIR}/FASTQs/${1}_R1_001.fastq" ]]; then
 		fi
 	fi
 elif [[ -s "${OUTDATADIR}/FASTQs/${1}_R2_001.fastq" ]]; then
-	raw_length_R2=$(cat ${SAMPDATADIR}/FASTQs/${1}_R2_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	raw_length_R2=$(cat ${OUTDATADIR}/FASTQs/${1}_R2_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
 	if [[ "${raw_length_R2}" -le 0 ]]; then
 		printf "%-20s: %-8s : %s\\n" "FASTQs R2" "FAILED" "Unzipped - File has no base pairs"
 		status="FAILED"
@@ -110,7 +110,7 @@ elif [[ -s "${OUTDATADIR}/FASTQs/${1}_R1_001.fastq.gz" ]] && [[ -s "${OUTDATADIR
 	raw_length_R2=$(zcat ${OUTDATADIR}/FASTQs/${1}_R2_001.fastq.gz | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
 	printf "%-20s: %-8s : %s\\n" "FASTQs" "SUCCESS" "Zipped - R1: ${raw_length_R1}bps R2: ${raw_length_R2}bps"
 elif [[ -s "${OUTDATADIR}/FASTQs/${1}_R1_001.fastq" ]]; then
-	raw_length_R1=$(zcat ${SAMPDATADIR}/FASTQs/${1}_R1_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	raw_length_R1=$(zcat ${OUTDATADIR}/FASTQs/${1}_R1_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
 	if [[ "${raw_length_R1}" -le 0 ]]; then
 		printf "%-20s: %-8s : %s\\n" "FASTQs R1" "FAILED" "Zipped - File has no contents"
 		status="FAILED"
@@ -121,7 +121,7 @@ elif [[ -s "${OUTDATADIR}/FASTQs/${1}_R1_001.fastq" ]]; then
 		fi
 	fi
 elif [[ -s "${OUTDATADIR}/FASTQs/${1}_R2_001.fastq" ]]; then
-	raw_length_R2=$(zcat ${SAMPDATADIR}/FASTQs/${1}_R2_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
+	raw_length_R2=$(zcat ${OUTDATADIR}/FASTQs/${1}_R2_001.fastq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
 	if [[ "${raw_length_R2}" -le 0 ]]; then
 		printf "%-20s: %-8s : %s\\n" "FASTQs R2" "FAILED" "Zipped - File has no contents"
 		status="FAILED"
