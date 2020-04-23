@@ -406,12 +406,25 @@ if [[ "${genus}" = "Peptoclostridium" ]] || [[ "${genus}" = "Clostridioides" ]];
 elif [[ "${genus}" = "Shigella" ]]; then
 	genus="Escherichia"
 fi
-"${shareScript}/run_ANI.sh" "${filename}" "${genus}" "${species}" "${project}"
+"${shareScript}/run_ANI_REFSEQ" "${filename}" "${project}"
 # Get end time of ANI and calculate run time and append to time summary (and sum to total time used
 end=$SECONDS
 timeANI=$((end - start))
 echo "autoANI - ${timeANI} seconds" >> "${time_summary}"
 totaltime=$((totaltime + timeANI))
+
+### Average Nucleotide Identity ###
+echo "----- Running ANI for Species confirmation -----"
+# ANI uses assembly and sample would have exited already if assembly did not complete, so no need to check
+# Get start time of ANI
+start=$SECONDS
+# run ANI
+"${shareScript}/run_ANI_REFSEQ" "${filename}" "${project}"
+# Get end time of ANI and calculate run time and append to time summary (and sum to total time used
+end=$SECONDS
+timeANIREF=$((end - start))
+echo "ANIREF - ${timeANI} seconds" >> "${time_summary}"
+totaltime=$((totaltime + timeANIREF))
 
 # Get taxonomy from currently available files (Only ANI, has not been run...yet, will change after discussions)
 "${shareScript}/determine_taxID.sh" "${filename}" "${project}"
