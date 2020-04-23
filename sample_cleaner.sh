@@ -103,7 +103,8 @@ fi
 echo "Cleaning Adapter Folder"
 if [ -d "${sample_folder}/removedAdapters" ]; then
 	echo "Deleting adapterless reads"
-	rm -r "${sample_folder}/removedAdapters"
+	rm "${sample_folder}/removedAdapters/*.fsq"
+	rm "${sample_folder}/removedAdapters/*.fsq.gz"
 fi
 # Clean trimmed folder of catted and unpaired reads, leaving only R1 and R2
 echo "Cleaning Trimmed Folder"
