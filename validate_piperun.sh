@@ -878,8 +878,8 @@ else
 	status="FAILED"
 fi
 #Check ANI
+# Currently showing both ANI_OSII and ANI_REFSEQ simultaneously if available
 ani_found=false
-#Check ANI REFSEQ. Not fully implemented yet, so not causing a failure in reporting
 if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus}).txt" ]]; then
 	ani_info=$(head -n 1 "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus}).txt")
 	percents_count=$(echo "${ani_info}" | tr -cd '%' | wc -c)
@@ -925,7 +925,7 @@ else
 	#status="FAILED"
 fi
 
-# Old version found, should still be good, but would mark as an ALERT, maybe Warning
+#Check ANI REFSEQ. Not fully implemented yet, so not causing a failure in reporting
 if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ*).txt" ]]; then
 		old_ani_file=$(find ${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ*).txt -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n)
 		old_ani_date=$(echo "${old_ani_file}" | rev | cut -d'_' -f1,2 | rev | cut -d'.' -f1)
@@ -951,10 +951,10 @@ if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ*).txt" ]]; then
 			fi
 		fi
 elif [[ ! -d "${OUTDATADIR}/ANI/" ]]; then
-	printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "/ANI/ does not exist"
+	printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "/ANI/ does not exist"
 	#status="FAILED"
 else
-	printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "NO ANI best_hits file"
+	printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "NO ANI_REFSEQ best_hits file"
 	#status="FAILED"
 fi
 
