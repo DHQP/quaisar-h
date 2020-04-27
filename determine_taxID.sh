@@ -134,7 +134,7 @@ do_ANI() {
 		source_file=$(ls -t "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered"* | head -n 1)
 	fi
 	header=$(head -n 1 "${source_file}")
-	percents_count=$(echo "${ani_info}" | tr -cd '%' | wc -c)
+	percents_count=$(echo "${header}" | tr -cd '%' | wc -c)
 	#echo "${header}"
 	if [[ "${percents_count}" -eq 2 ]]; then
 		Genus=$(echo "${header}" | cut -d' ' -f1 | cut -d'-' -f3)
