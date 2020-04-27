@@ -900,6 +900,7 @@ if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus}).txt" ]];
 				fi
 				#status="FAILED"
 			fi
+		fi
 	else
 	#echo "${percent_match--}"
 		if [[ "${percent_match}" = "0." ]]; then
