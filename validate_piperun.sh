@@ -880,30 +880,36 @@ fi
 #Check ANI
 ani_found=false
 #Check ANI REFSEQ. Not fully implemented yet, so not causing a failure in reporting
-if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ_${REFSEQ_date}).txt" ]]; then
-	#echo "ALL"
-	ani_info=$(head -n 1 "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ_${REFSEQ_date}).txt")
+if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus}).txt" ]]; then
+	ani_info=$(head -n 1 "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus}}).txt")
 	percent_match=$(echo "${ani_info}" | cut -d'.' -f1)
 	coverage_match=$(echo "${ani_info}" | cut -d'-' -f2 | cut -d'.' -f1)
 	#echo "${percent_match--}"
 	if [[ "${percent_match}" = "0." ]]; then
-		printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "No assembly file to work with"
+		printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "No assembly file to work with"
 		#status="FAILED"
 	else
 		if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
-			printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "SUCCESS" "${ani_info} against REFSEQ_${REFSEQ_date}"
+			printf "%-20s: %-8s : %s\\n" "ANI_OSII" "SUCCESS" "${ani_info} against ${dec_genus}"
 		else
 			if [[ "${percent_match}" -lt 95 ]]; then
-				printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "${percent_match}% identity is too low, ${ani_info}"
+				printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "${percent_match}% identity is too low, ${ani_info}"
 			elif [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
-				printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "${coverage_match}% coverage is too low, ${ani_info}"
+				printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "${coverage_match}% coverage is too low, ${ani_info}"
 			fi
 			#status="FAILED"
 		fi
 	fi
+elif [[ ! -d "${OUTDATADIR}/ANI/" ]]; then
+	printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "/ANI/ does not exist"
+	#status="FAILED"
 else
-	# Old version found, should still be good, but would mark as an ALERT, maybe Warning
-	if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ*).txt" ]]; then
+	printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "NO REFSEQ ANI best_hits file"
+	#status="FAILED"
+fi
+
+# Old version found, should still be good, but would mark as an ALERT, maybe Warning
+if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ*).txt" ]]; then
 		old_ani_file=$(find ${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ*).txt -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n)
 		old_ani_date=$(echo "${old_ani_file}" | rev | cut -d'_' -f1,2 | rev | cut -d'.' -f1)
 		old_ani_info=$(head -n1 "${old_ani_file}")
@@ -927,13 +933,12 @@ else
 				status="FAILED"
 			fi
 		fi
-	elif [[ ! -d "${OUTDATADIR}/ANI/" ]]; then
-		printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "/ANI/ does not exist"
-		#status="FAILED"
-	else
-		printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "NO REFSEQ ANI best_hits file"
-		#status="FAILED"
-	fi
+elif [[ ! -d "${OUTDATADIR}/ANI/" ]]; then
+	printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "/ANI/ does not exist"
+	#status="FAILED"
+else
+	printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "NO ANI best_hits file"
+	#status="FAILED"
 fi
 
 #Check c-SSTAR
