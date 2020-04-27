@@ -147,10 +147,13 @@ if [[ -s "${OUTDATADIR}/preQCcounts/${1}_counts.txt" ]]; then
 	Q30_R2_rounded=$(echo "${Q30_R2}"  | cut -d'.' -f2)
 	Q30_R2_rounded=$(echo "${Q30_R2_rounded::2}")
 	if [[ "${reads_pre}" -le 1000000 ]]; then
-		printf "%-20s: %-8s : %s\\n" "Raw read counts" "WARNING" "Low individual read count before trimming: ${reads_pre} (${pairs_pre} paired reads)"
+		printf "%-20s: %-8s : %s\\n" "Raw_read_counts" "WARNING" "Low individual read count before trimming: ${reads_pre} (${pairs_pre} paired reads)"
 		status="WARNING"
+	elif [[ "${reads_pre}" -le 1000000 ]]; then
+		printf "%-20s: %-8s : %s\\n" "Raw_read_counts" "FAILED" "No individual read count before trimming: ${reads_pre} (${pairs_pre} paired reads)"
+		status="FAILED"
 	else
-		printf "%-20s: %-8s : %s\\n" "Raw read counts" "SUCCESS" "${reads_pre} individual reads found in sample (${pairs_pre} paired reads)"
+		printf "%-20s: %-8s : %s\\n" "Raw_read_counts" "SUCCESS" "${reads_pre} individual reads found in sample (${pairs_pre} paired reads)"
 	fi
 	if [[ "${Q30_R1_rounded}" -lt 90 ]]; then
 		printf "%-20s: %-8s : %s\\n" "Q30_R1%" "WARNING" "Q30_R1% at ${Q30_R1_rounded}% (Threshold is 90%)"

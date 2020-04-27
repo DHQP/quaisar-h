@@ -329,6 +329,9 @@ while IFS= read -r var || [ -n "$var" ]; do
 		elif [[ "${tool}" == "16s_largest_hit" ]]; then
 			warning_flags="${warning_flags}-NO_16s_largest_species"
 			warnings=$(( warnings + 1 ))
+		elif [[ "${tool}" == "raw_read_count" ]]; then
+			warning_flags="${warning_flags}-Low Raw read count (<1000000)"
+			warnings=$(( warnings + 1 ))
 		fi
 	elif [[ "${tool_status}" == "FAILED" ]]; then
 		#echo "Found failure-${tool}-${tool_details}"
@@ -575,6 +578,9 @@ while IFS= read -r var || [ -n "$var" ]; do
 			fi
 		elif [[ "${tool}" == "16s" ]]; then
 			failure_flags="${failure_flags}-NO_16s"
+			failures=$(( failures + 1 ))
+		elif [[ "${tool}" == "Raw_read_count" ]]; then
+			failure_flags="${failure_flags}-NO_Raw_Reads"
 			failures=$(( failures + 1 ))
 		elif [[ "${tool}" == "plasmid" ]]; then
 			if [[ -d "${processed}/${1}/${sample_name}/plasmidFinder/" ]]; then
