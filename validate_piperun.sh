@@ -882,22 +882,38 @@ ani_found=false
 #Check ANI REFSEQ. Not fully implemented yet, so not causing a failure in reporting
 if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus}).txt" ]]; then
 	ani_info=$(head -n 1 "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus}).txt")
+	percents_count=$(echo "${ani_info}" | tr -cd '%' | wc -c)
 	percent_match=$(echo "${ani_info}" | cut -d'.' -f1)
-	coverage_match=$(echo "${ani_info}" | cut -d'-' -f2 | cut -d'.' -f1)
-	#echo "${percent_match--}"
-	if [[ "${percent_match}" = "0." ]]; then
-		printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "No assembly file to work with"
-		#status="FAILED"
-	else
-		if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
-			printf "%-20s: %-8s : %s\\n" "ANI_OSII" "SUCCESS" "${ani_info} against ${dec_genus}"
-		else
-			if [[ "${percent_match}" -lt 95 ]]; then
-				printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "${percent_match}% identity is too low, ${ani_info}"
-			elif [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
-				printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "${coverage_match}% coverage is too low, ${ani_info}"
-			fi
+	if [[ "${percents_count}" -eq 2 ]]; then
+		coverage_match=$(echo "${ani_info}" | cut -d'-' -f2 | cut -d'.' -f1)
+		if [[ "${percent_match}" = "0." ]]; then
+			printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "No assembly file to work with"
 			#status="FAILED"
+		else
+			if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
+				printf "%-20s: %-8s : %s\\n" "ANI_OSII" "SUCCESS" "${ani_info} against ${dec_genus}"
+			else
+				if [[ "${percent_match}" -lt 95 ]]; then
+					printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "${percent_match}% identity is too low, ${ani_info}"
+				elif [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
+					printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "${coverage_match}% coverage is too low, ${ani_info}"
+				fi
+				#status="FAILED"
+			fi
+	else
+	#echo "${percent_match--}"
+		if [[ "${percent_match}" = "0." ]]; then
+			printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "No assembly file to work with"
+		#status="FAILED"
+		else
+			if [[ "${percent_match}" -ge 95 ]]; then
+				printf "%-20s: %-8s : %s\\n" "ANI_OSII" "ALERT" "${ani_info} against ${dec_genus}, No coverage information"
+			else
+				if [[ "${percent_match}" -lt 95 ]]; then
+					printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "${percent_match}% identity is too low, ${ani_info}"
+				fi
+				#status="FAILED"
+			fi
 		fi
 	fi
 elif [[ ! -d "${OUTDATADIR}/ANI/" ]]; then

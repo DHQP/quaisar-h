@@ -236,7 +236,7 @@ while IFS= read -r var || [ -n "$var" ]; do
 			if [[ "${notes}" != "" ]]; then
 				notes="${notes},"
 			fi
-			notes="${notes}ANI_OSII is out of date"
+			notes="${notes}No coverage information extracted"
 		fi
 	elif [[ "${tool_status}" == "WARNING" ]]; then
 		#echo "Found warning"
