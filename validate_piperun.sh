@@ -135,6 +135,7 @@ else
 	printf "%-20s: %-8s : %s\\n" "FASTQs" "FAILED" "No reads found"
 	status="FAILED"
 fi
+
 #Checking QC counts
 if [[ -s "${OUTDATADIR}/preQCcounts/${1}_counts.txt" ]]; then
 	reads_pre=$(tail -n1 "${OUTDATADIR}/preQCcounts/${1}_counts.txt" | cut -d'	' -f13)
@@ -146,26 +147,26 @@ if [[ -s "${OUTDATADIR}/preQCcounts/${1}_counts.txt" ]]; then
 	Q30_R2_rounded=$(echo "${Q30_R2}"  | cut -d'.' -f2)
 	Q30_R2_rounded=$(echo "${Q30_R2_rounded::2}")
 	if [[ "${reads_pre}" -le 1000000 ]]; then
-		printf "%-20s: %-8s : %s\\n" "QC counts" "WARNING" "Low individual read count before trimming: ${reads_pre} (${pairs_pre} paired reads)"
+		printf "%-20s: %-8s : %s\\n" "Raw read counts" "WARNING" "Low individual read count before trimming: ${reads_pre} (${pairs_pre} paired reads)"
 		status="WARNING"
 	else
-		printf "%-20s: %-8s : %s\\n" "QC counts" "SUCCESS" "${reads_pre} individual reads found in sample (${pairs_pre} paired reads)"
-		if [[ "${Q30_R1_rounded}" -lt 90 ]]; then
-			printf "%-20s: %-8s : %s\\n" "Q30_R1%" "WARNING" "Q30_R1% below 90(${Q30_R1_rounded}%)"
-			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
-				status="WARNING"
-			fi
-		else
-			printf "%-20s: %-8s : %s\\n" "Q30_R1%" "SUCCESS" "Q30_R1% at ${Q30_R1_rounded}% (Threshold is 90)"
+		printf "%-20s: %-8s : %s\\n" "Raw read counts" "SUCCESS" "${reads_pre} individual reads found in sample (${pairs_pre} paired reads)"
+	fi
+	if [[ "${Q30_R1_rounded}" -lt 90 ]]; then
+		printf "%-20s: %-8s : %s\\n" "Q30_R1%" "WARNING" "Q30_R1% at ${Q30_R1_rounded}% (Threshold is 90%)"
+		if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
+			status="WARNING"
 		fi
-		if [[ "${Q30_R2_rounded}" -lt 70 ]]; then
-			printf "%-20s: %-8s : %s\\n" "Q30_R2%" "WARNING" "Q30_R2% below 70(${Q30_R2_rounded}%)"
-			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
-				status="WARNING"
-			fi
-		else
-			printf "%-20s: %-8s : %s\\n" "Q30_R2%" "SUCCESS" "Q30_R2% at ${Q30_R2_rounded}% (Threshold is 70)"
+	else
+		printf "%-20s: %-8s : %s\\n" "Q30_R1%" "SUCCESS" "Q30_R1% at ${Q30_R1_rounded}% (Threshold is 90)"
+	fi
+	if [[ "${Q30_R2_rounded}" -lt 70 ]]; then
+		printf "%-20s: %-8s : %s\\n" "Q30_R2%" "WARNING" "Q30_R2% at ${Q30_R2_rounded}% (Threshold is 70)"
+		if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
+			status="WARNING"
 		fi
+	else
+		printf "%-20s: %-8s : %s\\n" "Q30_R2%" "SUCCESS" "Q30_R2% at ${Q30_R2_rounded}% (Threshold is 70)"
 	fi
 else
 	printf "%-20s: %-8s : %s\\n" "QC counts" "FAILED" "/preQCcounts/${1}_counts.txt not found"
@@ -174,7 +175,6 @@ else
 	status="FAILED"
 fi
 
-## This folder is now deleted afterwards and therefore is no longer checked
 # Checking BBDUK output folder
 if [[ -d "${OUTDATADIR}/removedAdapters" ]]; then
 	#printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX" "SUCCESS" "Found"
