@@ -119,6 +119,7 @@ Check_source() {
 # Function to pull info from ANI output
 do_ANI() {
 	#echo "${source}"
+	percents_count=1
 	if [[ -f "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_${REFSEQ_date}" ]]; then
 		source="ANI_REFSEQ-UTD"
 		source_file="${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_${REFSEQ_date}).txt"
@@ -133,11 +134,19 @@ do_ANI() {
 		source_file=$(ls -t "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered"* | head -n 1)
 	fi
 	header=$(head -n 1 "${source_file}")
+	percents_count=$(echo "${ani_info}" | tr -cd '%' | wc -c)
 	#echo "${header}"
-	Genus=$(echo "${header}" | cut -d' ' -f1 | cut -d'-' -f2)
-	species=$(echo "${header}" | cut -d' ' -f2 | cut -d'(' -f1 | sed 's/[][]//g')
-	confidence_index=$(echo "${header}" | cut -d' ' -f1 | cut -d'%' -f1)
-	#echo "${Genus}-${species}"
+	if [[ "${percents_count}" -eq 2 ]]; then
+		Genus=$(echo "${header}" | cut -d' ' -f1 | cut -d'-' -f3)
+		species=$(echo "${header}" | cut -d' ' -f2 | cut -d'(' -f1 | sed 's/[][]//g')
+		confidence_index=$(echo "${header}" | cut -d' ' -f1 | cut -d'-' -f1,2)
+		#echo "${Genus}-${species}"
+	elif [[ "${percents_count}" -eq 1 ]]; then
+		source="ANI_OSII-GENUS-ID"
+		Genus=$(echo "${header}" | cut -d' ' -f1 | cut -d'-' -f2)
+		species=$(echo "${header}" | cut -d' ' -f2 | cut -d'(' -f1 | sed 's/[][]//g')
+		confidence_index=$(echo "${header}" | cut -d' ' -f1 | cut -d'-' -f1)
+	fi
 }
 
 # Function to pull best info from 16s output (largest vs highest bit score)
