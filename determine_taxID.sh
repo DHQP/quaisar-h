@@ -118,11 +118,18 @@ Check_source() {
 
 # Function to pull info from ANI output
 do_ANI() {
-	source="ANI"
 	#echo "${source}"
-	if [[ -f "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_All).txt" ]]; then
+	if [[ -f "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_${REFSEQ_date}" ]]; then
+		source="ANI_REFSEQ-UTD"
+		source_file="${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_${REFSEQ_date}).txt"
+	elif [[ -f "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_"* ]]; then
+		source="ANI_REFSEQ-Other"
+		source_file=$(ls -t "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_"* | head -n1)
+	elif [[ -f "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_All).txt" ]]; then
+		source="ANI_OSII-All"
 		source_file="${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_All).txt"
 	else
+		source="ANI_OSII-Genus"
 		source_file=$(ls -t "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered"* | head -n 1)
 	fi
 	header=$(head -n 1 "${source_file}")
