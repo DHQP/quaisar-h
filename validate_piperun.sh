@@ -926,7 +926,7 @@ else
 fi
 
 #Check ANI REFSEQ. Not fully implemented yet, so not causing a failure in reporting
-best_ani_refseq=$(find ${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ*).txt -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n)
+best_ani_refseq=$(find ${OUTDATADIR}/ANI/best_ANI_hits_ordered\(${1}_vs_REFSEQ*\).txt -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n)
 if [[ -z "${best_ani_refseq}" ]]; then
 		ani_refseq_date=$(echo "${best_ani_refseq}" | rev | cut -d'_' -f1,2 | rev | cut -d'.' -f1)
 		ani_refseq_info=$(head -n1 "${best_ani_refseq}")
