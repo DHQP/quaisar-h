@@ -968,14 +968,16 @@ if [[ ! -z "${best_ani_refseq}" ]]; then
 						else
 							printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "% Identity(${percent_match}%) is too low and database is out of date (${ani_refseq_date}), not ${REFSEQ_date}. ${ani_refseq_info}"
 							status="FAILED"
+						fi
 					fi
 				elif [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
 					if [[ "${ani_refseq_date}" = "${REFSEQ_date}" ]]; then
-						printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "% coverage is too low (${ani_refseq_date}), ${coverage_match}% coverage is too low. ${ani_refseq_info}"
+						printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "% coverage is too low (${coverage_match}%). ${ani_refseq_info}"
 						status="FAILED"
 					else
 						printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "% coverage (${coverage_match}%) is too low and REFSEQ database is out of date (${ani_refseq_date}). ${ani_refseq_info}"
 						status="FAILED"
+					fi
 				fi
 			fi
 		fi
