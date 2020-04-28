@@ -918,33 +918,38 @@ if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus}).txt" ]];
 		fi
 	fi
 elif [[ ! -d "${OUTDATADIR}/ANI/" ]]; then
-	printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "/ANI/ does not exist"
+	printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "/ANI/ does not exist"
 	#status="FAILED"
 else
-	printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "NO REFSEQ ANI best_hits file"
+	printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "NO ANI OSII best_hits file"
 	#status="FAILED"
 fi
 
 #Check ANI REFSEQ. Not fully implemented yet, so not causing a failure in reporting
-if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ*).txt" ]]; then
+if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ"* ]]; then
 		old_ani_file=$(find ${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ*).txt -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n)
 		old_ani_date=$(echo "${old_ani_file}" | rev | cut -d'_' -f1,2 | rev | cut -d'.' -f1)
 		old_ani_info=$(head -n1 "${old_ani_file}")
 		percent_match=$(echo "${old_ani_info}" | cut -d'.' -f1)
 		coverage_match=$(echo "${old_ani_info}" | cut -d'-' -f2 | cut -d'.' -f1)
+		echo "Test-${old_ani_date}-${old_ani_file}-${percent_match}-${coverage_match}"
 		if [[ "${percent_match}" = "0." ]]; then
+			echo 1
 			printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "No assembly file to work with (REFSEQ database is out of date (${old_ani_date}), not ${REFSEQ_date})"
 			#status="FAILED"
 		else
 			if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
+				echo 2
 				printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "ALERT" "REFSEQ database is out of date (${old_ani_date}), not ${REFSEQ_date}. ${ani_info}"
 				if [[ "${status}" == "SUCCESS" ]]; then
 					status="ALERT"
 				fi
 			else
 				if [[ "${percent_match}" -lt 95 ]]; then
+					echo 4
 					printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "% Identity too low and REFSEQ database is out of date (${old_ani_date}), ${percent_match}% identity is too low, ${ani_info}"
 				elif [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
+					echo 5
 					printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "% coverage is too low and REFSEQ database is out of date (${old_ani_date}), ${coverage_match}% coverage is too low, ${ani_info}"
 				fi
 				status="FAILED"
