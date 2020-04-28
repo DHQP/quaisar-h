@@ -929,11 +929,11 @@ fi
 best_ani_refseq=$(find ${OUTDATADIR}/ANI/best_ANI_hits_ordered\(${1}_vs_REFSEQ*\).txt -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n)
 echo ${best_ani_refseq}
 if [[ ! -z "${best_ani_refseq}" ]]; then
-		ani_refseq_date=$(echo "${best_ani_refseq}" | rev | cut -d'_' -f1,2 | rev | cut -d'.' -f1)
+		ani_refseq_date=$(echo "${best_ani_refseq}" | rev | cut -d'_' -f1,2 | rev | cut -d')' -f1)
 		ani_refseq_info=$(head -n1 "${best_ani_refseq}")
 		percent_match=$(echo "${best_ani_refseq}" | cut -d'.' -f1)
 		coverage_match=$(echo "${best_ani_refseq}" | cut -d'-' -f2 | cut -d'.' -f1)
-		echo "Test-${ani_refseq_date}-${best_ani_refseq}-${percent_match}-${coverage_match}"
+		echo "Test-${ani_refseq_date}-${best_ani_refseq}-${ani_refseq_info}-${percent_match}-${coverage_match}"
 		if [[ "${percent_match}" = "0." ]]; then
 			echo 1
 			printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "No assembly file to work with (REFSEQ database is out of date (${old_ani_date}), not ${REFSEQ_date})"
