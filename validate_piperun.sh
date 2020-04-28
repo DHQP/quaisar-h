@@ -931,8 +931,8 @@ echo ${best_ani_refseq}
 if [[ ! -z "${best_ani_refseq}" ]]; then
 		ani_refseq_date=$(echo "${best_ani_refseq}" | rev | cut -d'_' -f1,2 | rev | cut -d')' -f1)
 		ani_refseq_info=$(head -n1 "${best_ani_refseq}")
-		percent_match=$(echo "${best_ani_refseq}" | cut -d'.' -f1)
-		coverage_match=$(echo "${best_ani_refseq}" | cut -d'-' -f2 | cut -d'.' -f1)
+		percent_match=$(echo "${ani_refseq_info}" | cut -d'.' -f1)
+		coverage_match=$(echo "${ani_refseq_info}" | cut -d'-' -f2 | cut -d'.' -f1)
 		echo "Test-${ani_refseq_date}-${best_ani_refseq}-${ani_refseq_info}-${percent_match}-${coverage_match}"
 		if [[ "${percent_match}" = "0." ]]; then
 			echo 1
