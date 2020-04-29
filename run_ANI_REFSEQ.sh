@@ -21,7 +21,7 @@ fi
 #
 # Modules required: Python3/3.5.2, pyani/0.2.7, Mash/2.0
 #
-# V1.0.2(03/03/2020)
+# V1.0.3(04/29/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -105,8 +105,15 @@ while IFS= read -r var; do
 	fi
 done < ${OUTDATADIR}/ANI/${1}_${REFSEQ_date}_mash_sorted.dists
 
+successful_matches=$(ls -l "${OUTDATADIR}/ANI/localANIDB_REFSEQ" | wc -l)
+if [[ ${successful_matches} -gt 2 ]]; then
 "${shareScript}/append_taxonomy_to_ncbi_assembly_filenames.sh" "${OUTDATADIR}/ANI/localANIDB_REFSEQ"
 gunzip ${OUTDATADIR}/ANI/localANIDB_REFSEQ/*.gz
+else
+echo "No matches were found against REFSEQ Bacterial Database sketch"
+echo "0.00%ID-0.00%COV-NO_MATCHES_FOUND_AGAINST_BACTERIAL_REFSEQ(NONE)" > "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${REFSEQ_date}).txt"
+exit
+fi
 
 #Renames all files in the localANIDB_REFSEQ folder by changing extension from fna to fasta (which pyani needs)
 for file in ${OUTDATADIR}/ANI/localANIDB_REFSEQ/*.fna;
