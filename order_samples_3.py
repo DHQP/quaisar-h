@@ -54,16 +54,19 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name, sample_li
 	seqlog = pd.read_excel(excel_filename, sheet_name=sheetname_in)  #usecols['CDC Aliquot ID (Miseq_ID)','Output Folder Name']
 	matching_isolates=[]
 	missing_samples=0
+	if 'OSII WGS ID (HQ)' in seqlog.columns:
+		column_title='OSII WGS ID (HQ)'
+	elif 'CDC Local Aliquot ID or Outbreak ID' in seqlog.columns:
+		column_title='CDC Local Aliquot ID or Outbreak ID'
+	elif 'CDC Aliquot ID (Miseq ID)' in seqlog.columns:
+		column_title='CDC Aliquot ID (Miseq ID)'
+
 	for index, row in seqlog.iterrows():
 		#print(index,row)
 		if row['Output Folder Name'] == run_name:
 			#print("OSII:",str(row['OSII WGS ID (HQ)']), "CDC:", str(row['CDC Local Aliquot ID or Outbreak ID']))
-			if str(row['OSII WGS ID (HQ)']) in sample_list:
-				matching_isolates.append(str(run_name)+"/"+str(row['OSII WGS ID (HQ)']))
-			elif str(row['CDC Local Aliquot ID or Outbreak ID']) in sample_list:
-				matching_isolates.append(str(run_name)+"/"+str(row['CDC Local Aliquot ID or Outbreak ID']))
-			elif str(row['CDC Aliquot ID (Miseq ID)']) in sample_list:
-				matching_isolates.append(str(run_name)+"/"+str(row['CDC Aliquot ID (Miseq ID)']))
+			if str(row[column_title]) in sample_list:
+				matching_isolates.append(str(run_name)+"/"+str(row[column_title]))
 			else:
 				print("No match")
 				missing_samples+=1
