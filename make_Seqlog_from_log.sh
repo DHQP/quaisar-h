@@ -21,7 +21,7 @@ fi
 #
 # Modules required: Python3/3.5.4
 #
-# v1.0.5 (03/05/2020)
+# v1.0.6 (05/05/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -42,8 +42,8 @@ elif [[ "${1}" = "-h" ]]; then
 	exit 0
 fi
 
-if [[ -z "${2}" ]]; then
-	year=2019
+if [[ -z "${2}" ]] || [[ "${2}" = "2019_2020"]]; then
+	year=2019_2020
 elif [[ "${2}" -lt 2017 ]] || [[ "${2}" -gt 2099 ]]; then
 	echo "Year must be between 2017 and 2099, exiting"
 	exit 44
@@ -75,7 +75,7 @@ rm "${processed}/${1}/sorted_summaries.txt"
 rm "${processed}/${1}/${1}_list_ordered.txt"
 
 # Order samples (according to logsheet) in folder if not already done so
-python3 ${shareScript}/order_samples_3.py -i "${local_DBs}/Seqlog_copies/2019_2020_MMBSeq_Log.xlsx" -r ${1} -s "Miseq Isolate Log" -o "${processed}/${1}/${1}_list_ordered.txt" -l "${processed}/${1}/${1}_list.txt"
+python3 ${shareScript}/order_samples_3.py -i "${local_DBs}/Seqlog_copies/${year}_MMBSeq_Log.xlsx" -r ${1} -s "Miseq Isolate Log" -o "${processed}/${1}/${1}_list_ordered.txt" -l "${processed}/${1}/${1}_list.txt"
 if [[ ! -s "${processed}/${1}/${1}_list_ordered.txt" ]]; then
 	echo "Isolates were not able to be sorted, something wrong with MiSeq Log entries or list file, or....?"
 	exit
