@@ -21,7 +21,7 @@ fi
 #
 # Modules required: None
 #
-# v1.0.1 (12/18/2019)
+# v1.0.2 (05/05/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -237,6 +237,30 @@ while IFS= read -r var || [ -n "$var" ]; do
 				notes="${notes},"
 			fi
 			notes="${notes}No coverage information extracted"
+		elif [[ "${tool}" == "Trimming-R1" ]]; then
+			if [[ -s "${processed}/${1}/${sample_name}/FASTQs/${1}_R1_001.fastq" ]]; then
+				if [[ "${notes}" != "" ]]; then
+					notes="${notes},"
+				fi
+				notes="${notes}trimmed R1 reads not zipped"
+			else
+				if [[ "${notes}" != "" ]]; then
+					notes="${notes},"
+				fi
+				notes="${notes}No R1 bbduk counts for comparison"
+			fi
+		elif [[ "${tool}" == "Trimming-R2" ]]; then
+			if [[ -s "${processed}/${1}/${sample_name}/FASTQs/${1}_R2_001.fastq" ]]; then
+				if [[ "${notes}" != "" ]]; then
+					notes="${notes},"
+				fi
+				notes="${notes}trimmed R2 reads not zipped"
+			else
+				if [[ "${notes}" != "" ]]; then
+					notes="${notes},"
+				fi
+				notes="${notes}No R2 bbduk counts for comparison"
+			fi
 		fi
 	elif [[ "${tool_status}" == "WARNING" ]]; then
 		#echo "Found warning"
@@ -251,14 +275,12 @@ while IFS= read -r var || [ -n "$var" ]; do
 		elif [[ "${tool}" == "QCcounts" ]]; then
 			warning_flags="${warning_flags}-Raw_read_count_below_1000000"
 			warnings=$(( warning_flags + 1 ))
-		elif [[ "${tool}" == "Trimming" ]]; then
-			if [[ ! -s "${processed}/${1}/${sample_name}/trimmed/${1}_R1_001.paired.fq" ]]; then
-				warning_flags="${warning_flags}-Missing_R1_trimmed_reads_file"
-				warnings=$(( warnings + 1 ))
-			elif [[ ! -s "${processed}/${1}/${sample_name}/trimmed/${1}_R2_001.paired.fq" ]]; then
-				warning_flags="${warning_flags}-Missing_R2_trimmed_reads_file"
-				warnings=$(( warnings + 1 ))
-			fi
+		elif [[ "${tool}" == "Trimming-R1" ]]; then
+			warning_flags="${warning_flags}-No bases in trimmed R1 reads"
+			warnings=$(( warnings + 1 ))
+		elif [[ "${tool}" == "Trimming-R2" ]]; then
+			warning_flags="${warning_flags}-No bases in trimmed R2 reads"
+			warnings=$(( warnings + 1 ))
 		elif [[ "${tool}" == "Q30_R1%" ]]; then
 			warning_flags="${warning_flags}-Q30_R1_below_90%"
 			warnings=$(( warnings + 1 ))
