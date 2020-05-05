@@ -21,7 +21,7 @@ fi
 #
 # Modules required: None
 #
-# v1.0.4 (04/27/2020)
+# v1.0.5 (05/05/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -241,43 +241,71 @@ if [[ -s "${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq" ]] && [[ -s "${OUTDATADIR
 	remAdapt_length_R2=$(cat ${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
 	remAdapt_R1_diff=$(( nophi_length_R1 - remAdapt_length_R1 ))
 	remAdapt_R2_diff=$(( nophi_length_R2 - remAdapt_length_R2 ))
-	R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${nophi_length_R1} ))
-	R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${nophi_length_R2} ))
-	printf "%-20s: %-8s : %s\\n" "Trimming" "SUCCESS" "Unzipped - R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss)  R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss)"
+	if [[ "${remAdapt_length_R1}" -gt 0 ]] && [[ "${remAdapt_length_R1}" -gt 0 ]]; then
+		R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${nophi_length_R1} ))
+		R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${nophi_length_R2} ))
+		printf "%-20s: %-8s : %s\\n" "Trimming" "SUCCESS" "Unzipped - R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss)  R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss)"
+	else
+		printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "BBDUK counts not available - R1: 'N/A'bps (UNK% loss)  R2: 'N/A'bps (UNK% loss)"
+	fi
 elif [[ -s "${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq.gz" ]] && [[ -s "${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq.gz" ]]; then
 	remAdapt_length_R1=$(zcat ${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq.gz | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
 	remAdapt_length_R2=$(zcat ${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq.gz | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
 	remAdapt_R1_diff=$(( nophi_length_R1 - remAdapt_length_R1 ))
 	remAdapt_R2_diff=$(( nophi_length_R2 - remAdapt_length_R2 ))
-	R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${nophi_length_R1} ))
-	R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${nophi_length_R2} ))
 	#echo "${raw_length_R1}-${nophi_length_R1}-${remAdapt_length_R1} ${raw_length_R2}-${nophi_length_R2}-${remAdapt_length_R2}"
-	printf "%-20s: %-8s : %s\\n" "Trimming" "SUCCESS" "Zipped - R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss)  R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss)"
+	if [[ "${remAdapt_length_R1}" -gt 0 ]] && [[ "${remAdapt_length_R1}" -gt 0 ]]; then
+		R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${nophi_length_R1} ))
+		R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${nophi_length_R2} ))
+		printf "%-20s: %-8s : %s\\n" "Trimming" "SUCCESS" "Zipped - R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss)  R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss)"
+	else
+		printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "BBDUK counts not available - R1: 'N/A'bps (UNK% loss)  R2: 'N/A'bps (UNK% loss)"
+	fi
 elif [[ -s "${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq" ]]; then
 	remAdapt_length_R1=$(cat ${OUTDATADIR}/trimmde/${1}_R1_001.paired.fq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
-	R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${nophi_length_R1} ))
-	printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Unzipped - R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss)"
+	remAdapt_R1_diff=$(( nophi_length_R1 - remAdapt_length_R1 ))
+	if [[ "${remAdapt_length_R1}" -gt 0 ]]; then
+		R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${nophi_length_R1} ))
+		printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Unzipped - R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss) - No R2 paired fastq"
+	else
+		printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "BBDUK counts not available - R1: 'N/A'bps (UNK% loss)  R2: No paired fastq read"
+	fi
 	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 		status="WARNING"
 	fi
 elif [[ -s "${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq" ]]; then
 	remAdapt_length_R2=$(cat ${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
-	R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${nophi_length_R2} ))
-	printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Unzipped - R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss)"
+	remAdapt_R2_diff=$(( nophi_length_R2 - remAdapt_length_R2 ))
+	if [[ "${remAdapt_length_R2}" -gt 0 ]]; then
+		R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${nophi_length_R2} ))
+		printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Unzipped - R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss) - No R1 paired fastq"
+	else
+		printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "BBDUK counts not available - R2: 'N/A'bps (UNK% loss)  R1: No paired fastq read"
+	fi
 	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 		status="WARNING"
 	fi
 elif [[ -s "${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq.gz" ]]; then
 	remAdapt_length_R1=$(zcat ${OUTDATADIR}/trimmed/${1}_R1_001.paired.fq.gz | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
-	R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${nophi_length_R1} ))
-	printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Zipped - R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss)"
+	remAdapt_R1_diff=$(( nophi_length_R1 - remAdapt_length_R1 ))
+	if [[ "${remAdapt_length_R1}" -gt 0 ]]; then
+		R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${nophi_length_R1} ))
+		printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Zipped - R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss) - No R2 paired fastq"
+	else
+		printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "BBDUK counts not available - R1: 'N/A'bps (UNK% loss)  R2: No paired fastq read"
+	fi
 	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 		status="WARNING"
 	fi
 elif [[ -s "${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq.gz" ]]; then
 	remAdapt_length_R2=$(zcat ${OUTDATADIR}/trimmed/${1}_R2_001.paired.fq.gz | paste - - - - | cut -f2 |tr -d '\n' | wc -c)
-	R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${nophi_length_R2} ))
-	printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Zipped - R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss)"
+	remAdapt_R2_diff=$(( nophi_length_R2 - remAdapt_length_R2 ))
+	if [[ "${remAdapt_length_R2}" -gt 0 ]]; then
+		R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${nophi_length_R2} ))
+		printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "Zipped - R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss) - No R1 paired fastq"
+	else
+		printf "%-20s: %-8s : %s\\n" "Trimming" "WARNING" "BBDUK counts not available - R2: 'N/A'bps (UNK% loss)  R1: No paired fastq read"
+	fi
 	if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 		status="WARNING"
 	fi
