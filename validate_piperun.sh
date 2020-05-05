@@ -995,7 +995,7 @@ if [[ ! -z "${best_ani_refseq}" ]]; then
 		percent_match=$(echo "${ani_refseq_info}" | cut -d'.' -f1)
 		coverage_match=$(echo "${ani_refseq_info}" | cut -d'-' -f2 | cut -d'.' -f1)
 		if [[ "${percent_match}" = "0." ]]; then
-			if [[ "${ani_refseq_date}" = "REFSEQ_${REFSEQ_date}" ]]; then
+			if [[ "${ani_refseq_date}" = "${REFSEQ_date}" ]]; then
 				printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "No assembly file to work with"
 				status="FAILED"
 			else
@@ -1004,7 +1004,8 @@ if [[ ! -z "${best_ani_refseq}" ]]; then
 			fi
 		else
 			if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
-				if [[ "${ani_refseq_date}" = "REFSEQ_${REFSEQ_date}" ]]; then
+				echo "${ani_refseq_date}" = "${REFSEQ_date}"
+				if [[ "${ani_refseq_date}" = "${REFSEQ_date}" ]]; then
 					printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "SUCCESS" "${ani_refseq_info}"
 				else
 					printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "ALERT" "REFSEQ database is out of date ($ani_refseq_date}), not ${REFSEQ_date}. ${ani_refseq_info}"
@@ -1014,7 +1015,7 @@ if [[ ! -z "${best_ani_refseq}" ]]; then
 				fi
 			else
 				if [[ "${percent_match}" -lt 95 ]]; then
-					if [[ "${ani_refseq_date}" = "REFSEQ_${REFSEQ_date}" ]]; then
+					if [[ "${ani_refseq_date}" = "${REFSEQ_date}" ]]; then
 						if [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
 							printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "% Identity(${percent_match}%) and % coverage(${coverage_match}%) is too low. ${ani_refseq_info}"
 							status="FAILED"
@@ -1032,7 +1033,7 @@ if [[ ! -z "${best_ani_refseq}" ]]; then
 						fi
 					fi
 				elif [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
-					if [[ "${ani_refseq_date}" = "REFSEQ_${REFSEQ_date}" ]]; then
+					if [[ "${ani_refseq_date}" = "${REFSEQ_date}" ]]; then
 						printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "% coverage is too low (${coverage_match}%). ${ani_refseq_info}"
 						status="FAILED"
 					else
