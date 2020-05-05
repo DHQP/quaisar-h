@@ -62,6 +62,8 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name, sample_li
 				matching_isolates.append(str(run_name)+"/"+str(row['OSII WGS ID (HQ)']))
 			elif str(row['CDC Local Aliquot ID or Outbreak ID']) in sample_list:
 				matching_isolates.append(str(run_name)+"/"+str(row['CDC Local Aliquot ID or Outbreak ID']))
+			elif str(row['CDC Aliquot ID (Miseq ID)']) in sample_list:
+				matching_isolates.append(str(run_name)+"/"+str(row['CDC Local Aliquot ID (Miseq ID)']))
 			else:
 				print("No match")
 				missing_samples+=1
