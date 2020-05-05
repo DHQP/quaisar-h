@@ -46,7 +46,7 @@ def create_sample_dict(list_in):
 
 def do_conversion(excel_filename, sheetname_in, output_name, run_name, sample_list):
 	sample_count=len(sample_list)
-	for thign in sample_list:
+	for thing in sample_list:
 		print(":"+thing+":")
 	if sample_count == 0:
 		print("No samples added from original list, cant compare nothing to Seqlog, exiting")
