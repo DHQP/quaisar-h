@@ -1004,7 +1004,6 @@ if [[ ! -z "${best_ani_refseq}" ]]; then
 			fi
 		else
 			if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
-				echo "${ani_refseq_date}" = "${REFSEQ_date}"
 				if [[ "${ani_refseq_date}" = "${REFSEQ_date}" ]]; then
 					printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "SUCCESS" "${ani_refseq_info}"
 				else
