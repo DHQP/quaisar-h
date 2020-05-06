@@ -10,7 +10,7 @@
 #
 # Description: The full QuAISAR-H pipeline start to end serially, project/isolate_name must already have a populated FASTQs folder to work with
 #
-# Usage: ./quaisar_template.sh isolate_name project_name path_to_config_file_to_use
+# Usage: ./quaisar_template.sh isolate_name project_name path_to_config_file_to_use [alternate path for output]
 #
 # Output location: default_config.sh_output_location
 #
@@ -46,6 +46,12 @@ else
 	echo "${2}/${1} is loading config file ${3}"
 	ml purge
 	. "${3}"
+fi
+
+if [[ -d "${4}" ]]; then
+	processed="${4}"
+else
+	"Alternate location does not exist, using default ${processed}"
 fi
 
 ml Python3/3.5.2
