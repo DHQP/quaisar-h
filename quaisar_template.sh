@@ -152,14 +152,14 @@ else
 fi
 
 # Run bbduk
-ml BBMap/38.26
-bbduk.sh -"${bbduk_mem}" threads="${procs}" in="${OUTDATADIR}/${filename}/FASTQs/${filename}_R1_001.fastq" in2="${OUTDATADIR}/${filename}/FASTQs/${filename}_R2_001.fastq" out="${OUTDATADIR}/${filename}/removedAdapters/${filename}-noPhiX-R1.fsq" out2="${OUTDATADIR}/${filename}/removedAdapters/${filename}-noPhiX-R2.fsq" ref="${phiX_location}" k="${bbduk_k}" hdist="${bbduk_hdist}"
+#bbduk.sh -"${bbduk_mem}" threads="${procs}" in="${OUTDATADIR}/${filename}/FASTQs/${filename}_R1_001.fastq" in2="${OUTDATADIR}/${filename}/FASTQs/${filename}_R2_001.fastq" out="${OUTDATADIR}/${filename}/removedAdapters/${filename}-noPhiX-R1.fsq" out2="${OUTDATADIR}/${filename}/removedAdapters/${filename}-noPhiX-R2.fsq" ref="${phiX_location}" k="${bbduk_k}" hdist="${bbduk_hdist}"
+${shareScript}/run_BBDUK.sh "${filename}" "${project}"
 # Get end time of bbduk and calculate run time and append to time summary (and sum to total time used)
 end=$SECONDS
 timeAdapt=$((end - start))
 echo "Removing Adapters - ${timeAdapt} seconds" >> "${time_summary}"
 totaltime=$((totaltime + timeAdapt))
-ml -BBMAP/38.26
+
 
 ### Quality and Adapter Trimming using trimmomatic ###
 echo "----- Running Trimmomatic on reads -----"
