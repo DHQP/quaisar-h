@@ -406,7 +406,7 @@ if [[ "${genus}" = "Peptoclostridium" ]] || [[ "${genus}" = "Clostridioides" ]];
 elif [[ "${genus}" = "Shigella" ]]; then
 	genus="Escherichia"
 fi
-"${shareScript}/run_ANI_REFSEQ" "${filename}" "${project}"
+"${shareScript}/run_ANI_REFSEQ.sh" "${filename}" "${project}"
 # Get end time of ANI and calculate run time and append to time summary (and sum to total time used
 end=$SECONDS
 timeANI=$((end - start))
@@ -419,7 +419,7 @@ echo "----- Running ANI for Species confirmation -----"
 # Get start time of ANI
 start=$SECONDS
 # run ANI
-"${shareScript}/run_ANI_REFSEQ" "${filename}" "${project}"
+"${shareScript}/run_ANI.sh" "${filename}" "${project}"
 # Get end time of ANI and calculate run time and append to time summary (and sum to total time used
 end=$SECONDS
 timeANIREF=$((end - start))
