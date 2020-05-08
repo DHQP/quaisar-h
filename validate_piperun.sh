@@ -21,7 +21,7 @@ fi
 #
 # Modules required: None
 #
-# v1.0.5 (05/05/2020)
+# v1.0.6 (05/08/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -776,24 +776,24 @@ if [[ ! -s "${OUTDATADIR}/${1}.tax" ]]; then
 fi
 
 source_call=$(head -n1 "${OUTDATADIR}/${1}.tax")
+tax_source="UNK"
 while IFS= read -r line; do
 	# Grab first letter of line (indicating taxonomic level)
 	first=${line:0:1}
 	# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken, 3rd-true % of total reads, 4th-identifier)
-	if [ "${first}" = "s" ]
-	then
+	if [ "${first}" = "s" ]; then
 		dec_species=$(echo "${line}" | awk -F ' ' '{print $2}')
-	elif [ "${first}" = "G" ]
-	then
+	elif [ "${first}" = "G" ]; then
 		dec_genus=$(echo "${line}" | awk -F ' ' '{print $2}')
-	elif [ "${first}" = "F" ]
-	then
+	elif [ "${first}" = "F" ]; then
 		dec_family=$(echo "${line}" | awk -F ' ' '{print $2}')
+	elif [ "${first}" = "(" ]; then
+		tax_source=$(echo "${line}" | cut -d')' -f1 | cut -d'(' -f2)
 	fi
 done < "${OUTDATADIR}/${1}.tax"
 
 if [[ "$dec_genus" != "Not_assigned" ]] && [[ "$dec_species" != "Not_assigned" ]]; then
-	printf "%-20s: %-8s : %s\\n" "Taxa" "SUCCESS" "${dec_genus} ${dec_species}"
+	printf "%-20s: %-8s : %s\\n" "Taxa" "SUCCESS" "${tax_source}-${dec_genus} ${dec_species}"
 elif [[ "$dec_genus" != "Not_assigned" ]]; then
 	printf "%-20s: %-8s : %s\\n" "Taxa" "FAILED" "None of the classifiers completed successfully"
 elif [[ "$dec_species" != "Not_assigned" ]]; then
@@ -818,7 +818,7 @@ assembly_ID="${genus_initial}.${dec_species}"
 #echo "${assembly_ID}"
 if [[ ! -z "${mmb_bugs[${assembly_ID}]}" ]]; then
 	#echo "Found Bug in DB: ${assembly_ID}-${mmb_bugs[${assembly_ID}]}"
-	assembly_ratio=$(awk -v p="${assembly_length}" -v q="${mmb_bugs[${assembly_ID}]}" 'BEGIN{printf("%.2f",p/q)}')
+	assembly_ratio=$(awk -v p="${assembly_length}" -v q="${mmb_bugs[${assembly_ID}]}" 'BEGIN{printf("%.2f(%s-%s)",p/q)}')
 	if (( $(echo "$assembly_ratio > 1.2" | bc -l) )); then
 		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "FAILED" "Too large - ${assembly_ratio}x against ${assembly_ID}"
 		status="FAILED"
