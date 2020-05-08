@@ -941,8 +941,13 @@ fi
 #Check ANI
 # Currently showing both ANI_OSII and ANI_REFSEQ simultaneously if available
 ani_found=false
-if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus}).txt" ]]; then
-	ani_info=$(head -n 1 "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus}).txt")
+if [[ "${dec_genus}" = "Clostridioides" ]]; then
+	ani_genus="${clostrium}"
+else
+	ani_genus="${dec_genus}"
+fi
+if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${ani_genus}).txt" ]]; then
+	ani_info=$(head -n 1 "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${ani_genus}).txt")
 	percents_count=$(echo "${ani_info}" | tr -cd '%' | wc -c)
 	percent_match=$(echo "${ani_info}" | cut -d'.' -f1)
 	if [[ "${percents_count}" -eq 2 ]]; then
@@ -952,7 +957,7 @@ if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${dec_genus}).txt" ]];
 			#status="FAILED"
 		else
 			if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
-				printf "%-20s: %-8s : %s\\n" "ANI_OSII" "SUCCESS" "${ani_info} against ${dec_genus}"
+				printf "%-20s: %-8s : %s\\n" "ANI_OSII" "SUCCESS" "${ani_info} against ${ani_genus}"
 			else
 				if [[ "${percent_match}" -lt 95 ]]; then
 					printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "${percent_match}% identity is too low, ${ani_info}"
