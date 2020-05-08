@@ -16,10 +16,13 @@
 #
 # Modules required: Python3/3.5.2
 #
-# v1.0.3 (10/28/2019)
+# v1.0.4 (10/28/2019)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
+
+version_type="Quaisar Parallel"
+version_num="qp1.0.4"
 
 # Checks for proper argumentation
 if [[ $# -eq 0 ]]; then
@@ -74,6 +77,7 @@ fi
 touch "${OUTDATADIR}/${filename}/${filename}_time_summary.txt"
 time_summary=${OUTDATADIR}/${filename}/${filename}_time_summary.txt
 
+echo "QuAISAR v${version}" > "${time_summary}"
 echo "Time summary for ${project}/${filename}: Started ${global_time}" >> "${time_summary}"
 echo "${project}/${filename} started at ${global_time}"
 

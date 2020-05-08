@@ -21,7 +21,7 @@ fi
 #
 # Modules required: Python3/3.5.4
 #
-# v1.0.6 (05/05/2020)
+# v1.0.7 (05/08/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -171,17 +171,18 @@ while IFS= read -r var || [ -n "$var" ]; do
 		#echo "${read_qc_info}"
 	fi
 
-	source_call=$(head -n1 "${OUTDATADIR}/${sample_name}.tax")
+	source_call=$(head -n1 "${OUTDATADIR}/${sample_name}.tax").
+	tax_source="UNK"
 	while IFS= read -r line  || [ -n "$line" ]; do
 		# Grab first letter of line (indicating taxonomic level)
 		first=${line:0:1}
 		# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken, 3rd-true % of total reads, 4th-identifier)
-		if [ "${first}" = "s" ]
-		then
+		if [ "${first}" = "s" ]; then
 			dec_species=$(echo "${line}" | awk -F ' ' '{print $2}')
-		elif [ "${first}" = "G" ]
-		then
+		elif [ "${first}" = "G" ]; then
 			dec_genus=$(echo "${line}" | awk -F ' ' '{print $2}')
+		elif [ "${first}" = ")" ]; then
+			tax_source=$(echo "${line}" | cut -d')' -f1 | cut -d'(' -f2)
 		fi
 	done < "${OUTDATADIR}/${sample_name}.tax"
 
@@ -206,13 +207,11 @@ while IFS= read -r var || [ -n "$var" ]; do
 				assembly_ID="${dec_genus_initial}.${dec_species}"
 				echo "About to check mmb_bugs[${assembly_ID}]"
 				if [[ ! -z "${mmb_bugs[${assembly_ID}]}" ]]; then
-					#echo "Found Bug in DB: ${assembly_ID}-${mmb_bugs[${assembly_ID}]}"
-					assembly_ratio=$(awk -v p="${assembly_length}" -v q="${mmb_bugs[${assembly_ID}]}" 'BEGIN{printf("%.2f",p/q)}')
+					assembly_ratio=$(awk -v p="${assembly_length}" -v q="${mmb_bugs[${assembly_ID}]}" -v r="${tax_source}" -v s="${assembly_ID}" 'BEGIN{printf("%.2f(%s-%s)",p/q, r, s)}')
 				else
-					assembly_ratio="Not_in_DB"
+					assembly_ratio="Not_in_DB (${tax_source}-${assembly_ID})"
 				fi
-			elif [ ${counter} -eq 3 ]
-			then
+			elif [ ${counter} -eq 3 ]; then
 				N50=$(sed -n '18p' "${OUTDATADIR}/Assembly_Stats/${sample_name}_report.tsv"  | sed -r 's/[\t]+/ /g'| cut -d' ' -f2)
 			fi
 			counter=$((counter+1))
