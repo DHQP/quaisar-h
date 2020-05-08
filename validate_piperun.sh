@@ -818,15 +818,15 @@ assembly_ID="${genus_initial}.${dec_species}"
 #echo "${assembly_ID}"
 if [[ ! -z "${mmb_bugs[${assembly_ID}]}" ]]; then
 	#echo "Found Bug in DB: ${assembly_ID}-${mmb_bugs[${assembly_ID}]}"
-	assembly_ratio=$(awk -v p="${assembly_length}" -v q="${mmb_bugs[${assembly_ID}]}" 'BEGIN{printf("%.2f(%s-%s)",p/q)}')
+	assembly_ratio=$(awk -v p="${assembly_length}" -v q="${mmb_bugs[${assembly_ID}]}" 'BEGIN{printf("%.2f",p/q)}')
 	if (( $(echo "$assembly_ratio > 1.2" | bc -l) )); then
-		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "FAILED" "Too large - ${assembly_ratio}x against ${assembly_ID}"
+		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "FAILED" "Too large - ${assembly_ratio}x against ${assembly_ID} (${tax_source})"
 		status="FAILED"
 	elif (( $(echo "$assembly_ratio < 0.8" | bc -l) )); then
-		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "FAILED" "Too small - ${assembly_ratio}x against ${assembly_ID}"
+		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "FAILED" "Too small - ${assembly_ratio}x against ${assembly_ID} (${tax_source})"
 		status="FAILED"
 	else
-		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "SUCCESS" "${assembly_ratio}x against ${assembly_ID}"
+		printf "%-20s: %-8s : %s\\n" "Assembly ratio" "SUCCESS" "${assembly_ratio}x against ${assembly_ID} (${tax_source})"
 	fi
 else
 	printf "%-20s: %-8s : %s\\n" "Assembly ratio" "WARNING" "${assembly_ID} does not exist in the DB"
