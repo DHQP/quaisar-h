@@ -974,7 +974,7 @@ if [[ -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${ani_genus}).txt" ]];
 		#status="FAILED"
 		else
 			if [[ "${percent_match}" -ge 95 ]]; then
-				printf "%-20s: %-8s : %s\\n" "ANI_OSII" "ALERT" "${ani_info} against ${dec_genus}, No coverage information"
+				printf "%-20s: %-8s : %s\\n" "ANI_OSII" "ALERT" "${ani_info} against ${ani_genus}, No coverage information"
 			else
 				if [[ "${percent_match}" -lt 95 ]]; then
 					printf "%-20s: %-8s : %s\\n" "ANI_OSII" "FAILED" "${percent_match}% identity is too low, ${ani_info}"
