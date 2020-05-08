@@ -1048,10 +1048,10 @@ if [[ ! -z "${best_ani_refseq}" ]]; then
 			fi
 		fi
 elif [[ ! -d "${OUTDATADIR}/ANI/" ]]; then
-	printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "/ANI/ does not exist"
+	printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "#FAILED" "/ANI/ does not exist"
 	#status="FAILED"
 else
-	printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "FAILED" "NO ANI_REFSEQ best_hits file"
+	printf "%-20s: %-8s : %s\\n" "ANI_REFSEQ" "#FAILED" "NO ANI_REFSEQ best_hits file"
 	#status="FAILED"
 fi
 
