@@ -229,8 +229,8 @@ if [[ -d "${OUTDATADIR}/removedAdapters" ]]; then
 		fi
 	fi
 else
-	printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX" "FAILED" "/removedAdapters does not exist"
-	status="FAILED"
+	printf "%-20s: %-8s : %s\\n" "BBDUK-PhiX" "#FAILED" "/removedAdapters does not exist"
+	#status="FAILED"
 fi
 
 #Checking Trimmomatic output folder
