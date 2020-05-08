@@ -942,7 +942,7 @@ fi
 # Currently showing both ANI_OSII and ANI_REFSEQ simultaneously if available
 ani_found=false
 if [[ "${dec_genus}" = "Clostridioides" ]]; then
-	ani_genus="${clostrium}"
+	ani_genus="Clostridium"
 else
 	ani_genus="${dec_genus}"
 fi
