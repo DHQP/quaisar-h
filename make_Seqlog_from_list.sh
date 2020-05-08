@@ -150,7 +150,7 @@ while IFS= read -r var || [ -n "$var" ]; do
 			dec_species=$(echo "${line}" | awk -F ' ' '{print $2}')
 		elif [ "${first}" = "G" ]; then
 			dec_genus=$(echo "${line}" | awk -F ' ' '{print $2}')
-		elif [ "${first}" = ")" ]; then
+		elif [ "${first}" = "(" ]; then
 			tax_source=$(echo "${line}" | cut -d')' -f1 | cut -d'(' -f2)
 		fi
 	done < "${OUTDATADIR}/${sample_name}.tax"
