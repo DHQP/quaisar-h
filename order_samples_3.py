@@ -10,7 +10,7 @@
 #
 # Modules required: None
 #
-# v1.0 (10/3/2019)
+# v1.0.2 (05/12/2020)
 #
 
 
@@ -66,12 +66,35 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name, sample_li
 	for index, row in seqlog.iterrows():
 		#print(index,row)
 		if row['Output Folder Name'] == run_name:
-			print(str(row[column_title]))
-			if str(row[column_title]) in sample_list:
-				matching_isolates.append(str(run_name)+"/"+str(row[column_title]))
-			else:
-				print("No match")
-				missing_samples+=1
+						print(column_title, str(row[column_title]))
+			if column_title == "OSII WGS ID (HQ)":
+				if str(row[column_title]) in sample_list:
+					matching_isolates.append(str(run_name)+"/"+str(row[column_title]))
+				# Catch if name is changed due to FAILED/META/REFERENCE
+				elif str(row[column_title])+"_FAILED" in sample_list:
+					matching_isolates.append(str(run_name)+"/"+str(row[column_title])+"_FAILED")
+				elif str(row[column_title]) == "nan":
+					print(column_title, str(row['CDC Local Aliquot ID or Outbreak ID']))
+					if str(row['CDC Local Aliquot ID or Outbreak ID']) != "nan":
+						if str(row['CDC Local Aliquot ID or Outbreak ID']) in sample_list:
+							matching_isolates.append(str(run_name)+"/"+str(row['CDC Local Aliquot ID or Outbreak ID']))
+						elif str(row['CDC Local Aliquot ID or Outbreak ID'])+"_FAILED" in sample_list:
+							matching_isolates.append(str(run_name)+"/"+str(row['CDC Local Aliquot ID or Outbreak ID'])+"_FAILED")
+						else:
+							print("No match for non-empty", str(row['CDC Local Aliquot ID or Outbreak ID']), "in OSII WGS IS (HQ)-less CDC Local Aliquot ID or Outbreak ID")
+							missing_samples+=1
+				else:
+					print("No match for empty", str(row['CDC Local Aliquot ID or Outbreak ID']), "in OSII WGS IS (HQ)-less CDC Local Aliquot ID or Outbreak ID")
+					missing_samples+=1
+			elif column_title == 'CDC Local Aliquot ID or Outbreak ID' or column_title == 'CDC Aliquot ID (Miseq ID)':
+				if str(row[column_title]) in sample_list:
+					matching_isolates.append(str(run_name)+"/"+str(row[column_title]))
+				# Catch if name is changed due to FAILED/META/REFERENCE
+				elif str(row[column_title])+"_FAILED" in sample_list:
+					matching_isolates.append(str(run_name)+"/"+str(row[column_title])+"_FAILED")
+				else:
+					print("No match for", str(row[column_title]),"in CDC (Local) Aliquot ID [or Outbreak ID|Miseq ID]")
+					missing_samples+=1
 	print("Matching rows: {0}".format(len(matching_isolates)))
 	print("Missing samples:", missing_samples)
 	summary_out=open(output_name, 'w')

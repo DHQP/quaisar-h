@@ -12,7 +12,7 @@
 #
 # Modules required: None
 #
-# v1.0.1 (1/17/2020)
+# v1.0.2 (05/08/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -75,6 +75,23 @@ procs=12 # Number of processors
 
 # Phred scoring scale to be used (33 or 64)
 phred=33
+
+############# Tool versions for recordings sake ###########
+version_BBMap="38.26"
+version_Trimmomatic="0.35"
+version_Kraken="0.10.5"
+version_GOTTCHA="1.0c"
+version_SPAdes="3.13.0"
+version_QUAST="4.3"
+version_PROKKA="1.12"
+version_BUSCO="3.0.1"
+version_pyANI="0.2.7"
+version_CSSTAR="1.1.01"
+version_srst2="0.2.0"
+version_GAMA="4.7.4"
+version_MLST="2.16"
+version_plasFlow="1.1"
+version_BARRNAP="0.8"
 
 
 ############# Application Specific Options #############

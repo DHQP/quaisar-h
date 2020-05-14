@@ -16,11 +16,11 @@ fi
 # Description: Creates a single file that attempts to pull the best taxonomic information from the isolate. Currently, it operates in a linear fashion, e.g. 1.ANI, 2.16s, 3.kraken, 4.Gottcha
 # 	The taxon is chosen based on the highest ranked classifier first
 #
-# Usage: ./determine_texID.sh sample_name project_ID
+# Usage: ./determine_texID.sh sample_name project_ID [alternate_database_location]
 #
 # Modules required: None
 #
-# v1.0.5 (04/27/2020)
+# v1.0.6 (05/12/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -28,6 +28,9 @@ fi
 # Checks for proper argumentation
 if [[ $# -eq 0 ]]; then
 	echo "No argument supplied to $0, exiting"
+	exit 1
+elif [[ "${1}" = "-h" ]]; then
+	echo "Usage: ./determine_texID.sh sample_name project_ID [alternate_database_location]"
 	exit 1
 elif [[ -z "${1}" ]]; then
 	echo "Empty sample_id supplied to determine_taxID.sh, exiting"
@@ -39,11 +42,19 @@ elif [[ "${1}" = "-h" ]]; then
 elif [[ -z "${2}" ]]; then
 	echo "Empty run_ID supplied to determine_taxID.sh, exiting"
 	exit 1
+elif [[ ! -z "${3}" ]] && [[ ! -d "${3}" ]]; then
+	echo "Empty database location supplied to determine_taxID.sh, exiting"
+	exit 1
 fi
 
 # Set default values after setting variables
 sample=${1}
 project=${2}
+if [[ -z "${3}" ]]; then
+	databases=${local_DBs}
+else
+	databases=${3}
+fi
 
 # Set default values for a ll taxonomic levels
 Domain="Not_assigned"
@@ -68,6 +79,8 @@ Check_source() {
 				if [[ ${header} != "No matching ANI database found for"* ]] && [[ ${header} != "0.00%"* ]] ; then
 		    	do_ANI
 		    	return
+				else
+					Check_source 2
 				fi
 			fi
 		done
@@ -241,7 +254,7 @@ while IFS= read -r line  || [ -n "$line" ]; do
 	DB_genus=$(echo ${line} | cut -d"," -f1)
 	#echo ":${Genus}:${DB_genus}:"
 	if [[ "${Genus,}" = "${DB_genus}" ]]; then
-			tax_DB="${local_DBs}/taxes.csv"
+			tax_DB="${databases}/taxes.csv"
 			Domain=$(echo "${line}" | cut -d"," -f2)
 			Phylum=$(echo "${line}" | cut -d"," -f3)
 			Class=$(echo "${line}" | cut -d"," -f4)
@@ -250,7 +263,7 @@ while IFS= read -r line  || [ -n "$line" ]; do
 			#echo ":${Family}:"
 			break
 	fi
-done < "${local_DBs}/taxes.csv"
+done < "${databases}/taxes.csv"
 
 # Print output to tax file for sample
 echo -e "(${source})-${confidence_index}%-${source_file}\nD:	${Domain}\nP:	${Phylum}\nC:	${Class}\nO:	${Order}\nF:	${Family}\nG:	${Genus}\ns:	${species}\n" > "${processed}/${project}/${sample}/${sample}.tax"

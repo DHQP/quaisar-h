@@ -15,13 +15,13 @@ fi
 #
 # Description: Grabs the best species match based on %/read hits from the kraken tool run
 #
-# Usage: ./best_hit_from_kraken.sh sample_name pre/post(relative to assembly) source_type(paired/assembled) run_ID source(kraken|kraken2)
+# Usage: ./best_hit_from_kraken.sh sample_name pre/post(relative to assembly) paired|assembled(source_type) run_ID kraken|kraken2(source) [alt_path-for-output]
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/kraken/pre|post-Assembly/
-#
+#				or				alt_path-for-output/kraken/pre|postAssembly
 # Modules required: None
 #
-# v1.0 (10/3/2019)
+# v1.0.1 (05/12/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -34,8 +34,9 @@ elif [ -z "$1" ]; then
 	echo "Empty sample name supplied to $0, exiting"
 	exit 1
 elif [[ "$1" = "-h" ]]; then
-	echo "Usage is ./best_hit_from_kraken.sh  sample_name  [pre/post] [paired/assembled] run_ID	source(kraken|kraken2)"
-	echo "Output is saved to ${processed}/miseq_run_ID_id/sample_name/kraken/(pre/post)assembly/sample_name_kraken_summary_(paired/assembled)"
+	echo "Usage is ./best_hit_from_kraken.sh  sample_name  pre|post paired|assembled run_ID	kraken|kraken2 [alt_path-for-output]"
+	echo "Output is saved to ${processed}/miseq_run_ID_id/sample_name/kraken/pre|postassembly/sample_name_kraken_summary_paired|assembled"
+	echo "				or				alt_path-for-output/kraken/pre|postAssembly"
 	exit 0
 elif [ -z "$2" ]; then
 	echo "Empty assembly relativity supplied to $0, exiting"
@@ -48,6 +49,16 @@ elif [ -z "$4" ]; then
 	exit 1
 elif [ -z "$5" ]; then
 	echo "Empty out folder supplied to $0, exiting"
+	exit 1
+elif [ -z "${6}" ]; then
+	echo "Using default path - ${processed}"
+	OUTDATADIR="${processed}/${4}/${1}/${5}/${2}Assembly"
+elif [ -d "${6}" ]; then
+	echo "Using given path - ${3}"
+	OUTDATADIR="${6}/${4}/${1}/${5}/${2}Assembly"
+else
+	OUTDATADIR="${processed}/${4}/${1}/${5}/${2}Assembly"
+	echo "Path does not exist - ${6}, using default (${processed})"
 	exit 1
 fi
 
