@@ -195,7 +195,7 @@ fi
 
 # Copies reads from source location to working directory and creates a list of IDs
 if [[ "${assemblies}" == "true" ]]; then
-	"${shareScript}/get_assemblies_from_folder.sh" "${PROJECT}" "${INDATADIR}"
+	"${shareScript}/get_Assemblies_from_folder.sh" "${PROJECT}" "${INDATADIR}"
 else
 	"${shareScript}/get_Reads_from_folder.sh" "${PROJECT}" "${INDATADIR}" "${postfix}"
 fi
