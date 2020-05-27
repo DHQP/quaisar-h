@@ -133,7 +133,7 @@ Check_source() {
 do_ANI() {
 	#echo "${source}"
 	percents_count=1
-	if [[ -f "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_${REFSEQ_date}" ]]; then
+	if [[ -f "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_${REFSEQ_date}).txt" ]]; then
 		source="ANI_REFSEQ-UTD"
 		source_file="${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_${REFSEQ_date}).txt"
 	elif [[ -f "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_"* ]]; then
