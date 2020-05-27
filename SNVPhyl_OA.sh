@@ -49,7 +49,7 @@ Name=$2
 Folder=$3
 
 if [[ ! -d ${Folder} ]]; then
-	mkdir ${Folder}
+	mkdir ${Folder}/${Name}
 fi
 
 ml Python3/3.5.2
