@@ -423,7 +423,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 		genus=$(tail -n2 "${OUTDATADIR}/${sample_name}.tax" | head -n1 | cut -d'	' -f2)
 		species=$(tail -n1 "${OUTDATADIR}/${sample_name}.tax" | cut -d'	' -f2)
 		taxonomy="${genus} ${species}"
-		if [[ "${taxonomy_source_type}" = "(ANI_REFSEQ-UTD)" ]]; then
+		if [[ "${taxonomy_source_type}" = "(ANI_REFSEQ_UTD)" ]]; then
 			confidence_info=$(head -n1 "${taxonomy_source}")
 		else
 			taxonomy_source_type=$(echo "${taxonomy_source_type}" | cut -d'(' -f2 | cut -d')' -f1)

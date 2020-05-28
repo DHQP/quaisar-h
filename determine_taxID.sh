@@ -134,16 +134,16 @@ do_ANI() {
 	#echo "${source}"
 	percents_count=1
 	if [[ -f "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_${REFSEQ_date}).txt" ]]; then
-		source="ANI_REFSEQ-UTD"
+		source="ANI_REFSEQ_UTD"
 		source_file="${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_${REFSEQ_date}).txt"
 	elif [[ -f "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_"* ]]; then
-		source="ANI_REFSEQ-Other"
+		source="ANI_REFSEQ_Other"
 		source_file=$(ls -t "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_"* | head -n1)
 	elif [[ -f "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_All).txt" ]]; then
-		source="ANI_OSII-All"
+		source="ANI_OSII_All"
 		source_file="${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_All).txt"
 	else
-		source="ANI_OSII-Genus"
+		source="ANI_OSII_Genus"
 		source_file=$(ls -t "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered"* | head -n 1)
 	fi
 	header=$(head -n 1 "${source_file}")
@@ -155,7 +155,7 @@ do_ANI() {
 		confidence_index=$(echo "${header}" | cut -d' ' -f1 | cut -d'-' -f1,2)
 		#echo "${Genus}-${species}"
 	elif [[ "${percents_count}" -eq 1 ]]; then
-		source="ANI_OSII-GENUS-ID"
+		source="ANI_OSII_GENUS_ID"
 		Genus=$(echo "${header}" | cut -d' ' -f1 | cut -d'-' -f2)
 		species=$(echo "${header}" | cut -d' ' -f2 | cut -d'(' -f1 | sed 's/[][]//g')
 		confidence_index=$(echo "${header}" | cut -d' ' -f1 | cut -d'-' -f1)
