@@ -281,7 +281,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 			csstar_list="NO CURRENT FILE"
 		fi
 
-		
+
 		# Extracts all AR genes from normal csstar output file and creates a lits of all genes that pass the filtering steps
 	 	#echo "^^^^^^^^^^^^^^^^^^^ ${OUTDATADIR}/GAMA/${sample_name}.${ResGANNCBI_srst2_filename}.GAMA"
 		if [[ -f "${OUTDATADIR}/GAMA/${sample_name}.${ResGANNCBI_srst2_filename}.GAMA" ]]; then
@@ -423,7 +423,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 		genus=$(tail -n2 "${OUTDATADIR}/${sample_name}.tax" | head -n1 | cut -d'	' -f2)
 		species=$(tail -n1 "${OUTDATADIR}/${sample_name}.tax" | cut -d'	' -f2)
 		taxonomy="${genus} ${species}"
-		if [[ "${taxonomy_source_type}" = "(ANI)" ]]; then
+		if [[ "${taxonomy_source_type}" = "(ANI_REFSEQ-UTD)" ]]; then
 			confidence_info=$(head -n1 "${taxonomy_source}")
 		else
 			taxonomy_source_type=$(echo "${taxonomy_source_type}" | cut -d'(' -f2 | cut -d')' -f1)
