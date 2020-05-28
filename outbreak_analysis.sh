@@ -415,15 +415,15 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 		tax_file="${OUTDATADIR}/${sample_name}.tax"
 		sed -i '/^$/d' "${OUTDATADIR}/${sample_name}.tax"
 		tax_header=$(head -n1 "${OUTDATADIR}/${sample_name}.tax")
-		taxonomy_source_type=$(echo "${tax_header}" | cut -d'-' -f1)
-		taxonomy_source=$(echo "${tax_header}" | cut -d'-' -f3-)
+		taxonomy_source_type=$(echo "${tax_header}" | cut -d'(' -f2 | cut -d')' -f1)
+		taxonomy_source=$(echo "${tax_header}" | cut -d'-' -f4-)
 		#echo "Test-${tax_header};${taxonomy_source_type};${taxonomy_source}"
 
 		#echo "Looking at ${OUTDATADIR}/${sample_name}.tax"
 		genus=$(tail -n2 "${OUTDATADIR}/${sample_name}.tax" | head -n1 | cut -d'	' -f2)
 		species=$(tail -n1 "${OUTDATADIR}/${sample_name}.tax" | cut -d'	' -f2)
 		taxonomy="${genus} ${species}"
-		if [[ "${taxonomy_source_type}" = "(ANI_REFSEQ_UTD)" ]]; then
+		if [[ "${taxonomy_source_type}" = "ANI_REFSEQ_UTD" ]]; then
 			confidence_info=$(head -n1 "${taxonomy_source}")
 		else
 			taxonomy_source_type=$(echo "${taxonomy_source_type}" | cut -d'(' -f2 | cut -d')' -f1)
