@@ -40,15 +40,13 @@ elif [[ ! "${1}" ]]; then
 	echo "List ${1} does not exist"
 	echo "EXITING..."
 	exit 1
-else
-	echo "Cleaning ${processed}/${2}/${1}"
 fi
 
 List=$1
 Name=$2
 Folder=$3
 
-if [[ ! -d ${Folder} ]]; then
+if [[ ! -d ${Folder}/${Name} ]]; then
 	mkdir ${Folder}/${Name}
 fi
 
