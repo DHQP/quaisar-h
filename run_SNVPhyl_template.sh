@@ -130,10 +130,8 @@ cp "${processed}/${ref_proj}/${ref}/Assembly/${ref}_scaffolds_trimmed.fasta" "${
 owd=$(pwd)
 cd ${OUTDATADIR}/
 
-#snvphyl --fastq-dir ./FASTQs --reference-file "./reference(${ref}).fasta" --output-dir ./output --relative-snv-abundance 0.95 --min-coverage 5 --min-mean-mapping 10 --filter-density-window 20 --filter-density-threshold 2
-#snvphyl --fastq-dir ./FASTQs --reference-file "./reference(${ref}).fasta" --output-dir --deploy-docker ./output --relative-snv-abundance 0.75 --min-coverage 10 --min-mean-mapping 30 --filter-density-threshold 2
-snvphyl --fastq-dir ./FASTQs --reference-file "./reference(${ref}-${submitter}).fasta" --output-dir ./output --relative-snv-abundance 0.75 --min-coverage 10 --min-mean-mapping 30 --filter-density-threshold 2 --filter-density-window 11 --workflow-id "f2db41e1fa331b3e"
-#snvphyl --fastq-dir ./FASTQs --reference-file "./reference(${ref}).fasta" --output-dir ./output --relative-snv-abundance 0.75 --min-coverage 10 --min-mean-mapping 30 --filter-density-threshold 2 --filter-density-window 11
+# Must change api-key everytime container gets restarted. This will only work on CDC network
+snvphyl --galaxy-url http://snvphyl-galaxy.biotech.cdc.gov --galaxy-api-key a4e89f39f940dadf2cdea6cbdd753041 --fastq-dir ./FASTQs --reference-file "./reference(${ref}-${submitter}).fasta" --output-dir ./output --relative-snv-abundance 0.75 --min-coverage 10 --min-mean-mapping 30 --filter-density-threshold 2 --filter-density-window 11 --workflow-id "f2db41e1fa331b3e"
 
 snv_all_est=$(tail -n 1 "${OUTDATADIR}/output/vcf2core.tsv")
 snv_est=$(echo "${snv_all_est}" | cut -d '	' -f7)
