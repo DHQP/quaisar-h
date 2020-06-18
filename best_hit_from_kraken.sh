@@ -184,16 +184,16 @@ while IFS= read -r line  || [ -n "$line" ]; do
 	fi
 done < "${OUTDATADIR}/${1}_${3}.list"
 
-# Calculate % of unclassified reads using sum of highest taxon level reads against total reads found in QC counts
+# Calculate % of unclassified reads/contigs using sum of highest taxon level reads against total reads found in QC counts
 # Grabs total possible reads from preQC counts if kraken was used on reads (pre assembly)
 if [[ "${2}" = "pre" ]]; then
 	# Checks for the existence of the preQC counts file to get total possible reads
 	if [[ -s "${processed}/${4}/${1}/preQCcounts/${1}_trimmed_counts.txt" ]]; then
 		# Pulls the total number of possible reads from the preQC counts file
 		file_reads=$(tail -n 1 "${processed}/${4}/${1}/preQCcounts/${1}_trimmed_counts.txt" | cut -d'	' -f13)
-		# Calculates the true count of unclassified reads rather than the reported value from kraken
+		# Calculates the true count of unclassified reads/contigs rather than the reported value from kraken
 		unclass_reads=$(( file_reads - classified_reads ))
-		# Calculates the percent of unclassified reads using the total possible reads
+		# Calculates the percent of unclassified reads/contigs using the total possible reads
 		u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 	#The file does not exist and something terrible went wrong early in processing of this sample
 	else
