@@ -21,7 +21,7 @@ fi
 #
 # Modules required: Python3/3.5.4
 #
-# v1.0.7 (05/08/2020)
+# v1.0.8 (07/71/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #

@@ -21,7 +21,7 @@ fi
 #
 # Modules required: None
 #
-# v1.0.2 (05/08/2020)
+# v1.0.3 (07/17/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
