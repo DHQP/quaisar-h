@@ -5,7 +5,7 @@
 #$ -N quasX
 #$ -pe smp 12
 #$ -cwd
-#$ -q short.q
+#$ -q all.q
 
 #
 # Description: The full QuAISAR-H pipeline start to end serially, project/isolate_name must already have a populated FASTQs folder to work with

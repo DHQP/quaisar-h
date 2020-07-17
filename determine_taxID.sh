@@ -220,7 +220,7 @@ do_Kraken() {
 		# Grab first letter of line (indicating taxonomic level)
 		first=${line::1}
 		# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken, 3rd-true % of total reads, 4th-identifier)
-		if [ "${first}" = "S" ]
+		if [ "${first}" = "s" ]
 		then
 			species=$(echo "${line}" | awk -F ' ' '{print $4}')
 		elif [ "${first}" = "G" ]
