@@ -4,7 +4,7 @@
 #$ -e parqua.err
 #$ -N parqua
 #$ -cwd
-#$ -q short.q
+#$ -q all.q
 
 # Sets the sharescript variable temporarily to the current working directory, allowing it to find the original config.sh file
 shareScript=$(pwd)
