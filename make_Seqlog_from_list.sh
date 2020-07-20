@@ -36,8 +36,7 @@ elif [[ -z "${1}" ]]; then
 # Gives the user a brief usage and help section if requested with the -h option argument
 elif [[ "${1}" = "-h" ]]; then
 	echo "Usage is ./make_Seqlog_from_list.sh list_of_samples"
-	temp_dir=$(dirname ${1})
-	echo "Output is saved to ${temp_dir}/Seqlog_output.txt"
+	echo "Output is saved to Seqlog_output.txt in same folder as list"
 	exit 0
 fi
 
@@ -99,7 +98,7 @@ while IFS= read -r var || [ -n "$var" ]; do
 	if [[ -s "${OUTDATADIR}/kraken/preAssembly/${sample_name}_kraken_summary_paired.txt" ]]; then
 		while IFS= read -r line  || [ -n "$line" ]; do
 			first=${line::1}
-			if [ "${first}" = "s" ]
+			if [ "${first}" = "S" ]
 			then
 				species_reads=$(echo "${line}" | awk -F ' ' '{print $4}')
 			elif [ "${first}" = "G" ]
