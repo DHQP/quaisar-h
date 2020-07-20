@@ -98,7 +98,7 @@ while IFS= read -r var || [ -n "$var" ]; do
 	if [[ -s "${OUTDATADIR}/kraken/preAssembly/${sample_name}_kraken_summary_paired.txt" ]]; then
 		while IFS= read -r line  || [ -n "$line" ]; do
 			first=${line::1}
-			if [ "${first}" = "S" ]
+			if [ "${first}" = "s" ]
 			then
 				species_reads=$(echo "${line}" | awk -F ' ' '{print $4}')
 			elif [ "${first}" = "G" ]
