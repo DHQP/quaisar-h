@@ -260,7 +260,7 @@ fi
 			gzip "${sample_folder}/trimmed/${sample_name}.single.fq.gz"
 		fi
 	fi
-	if [[ -f "${sample_folder}/trimmed/${sample_name}_R2_001.paired.fq.gz" ]] && [[ -f "${sample_folder}/trimmed/${sample_name}_R2_001.paired.fq.gz" ]]; then
-		clumpify in1="${sample_folder}/trimmed/${sample_name}_R1_001.paired.fq.gz" in2="${sample_folder}/trimmed/${sample_name}_R2_001.paired.fq.gz" out1="${sample_folder}/trimmed/${sample_name}_R1_001.paired.fq.clumped.gz" out2="${sample_folder}/trimmed/${sample_name}_R2_001.paired.fq.clumped.gz" reorder
-	fi
+	#if [[ -f "${sample_folder}/trimmed/${sample_name}_R2_001.paired.fq.gz" ]] && [[ -f "${sample_folder}/trimmed/${sample_name}_R2_001.paired.fq.gz" ]]; then
+	#	clumpify in1="${sample_folder}/trimmed/${sample_name}_R1_001.paired.fq.gz" in2="${sample_folder}/trimmed/${sample_name}_R2_001.paired.fq.gz" out1="${sample_folder}/trimmed/${sample_name}_R1_001.paired.fq.clumped.gz" out2="${sample_folder}/trimmed/${sample_name}_R2_001.paired.fq.clumped.gz" reorder
+	#fi
 echo "Sample ${2}/${1} should now be clean" >> "${processed}/cleaned_sample_list.txt"
