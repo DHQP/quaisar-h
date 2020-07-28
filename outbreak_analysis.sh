@@ -24,7 +24,7 @@ fi
 # Modules required: Python3/3.5.2, mashtree/0.29
 #		***Must be submitted as a job (or run on the cluster) if there are isolates that need to have csstar, GAMA or srst2 updated
 #
-# v1.0.4 (1/07/2019)
+# v1.1 (7/28/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -303,7 +303,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 				contig_number=$(echo "${ar_line[4]}" | rev | cut -d'_' -f3 | rev)
 				gene="${ar_line[3]}"
 				# Ensure that the gene passes % identity and % length threhsolds for reporting
-				if [[ ${percent_length} -ge ${project_parser_Percent_length} ]] && [[ ${percent_BP_ID} -ge ${project_parser_Percent_identity} ]]; then
+				if [[ ${percent_length} -ge ${project_parser_Percent_length} ]] && [[ ${percent_codon_ID} -ge ${project_parser_Percent_identity} ]]; then
 					if [[ -z "${GAMA_list}" ]]; then
 					#	echo "First GAMA: ${gene}"
 						GAMA_list="${gene,,}(${conferred})[${percent_BP_ID}/${percent_codon_ID}/${percent_length}:#${contig_number}]"
