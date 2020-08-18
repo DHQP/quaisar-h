@@ -41,7 +41,7 @@ do
 	fi
 	if [[ ! -f "${shareScript}/config_${config_counter}.sh" ]]; then
 		if [[ -f "${shareScript}/config_template.sh" ]]; then
-			echo "Trying to copy config_template.sh to config_${config_counter}"
+			echo "Trying to copy ${shareScript}/config_template.sh to ${shareScript}/config_${config_counter}.sh"
 			cp "${shareScript}/config_template.sh" "${shareScript}/config_${config_counter}.sh"
 			break
 		else
