@@ -15,7 +15,7 @@ fi
 #
 # Description: Will find all assembly files (.fna or .fasta) within the given folder
 #
-# Usage: ./get_Assemblies_from_folder.sh run_ID folder_with_Assemblies
+# Usage: ./get_Assemblies_from_folder.sh full_path_Output_directory folder_with_Assemblies
 #
 # Output location: default_config.sh_output_location/run_ID
 #
@@ -34,7 +34,7 @@ elif [[ -z "${1}" ]]; then
 	echo "Empty project name supplied to $0, exiting"
 	exit 1
 elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./get_Assemblies_from_folder.sh  run_ID location_of_Assemblies"
+	echo "Usage is ./get_Assemblies_from_folder.sh  full_path_Output_directory location_of_Assemblies"
 	echo "Output by default is downloaded to ${processed}/run_ID and copied to ${processed}/run_ID/sample_name/Assembly"
 	exit 0
 elif [[ -z "${2}" ]]; then
@@ -44,7 +44,7 @@ fi
 
 
 # Sets folder to where files will be downloaded to
-OUTDATADIR="${processed}/${1}"
+OUTDATADIR="${1}"
 if [ ! -d "${OUTDATADIR}" ]; then
 	echo "Creating $OUTDATADIR"
 	mkdir -p "${OUTDATADIR}"
