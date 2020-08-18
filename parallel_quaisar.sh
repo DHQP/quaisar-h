@@ -195,9 +195,9 @@ fi
 
 # Copies reads from source location to working directory and creates a list of IDs
 if [[ "${assemblies}" == "true" ]]; then
-	"${shareScript}/get_Assemblies_from_folder.sh" "${processed}/${PROJECT}" "${INDATADIR}"
+	"${shareScript}/get_Assemblies_from_folder.sh" "${PROJECT}" "${INDATADIR}" "${processed}"
 else
-	"${shareScript}/get_Reads_from_folder.sh" "${processed}/${PROJECT}" "${INDATADIR}" "${postfix}"
+	"${shareScript}/get_Reads_from_folder.sh" "${PROJECT}" "${INDATADIR}" "${postfix}" "${processed}"
 fi
 
 # Loops through list file to create an array of all isolates to run through pipeline
