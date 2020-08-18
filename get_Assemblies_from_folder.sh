@@ -41,7 +41,7 @@ elif [[ -z "${2}" ]]; then
 	echo "Empty source supplied to $0, exiting"
 	exit 1
 elif [[ ! -d "${3}" ]]; then
-	echo "Output directory does not exist, exiting"
+	echo "Output directory ${3} does not exist, exiting"
 	exit 1
 fi
 

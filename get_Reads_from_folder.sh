@@ -46,7 +46,7 @@ elif ! [[ ${3} =~ $number ]] || [[ -z "${3}" ]]; then
 	echo "postfix is not a number or is empty. Please input max number of concurrent qsub submissions...exiting"
 	exit 2
 elif ! [[ ! -d ${4} ]]; then
-	echo "Output directory doesnt exist...exiting"
+	echo "Output directory ${4} doesnt exist...exiting"
 	exit 2
 fi
 
