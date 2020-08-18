@@ -127,8 +127,8 @@ for ((i=1 ; i <= nopts ; i++)); do
 			PROJECT="$3"
 			shift 3
 
-			echo "processed=${BASEDIR}" >> "${shareScript}/config.sh"
-			. ${shareScript}/config.sh
+			echo "processed=${BASEDIR}" >> "${shareScript}/config_${config_counter}.sh"
+			. ${shareScript}/config_${config_counter}.sh
 			echo "${processed}"
 			list_path="${BASEDIR}/${PROJECT}/${PROJECT}_list.txt"
 			if [[ ! -d ${BASEDIR} ]]; then
