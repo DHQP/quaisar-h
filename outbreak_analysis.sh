@@ -12,8 +12,9 @@ if [[ -f config_template.sh ]]; then
 		cp config_template.sh config.sh
 	fi
 fi
+echo "${processed}"
 . ./config.sh
-
+echo "${processed}"
 #
 # Description: Pulls out MLST, AR genes, and plasmid repicons and creates a mashtree for the listed samples and consolidates them into one sheet
 #
