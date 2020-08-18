@@ -15,13 +15,13 @@ fi
 #
 # Description: Will find all fastq.gz files within the given folder. It will move and rename them to the location that the pipeline will expect
 #
-# Usage: ./get_Reads_from_folder.sh run_ID folder_with_fastqs postfix_for_reads(1:_SX_L001_RX_00X.fastq.gz 2: _(R)X.fastq.gz 3: _RX_00X.fastq.gz 4: _SX_RX_00X.fastq.gz)
+# Usage: ./get_Reads_from_folder.sh full_path_Output_directory folder_with_fastqs postfix_for_reads(1:_SX_L001_RX_00X.fastq.gz 2: _(R)X.fastq.gz 3: _RX_00X.fastq.gz 4: _SX_RX_00X.fastq.gz)
 #
-# Output location: default_config.sh_output_location/run_ID
+# Output location: output_location
 #
 # Modules required: None
 #
-# v1.0 (10/3/2019)
+# v1.0.1 (08/18/2019)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -36,7 +36,7 @@ elif [[ -z "${1}" ]]; then
 	echo "Empty project name supplied to $0, exiting"
 	exit 1
 elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./get_Reads_from_folder.sh  run_ID location_of_fastqs postfix_for_reads( 1: _SX_L001_RX_00X.fastq.gz 2: _(R)X.fastq.gz 3: _RX_00X.fastq.gz 4: _SX_RX_00X.fastq.gz)"
+	echo "Usage is ./get_Reads_from_folder.sh  full_path_Output_directory location_of_fastqs postfix_for_reads( 1: _SX_L001_RX_00X.fastq.gz 2: _(R)X.fastq.gz 3: _RX_00X.fastq.gz 4: _SX_RX_00X.fastq.gz)"
 	echo "Output by default is downloaded to ${processed}/run_ID and extracted to ${processed}/run_ID/sample_name/FASTQs"
 	exit 0
 elif [[ -z "${2}" ]]; then
@@ -54,7 +54,7 @@ fi
 
 
 # Sets folder to where files will be downloaded to
-OUTDATADIR="${processed}/${1}"
+OUTDATADIR="${1}"
 if [ ! -d "${OUTDATADIR}" ]; then
 	echo "Creating $OUTDATADIR"
 	mkdir -p "${OUTDATADIR}"

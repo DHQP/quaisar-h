@@ -195,9 +195,9 @@ fi
 
 # Copies reads from source location to working directory and creates a list of IDs
 if [[ "${assemblies}" == "true" ]]; then
-	"${shareScript}/get_Assemblies_from_folder.sh" "${PROJECT}" "${INDATADIR}"
+	"${shareScript}/get_Assemblies_from_folder.sh" "${processed}/${PROJECT}" "${INDATADIR}"
 else
-	"${shareScript}/get_Reads_from_folder.sh" "${PROJECT}" "${INDATADIR}" "${postfix}"
+	"${shareScript}/get_Reads_from_folder.sh" "${processed}/${PROJECT}" "${INDATADIR}" "${postfix}"
 fi
 
 # Loops through list file to create an array of all isolates to run through pipeline
@@ -356,7 +356,8 @@ fi
 # Copy the config file to the log directory so as not to hold up any future quaisar runs that count the number of config files present, but for some reason does not remove from script folder
 if [[ -f "${shareScript}/config_${config_counter}.sh" ]]; then
 	echo "Supposedly moving config file(config_${config_counter}.sh) to log directory ($log_dir)"
-	mv "${shareScript}/config_${config_counter}.sh" "${log_dir}/config_${PROJECT}.sh"
+	cp "${shareScript}/config_${config_counter}.sh" "${processed}/${PROJECT}/config_${PROJECT}.sh"
+	#mv "${shareScript}/config_${config_counter}.sh" "${log_dir}/config_${PROJECT}.sh"
 fi
 
 end_date=$(date "+%m_%d_%Y_at_%Hh_%Mm")
