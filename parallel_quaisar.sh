@@ -268,11 +268,11 @@ else
 			sed -i -e "s/quaisar_X/quaisar_${file}/g" "${shareScript}/quaisar_${file}.sh"
 			sed -i -e "s/quasX/quasp_${file}/g" "${shareScript}/quaisar_${file}.sh"
 			echo "Entering ${shareScript}/quaisar_${file}.sh" "${file}" "${proj}" "${shareScript}/config_${config_counter}.sh"
-			qsub "${shareScript}/quaisar_${file}.sh" "${file}" "${proj}" "${shareScript}/config_${config_counter}.sh"
+			qsub "${shareScript}/quaisar_${file}.sh" "${file}" "${proj}" "${shareScript}/config_${config_counter}.sh" "${BASEDIR}"
 			echo "Created and ran quaisar_${file}.sh"
 		else
 			echo "${shareScript}/quaisar_${file}.sh already exists, will resubmit"
-			qsub "${shareScript}/quaisar_${file}.sh" "${file}" "${proj}" "${shareScript}/config_${config_counter}.sh"
+			qsub "${shareScript}/quaisar_${file}.sh" "${file}" "${proj}" "${shareScript}/config_${config_counter}.sh" "${BASEDIR}"
 		fi
 	done
 fi

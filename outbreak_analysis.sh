@@ -153,7 +153,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 			sample_name=$(echo "${line}" | awk -F/ '{ print $2}' | tr -d '[:space:]')
 			project=$(echo "${line}" | awk -F/ '{ print $1}' | tr -d '[:space:]')
 			OUTDATADIR="${processed}/${project}/${sample_name}"
-			#echo "checking for ${OUTDATADIR}/c-sstar/${sample_name}.${ResGANNCBI_srst2_filename}.${2}_${sim}_sstar_summary.txt"
+			echo "checking for ${OUTDATADIR}/c-sstar/${sample_name}.${ResGANNCBI_srst2_filename}.${2}_${sim}_sstar_summary.txt"
 			if [[ -s "${OUTDATADIR}/c-sstar/${sample_name}.${ResGANNCBI_srst2_filename}.${2}_${sim}_sstar_summary.txt" ]];
 			then
 				#echo "${project}/${sample_name} has newest ResGANNCBI for normal csstar already"
@@ -163,7 +163,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 				echo "${project}/${sample_name}" >> "${output_directory}/${4}-csstar_todo.txt"
 				run_csstar="true"
 			fi
-			#echo "checking for ${OUTDATADIR}/srst2/${sample_name}__genes__${ResGANNCBI_srst2_filename}_srst2__results.txt"
+			echo "checking for ${OUTDATADIR}/srst2/${sample_name}__genes__${ResGANNCBI_srst2_filename}_srst2__results.txt"
 			if [[ -s ${OUTDATADIR}/FASTQs/${sample_name}_R1_001.fastq ]] && [[ -s ${OUTDATADIR}/FASTQs/${sample_name}_R1_001.fastq ]] || [[ -s ${OUTDATADIR}/FASTQs/${sample_name}_R1_001.fastq.gz ]] && [[ -s ${OUTDATADIR}/FASTQs/${sample_name}_R1_001.fastq.gz ]]; then
 				#echo "FASTQs exist"
 				if [[ -f "${OUTDATADIR}/srst2/${sample_name}__fullgenes__${ResGANNCBI_srst2_filename}_srst2__results.txt" ]] || [[ -f "${OUTDATADIR}/srst2/${sample_name}__genes__${ResGANNCBI_srst2_filename}_srst2__results.txt" ]]; then
@@ -175,6 +175,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 						run_srst2="true"
 				fi
 			fi
+			echo "checking for ${OUTDATADIR}/GAMA/${sample_name}_${ResGANNCBI_srst2_filename}.GAMA"
 			if [[ -s "${OUTDATADIR}/GAMA/${sample_name}_${ResGANNCBI_srst2_filename}.GAMA" ]];
 			then
 				mv "${OUTDATADIR}/GAMA/${sample_name}_${ResGANNCBI_srst2_filename}.GAMA" "${OUTDATADIR}/GAMA/${sample_name}.${ResGANNCBI_srst2_filename}.GAMA"
