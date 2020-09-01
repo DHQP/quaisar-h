@@ -154,8 +154,8 @@ fi
 if [[ -f ${output_directory}/${analysis_name}_AR_plasmid_report.tsv ]]; then
 	rm ${output_directory}/${analysis_name}_AR_plasmid_report.tsv
 fi
-if [[ -f ${output_directory}/${analysis_name}-csstar_summary_full.txt ]]; then
-	rm ${output_directory}/${analysis_name}-csstar_summary_full.txt
+if [[ -f ${output_directory}/${analysis_name}-sample_summary.txt ]]; then
+	rm ${output_directory}/${analysis_name}-sample_summary.txt
 fi
 if [[ -f ${output_directory}/${analysis_name}-srst2.txt ]]; then
 	rm ${output_directory}/${analysis_name}-srst2.txt
@@ -375,7 +375,7 @@ while IFS= read -r line || [ -n "$line" ]; do
 	fi
 #	echo "${ANI}"
 # Print all extracted info to primary file
-	echo -e "${project}\t${sample_name}\t${taxonomy}\t${taxonomy_source_type}\t${confidence_info}\t${mlst}\t${alt_mlst}\t${oar_list}" >> ${output_directory}/${analysis_name}-csstar_summary_full.txt
+	echo -e "${project}\t${sample_name}\t${taxonomy}\t${taxonomy_source_type}\t${confidence_info}\t${mlst}\t${alt_mlst}\t${oar_list}" >> ${output_directory}/${analysis_name}-sample_summary.txt
 
 	# Adding in srst2 output in a similar fashion as to how the csstar genes are output to the file.
 	if [[ -s "${OUTDATADIR}/srst2/${sample_name}__fullgenes__${Alt_db}_srst2__results.txt" ]]; then
@@ -560,7 +560,7 @@ while IFS= read -r line || [ -n "$line" ]; do
 done < ${list}
 
 # Calls script that sorts and formats all isolates info into a matrix for easy viewing
-python3 "${shareScript}/project_parser.py" -c "${output_directory}/${analysis_name}-csstar_summary_full.txt" -p "${output_directory}/${analysis_name}-plasmid_summary.txt" -o "${output_directory}/${analysis_name}_AR_plasmid_report.tsv" -d "${Alt_db}"
+python3 "${shareScript}/project_parser.py" -s "${output_directory}/${analysis_name}-sample_summary.txt" -p "${output_directory}/${analysis_name}-plasmid_summary.txt" -o "${output_directory}/${analysis_name}_AR_plasmid_report.tsv" -d "${Alt_db}"
 
 submitter=$(whoami)
 global_end_time=$(date "+%m-%d-%Y @ %Hh_%Mm_%Ss")

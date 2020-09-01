@@ -6,16 +6,10 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp config_template.sh config.sh
-fi
-. ./config.sh
-
 #
 # Description: Script to create mashtree of specified isolates that were processed by Quaisar pipeline (proper folder structures)
 #
-# Usage: ./mashtree_of_list.sh -i absolute_path_to_list -d absolute_output_directory -o tree_output_name
+# Usage: ./mashtree_of_list.sh -i absolute_path_to_list -d absolute_output_directory -o tree_output_name [-c path_to_config_file]
 #
 # Output location: parameter
 #
@@ -30,12 +24,12 @@ ml perl/5.16.1-MT mashtree/0.29
 
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./mashtree_of_list.sh -i path_to_list -d output_directory -o tree_output_name"
+	echo "Usage is ./mashtree_of_list.sh -i path_to_list -d output_directory -o tree_output_name [-c path_to_config_file]"
 	echo "Output is saved to output_directory/tree_output_namepath_to_folder"
 }
 
 options_found=0
-while getopts ":h?i:d:o:" option; do
+while getopts ":h?i:d:o:c:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -52,6 +46,9 @@ while getopts ":h?i:d:o:" option; do
 		o)
 			echo "Option -o triggered, argument = ${OPTARG}"
 			output_file=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -67,6 +64,18 @@ if [[ "${options_found}" -eq 0 ]]; then
 	exit
 fi
 
+if [[ -f "${config}" ]];
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
 
 # create output directory if it does not exist
 if [[ ! -d ${outdir} ]]; then

@@ -4,81 +4,128 @@
 #$ -e ablmq-cs.err
 #$ -N ablmq-cs
 #$ -cwd
-#$ -q short.q
-
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
+#$ -q all.q
 
 #
 # Description: A script to submit a list of isolates to the cluster to perform csstar on many isolates in parallel
 #
-# Usage: ./abl_mass_qsub_csstar.sh path_to_list max_concurrent_submissions output_folder_for_scripts clobberness[keep|clobber] %ID(optional)[80|95|98|99|100]
+# Usage is ./abl_mass_qsub_csstar.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -s %ID(optional)[80|95|98|99|100] -c path_to_config_file(optional)
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/c-sstar/. Temp scripts will be in default_mass_qsubs_folder_from_config.sh/c-sstar_subs
 #
 # Modules required: None, run_c-sstar.sh will load Python3/3.5.2 and ncbi-blast+/LATEST
 #
-# v1.0 (10/3/2019)
+# v1.0.1 (08/18/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./abl_mass_qsub_csstar.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -s %ID(optional)[80|95|98|99|100] -c path_to_config_file(optional)"
+	echo "Output is saved to ${processed}/run_ID/sample_name/csstar where processed is retrieved from config file, either default or imported"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?l:o:m:s:k:c:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		l)
+			echo "Option -l triggered, argument = ${OPTARG}"
+			list=${OPTARG};;
+		m)
+			echo "Option -m triggered, argument = ${OPTARG}"
+			max_subs=${OPTARG};;
+		o)
+			echo "Option -o triggered, argument = ${OPTARG}"
+			script_output=${OPTARG};;
+		k)
+			echo "Option -k triggered, argument = ${OPTARG}"
+			clobberness=${OPTARG};;
+		s)
+			echo "Option -s triggered, argument = ${OPTARG}"
+			percent_ID=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+# Show help info for when no options are given
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
+
 # Number regex to test max concurrent submission parametr
 number='^[0-9]+$'
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
+if [[ ! -f "${list}" ]]; then
+	echo "${list} (list) does not exist...exiting"
 	exit 1
-# Shows a brief uasge/help section if -h option used as first argument
-elif [[ "$1" = "-h" ]]; then
-	echo "Usage is ./abl_mass_qsub_csstar.sh path_to_list_file(single sample ID per line, e.g. B8VHY/1700128 (it must include project id also)) max_concurrent_submissions output_directory_for_scripts clobberness[keep|clobber] %ID(optional)[80|95|98|99|100]"
-	exit 1
-elif [[ ! -f "${1}" ]]; then
-	echo "${1} (list) does not exist...exiting"
-	exit 1
-elif ! [[ ${2} =~ $number ]] || [[ -z "${2}" ]]; then
-	echo "${2} is not a number or is empty. Please input max number of concurrent qsub submissions...exiting"
+elif ! [[ ${max_subs} =~ $number ]] || [[ -z "${max_subs}" ]]; then
+	echo "${max_subs} is not a number or is empty. Please input max number of concurrent qsub submissions...exiting"
 	exit 2
-elif [[ -z "${3}" ]]; then
-	echo "Output directory parameter is empty...exiting"
+elif [[ -z "${script_output}" ]]; then
+	echo "Script output directory parameter is empty...exiting"
 	exit 1
-elif [[ -z "${4}" ]]; then
+elif [[ -z "${cloberness}" ]]; then
 	echo "Clobberness was not input, be sure to add keep or clobber as 4th parameter...exiting"
 	exit 1
 fi
 
 # Check that clobberness is a valid option
-if [[ "${4}" != "keep" ]] && [[ "${4}" != "clobber" ]]; then
-	echo "Clobberness was not input, be sure to add keep or clobber as 5th parameter...exiting"
+if [[ "${clobberness}" != "keep" ]] && [[ "${cloberness}" != "clobber" ]]; then
+	echo "Clobberness was not input, be sure to add keep or clobber as 4th parameter...exiting"
 	exit 1
-else
-	clobberness="${4}"
 fi
 
 # Checks that value given for % Identity is one of the presets for csstar
-if [[ "${5}" != 80 ]] && [[ "${5}" != 95 ]] && [[ "${5}" != 98 ]] && [[ "${5}" != 99 ]] && [[ "${5}" != 100 ]]; then
+if [[ "${percent_ID}" != 80 ]] && [[ "${percent_ID}" != 95 ]] && [[ "${percent_ID}" != 98 ]] && [[ "${percent_ID}" != 99 ]] && [[ "${percent_ID}" != 100 ]]; then
 	echo "Identity is not one of the presets for csstar and therefore will fail, defaulting to 98..."
 	sim="h"
 	simnum=98
 else
-	if [ "${5}" == 98 ]; then
+	if [ "${percent_ID}" == 98 ]; then
 		sim="h"
-	elif [ "${5}" == 80 ]; then
+	elif [ "${percent_ID}" == 80 ]; then
 		sim="l"
-	elif [ "${5}" == 99 ]; then
+	elif [ "${percent_ID}" == 99 ]; then
 		sim="u"
-	elif [ "${5}" == 95 ]; then
+	elif [ "${percent_ID}" == 95 ]; then
 		sim="m"
-	elif [ "${5}" == 100 ]; then
+	elif [ "${percent_ID}" == 100 ]; then
 		sim="p"
-	elif [ "${5}" == 40 ]; then
+	elif [ "${percent_ID}" == 40 ]; then
 		sim="o"
 	fi
-	simnum=${5}
+	simnum=${percent_ID}
+fi
+
+if [[ -f "${config}" ]];
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
 fi
 
 # create an array of all samples in the list
@@ -88,7 +135,7 @@ while IFS= read -r line || [ "$line" ];  do
 		line=$(echo ${line} | tr -d '\n' | tr -d '\r')
 		arr+=($line)
 	fi
-done < ${1}
+done < ${list}
 
 arr_size="${#arr[@]}"
 last_index=$(( arr_size -1 ))
@@ -97,15 +144,14 @@ echo "-${arr_size}:${arr[@]}-"
 
 # Create direcory to hold all temporary qsub scripts
 counter=0
-max_subs=${2}
 
 # format name being extracted from alt database
-main_dir="${3}/csstar_subs"
+main_dir="${script_output}/csstar_subs"
 #cp ./config ${main_dir}
-if [[ ! -d "${3}/csstar_subs" ]]; then
-	mkdir -p "${3}/csstar_subs/complete"
-elif [[ ! -d  "${3}/csstar_subs/complete" ]]; then
-	mkdir "${3}/csstar_subs/complete"
+if [[ ! -d "${script_output}/csstar_subs" ]]; then
+	mkdir -p "${script_output}/csstar_subs/complete"
+elif [[ ! -d  "${script_output}/csstar_subs/complete" ]]; then
+	mkdir "${script_output}/csstar_subs/complete"
 fi
 
 start_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
@@ -137,55 +183,16 @@ while [ ${counter} -lt ${arr_size} ] ; do
 				echo -e "module load Python/3.6.1\n" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
 				# Defaulting to gapped/98, change if you want to include user preferences
 				echo -e "cd ${shareScript}" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-				echo -e "\"${shareScript}/run_c-sstar.sh\" \"${sample}\" g "${sim}" \"${project}\"" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+				echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample}\" -g gapped -s \"${sim}\" -p \"${project}\" -c \"${config}\""  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
 				echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_csstarn_complete.txt\"" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
 				cd "${main_dir}"
 				echo "submitting ${main_dir}/csstn_${sample}_${start_time}.sh"
-				#if [[ "${counter}" -lt "${last_index}" ]]; then
-					qsub "${main_dir}/csstn_${sample}_${start_time}.sh"
-				#else
-				#	if [[ -d "${processed}/${project}/${sample}/c-sstar_plasmid" ]]; then
-				#		qsub "${main_dir}/csstn_${sample}_${start_time}.sh"
-				#	else
-				#		qsub -sync y "${main_dir}/csstn_${sample}_${start_time}.sh"
-				#	fi
-				#fi
+				qsub "${main_dir}/csstn_${sample}_${start_time}.sh"
 			# Old data exists
 			else
 				echo "${project}/${sample} already has the newest ResGANNCBI (${ResGANNCBI_srst2_filename})"
 				echo -e "$(date)" > "${main_dir}/complete/${sample}_csstarn_complete.txt"
 			fi
-			# Check if plasmid folder exists
-			# if [[ -d "${processed}/${project}/${sample}/c-sstar_plasmid" ]]; then
-			# 	# Check if old data exists, skip if so
-			# 	if [[ ! -f "${processed}/${project}/${sample}/c-sstar_plasmid/${sample}.${ResGANNCBI_srst2_filename}.gapped_40_sstar_summary.txt" ]]; then
-			# 		echo "Index below max submissions, submitting plasmid"
-			# 		echo -e "#!/bin/bash -l\n" > "${main_dir}/csstp_${sample}_${start_time}.sh"
-			# 		echo -e "#$ -o csstp_${sample}.out" >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-			# 		echo -e "#$ -e csstp_${sample}.err" >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-			# 		echo -e "#$ -N csstp_${sample}"   >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-			# 		echo -e "#$ -cwd"  >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-			# 		echo -e "#$ -q short.q\n"  >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-			# 		echo -e "module load Python/3.6.1\n" >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-			# 		# Defaulting to gapped/98, change if you want to include user preferences
-			# 		echo -e "cd ${shareScript}" >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-			# 		echo -e "\"${shareScript}/run_c-sstar.sh\" \"${sample}\" g o \"${project}\" \"--plasmid\"" >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-			# 		echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_csstarp_complete.txt\"" >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-			# 		cd "${main_dir}"
-			# 		#if [[ "${counter}" -lt "${last_index}" ]]; then
-			# 			qsub "${main_dir}/csstp_${sample}_${start_time}.sh"
-			# 		#else
-			# 		#	qsub -sync y "${main_dir}/csstp_${sample}_${start_time}.sh"
-			# 		#fi
-			# 	# Skipping because old data exists
-			# 	else
-			# 		echo "${project}/${sample} plasmid already has the newest ResGANNCBI (${ResGANNCBI_srst2_filename})"
-			# 		echo -e "$(date)" > "${main_dir}/complete/${sample}_csstarp_complete.txt"
-			# 	fi
-			# else
-			# 	echo "${project}/${sample} doesnt have a plasmid folder, so no further actions required"
-			# 	echo "$(date)" > "${main_dir}/complete/${sample}_csstarp_complete.txt"
-			# fi
 		# Counter is above max number of submissions
 		else
 			waiting_for_index=$(( counter - max_subs ))
@@ -213,53 +220,15 @@ while [ ${counter} -lt ${arr_size} ] ; do
 						echo -e "module load Python/3.6.1\n" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
 						# Defaulting to gapped/98, change if you want to include user preferences
 						echo -e "cd ${shareScript}" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-						echo -e "\"${shareScript}/run_c-sstar.sh\" \"${sample}\" g "${sim}" \"${project}\"" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+						echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample}\" -g gapped -s \"${sim}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
 						echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_csstarn_complete.txt\"" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
 						cd ${main_dir}
-						#if [[ "${counter}" -lt "${last_index}" ]]; then
-							qsub "${main_dir}/csstn_${sample}_${start_time}.sh"
-						#else
-						#	if [[ -d "${processed}/${project}/${sample}/c-sstar_plasmid" ]]; then
-						#		qsub "${main_dir}/csstn_${sample}_${start_time}.sh"
-						#	else
-						#		qsub -sync y "${main_dir}/csstn_${sample}_${start_time}.sh"
-						#	fi
-						#fi
+						qsub "${main_dir}/csstn_${sample}_${start_time}.sh"
 					# Skipping because old data exists
 					else
 						echo "${project}/${sample} already has the newest ResGANNCBI (${ResGANNCBI_srst2_filename})"
 						echo -e "$(date)" > "${main_dir}/complete/${sample}_csstarn_complete.txt"
 					fi
-					# Check if plasmid folder exists
-					# if [[ -d "${processed}/${project}/${sample}/c-sstar_plasmid" ]]; then
-					# 	# Check if old data exists, skip if so
-					# 	if [[ ! -f "${processed}/${project}/${sample}/c-sstar_plasmid/${sample}.${ResGANNCBI_srst2_filename}.gapped_40_sstar_summary.txt" ]]; then
-					# 		echo -e "#!/bin/bash -l\n" > "${main_dir}/csstp_${sample}_${start_time}.sh"
-					# 		echo -e "#$ -o csstp_${sample}.out" >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-					# 		echo -e "#$ -e csstp_${sample}.err" >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-					# 		echo -e "#$ -N csstp_${sample}"   >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-					# 		echo -e "#$ -cwd"  >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-					# 		echo -e "#$ -q short.q\n"  >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-					# 		echo -e "module load Python/3.6.1\n" >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-					# 		# Defaulting to gapped/98, change if you want to include user preferences
-					# 		echo -e "cd ${shareScript}" >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-					# 		echo -e "\"${shareScript}/run_c-sstar.sh\" \"${sample}\" g o \"${project}\" \"--plasmid\"" >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-					# 		echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_csstarp_complete.txt\"" >> "${main_dir}/csstp_${sample}_${start_time}.sh"
-					# 		cd ${main_dir}
-					# 		#if [[ "${counter}" -lt "${last_index}" ]]; then
-					# 			qsub "${main_dir}/csstp_${sample}_${start_time}.sh"
-					# 		#else
-					# 		#	qsub -sync y "${main_dir}/csstp_${sample}_${start_time}.sh"
-					# 		#fi
-					# 	# Skipping because old data exists
-					# 	else
-					# 		echo "${project}/${sample} plasmid already has the newest ResGANNCBI (${ResGANNCBI_srst2_filename})"
-					# 		echo -e "$(date)" > "${main_dir}/complete/${sample}_csstarp_complete.txt"
-					# 	fi
-					# else
-					# 	echo "${project}/${sample} doesnt have a plasmid folder, so no further actions required"
-					# 	echo "$(date)" > "${main_dir}/complete/${sample}_csstarp_complete.txt"
-					# fi
 					break
 				# If waiting sample has not completed, wait 5 more seconds and try again
 				else
@@ -286,30 +255,6 @@ for item in "${arr[@]}"; do
 		if [[ -f "${shareScript}/csstn_${waiting_sample}.err" ]]; then
 			mv "${shareScript}/csstn_${waiting_sample}.err" "${main_dir}"
 		fi
-		# # Check if plasmid csstar is complete also and wait a total of 30 minutes for all samples to be checked
-		# if [[ -f "${main_dir}/complete/${waiting_sample}_csstarp_complete.txt" ]] || [[ ! -s "${processed}/${project}/${waiting_sample}/plasmidAssembly/${waiting_sample}_plasmid_scaffolds_trimmed.fasta" ]]; then
-		# 	while :
-		# 	do
-		# 			if [[ ${ptimer} -gt 1800 ]]; then
-		# 				echo "Timer exceeded limit of 1800 seconds = 30 minutes"
-		# 				exit 1
-		# 			fi
-		# 			if [[ -f "${main_dir}/complete/${waiting_sample}_csstarp_complete.txt" ]]; then
-		# 				echo "${item} is complete plasmid"
-		# 				if [[ -f "${shareScript}/csstp_${sample}.out" ]]; then
-		# 					mv "${shareScript}/csstp_${sample}.out" "${main_dir}"
-		# 				fi
-		# 				if [[ -f "${shareScript}/csstp_${sample}.err" ]]; then
-		# 					mv "${shareScript}/csstp_${sample}.err" "${main_dir}"
-		# 				fi
-		# 				break
-		# 			else
-		# 				ptimer=$(( ptimer + 5 ))
-		# 				echo "sleeping for 5 seconds, so far slept for ${ptimer}"
-		# 				sleep 5
-		# 			fi
-		# 	done
-		# fi
 	else
 		# Check every 5 seconds to see if the sample has completed normal csstar analysis
 		while :

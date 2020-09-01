@@ -4,66 +4,110 @@
 #$ -e ablmq_GAMA.err
 #$ -N ablmq_GAMA
 #$ -cwd
-#$ -q short.q
-
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
+#$ -q all.q
 
 #
 # Description: A script to submit a list of isolates to the cluster to perform GAMA on many isolates in parallel
 #
-# Usage: ./abl_mass_qsub_GAMA.sh path_to_list max_concurrent_submissions output_directory_for_scripts clobberness[keep|clobber]
+# ./abl_mass_qsub_GAMA.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -c path_to_config_file(optional)
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/GAMA/. Temp scripts will be in default_mass_qsubs_folder_from_config.sh/GAMA_subs
 #
 # Modules required: None, run_GAMA.sh will load Python3/3.5.2 and blat/35
 #
-# v1.0 (10/3/2019)
+# v1.0.1 (08/18/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./abl_mass_qsub_GAMA.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -c path_to_config_file(optional)"
+	echo "Output is saved to ${processed}/run_ID/sample_name/GAMA where processed is retrieved from config file, either default or imported"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?l:s:m:s:k:c:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		l)
+			echo "Option -l triggered, argument = ${OPTARG}"
+			list=${OPTARG};;
+		m)
+			echo "Option -m triggered, argument = ${OPTARG}"
+			max_subs=${OPTARG};;
+		o)
+			echo "Option -o triggered, argument = ${OPTARG}"
+			script_output=${OPTARG};;
+		k)
+			echo "Option -k triggered, argument = ${OPTARG}"
+			clobberness=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+# Show help info for when no options are given
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
+
 # Number regex to test max concurrent submission parametr
 number='^[0-9]+$'
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
+if [[ ! -f "${list}" ]]; then
+	echo "${list} (list) does not exist...exiting"
 	exit 1
-# Shows a brief uasge/help section if -h option used as first argument
-elif [[ "$1" = "-h" ]]; then
-	echo "Usage is ./abl_mass_qsub_GAMA.sh path_to_list_file(single sample ID per line, e.g. B8VHY/1700128 (it must include project id also)) max_concurrent_submissions path_to_alt_database output_directory_for_scripts clobberness[keep|clobber]"
-	exit 1
-elif [[ ! -f "${1}" ]]; then
-	echo "${1} (list) does not exist...exiting"
-	exit 1
-elif ! [[ ${2} =~ $number ]] || [[ -z "${2}" ]]; then
-	echo "${2} is not a number or is empty. Please input max number of concurrent qsub submissions...exiting"
+elif ! [[ ${max_subs} =~ $number ]] || [[ -z "${max_subs}" ]]; then
+	echo "${max_subs} is not a number or is empty. Please input max number of concurrent qsub submissions...exiting"
 	exit 2
-elif [[ -z "${3}" ]]; then
-	echo "Output directory parameter is empty...exiting"
+elif [[ -z "${script_output}" ]]; then
+	echo "${script_output} directory parameter for script output is empty...exiting"
 	exit 1
-elif [[ -z "${4}" ]]; then
+elif [[ -z "${cloberness}" ]]; then
 	echo "Clobberness was not input, be sure to add keep or clobber as 4th parameter...exiting"
 	exit 1
 fi
 
 # Check that clobberness is a valid option
-if [[ "${4}" != "keep" ]] && [[ "${4}" != "clobber" ]]; then
+if [[ "${clobberness}" != "keep" ]] && [[ "${clobberness}" != "clobber" ]]; then
 	echo "Clobberness was not input, be sure to add keep or clobber as 5th parameter...exiting"
 	exit 1
+fi
+
+if [[ -f "${config}" ]];
+	echo "Loading special config file - ${config}"
+	. "${config}"
 else
-	clobberness="${4}"
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
 fi
 
 # create an array of all samples in the list
 arr=()
 while IFS= read -r line || [ "$line" ];  do
   arr+=("$line")
-done < ${1}
+done < ${list}
 
 arr_size="${#arr[@]}"
 last_index=$(( arr_size -1 ))
@@ -71,17 +115,16 @@ echo "-${arr_size}:${arr[@]}-"
 
 # Create counter and set max number of concurrent submissions
 counter=0
-max_subs=${2}
 
-"${shareScript}/clean_list.sh" "${1}"
+"${shareScript}/clean_list.sh" "${list}"
 
 # Set script directory
-main_dir="${3}/GAMA_subs"
-if [[ ! -d "${3}/GAMA_subs" ]]; then
-	mkdir "${3}/GAMA_subs"
-	mkdir "${3}/GAMA_subs/complete"
-elif [[ ! -d  "${3}/GAMA_subs/complete" ]]; then
-	mkdir "${3}/GAMA_subs/complete"
+main_dir="${script_output}/GAMA_subs"
+if [[ ! -d "${script_output}/GAMA_subs" ]]; then
+	mkdir "${script_output}/GAMA_subs"
+	mkdir "${script_output}/GAMA_subs/complete"
+elif [[ ! -d  "${script_output}/GAMA_subs/complete" ]]; then
+	mkdir "${script_output}/GAMA_subs/complete"
 fi
 
 start_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
@@ -106,10 +149,8 @@ while [ ${counter} -lt ${arr_size} ] ; do
 			echo -e "#$ -cwd"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 			echo -e "#$ -q short.q\n"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 			echo -e "cd ${shareScript}" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-			echo -e "\"${shareScript}/run_GAMA.sh\" \"${sample}\" \"${project}\" -c" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+			echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -k -c \"${config.sh}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 			echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_GAMAAR_complete.txt\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-
-			#cd "${main_dir}"
 			if [[ "${counter}" -lt "${last_index}" ]]; then
 				qsub "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 			else
@@ -147,7 +188,7 @@ while [ ${counter} -lt ${arr_size} ] ; do
 					echo -e "#$ -cwd"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 					echo -e "#$ -q short.q\n"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 					echo -e "cd ${shareScript}" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-					echo -e "\"${shareScript}/run_GAMA.sh\" \"${sample}\" \"${project}\" -c" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+					echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -k -c \"${config}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 					echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_GAMAAR_complete.txt\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 
 					#cd "${main_dir}"
