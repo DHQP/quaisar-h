@@ -102,7 +102,7 @@ fi
 number='^[0-9]+$'
 
 # Checks for proper argumentation
-if [[ -z "${clobberness}"]]; then
+if [[ -z "${clobberness}" ]]; then
 	echo "Clobberness is empty...keeping"
 	clobberness="keep"
 elif [[ "${clobberness}" != "keep" ]] && [[ "${clobberness}" != "clobber" ]]; then
