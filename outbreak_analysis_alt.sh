@@ -85,7 +85,7 @@ if [[ -z "${list}" ]] || [[ ! -f "${list}" ]]; then
 	exit 1
 fi
 
-if [[ -f "${config}" ]];
+if [[ -f "${config}" ]]; then
 	echo "Loading special config file - ${config}"
 	. "${config}"
 else
