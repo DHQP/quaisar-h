@@ -31,7 +31,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?l:c:g:n:s:k:" option; do
+while getopts ":h?l:c:g:n:s:k:d:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -56,7 +56,7 @@ while getopts ":h?l:c:g:n:s:k:" option; do
 			clobberness=${OPTARG};;
 		d)
 			echo "Option -d triggered, argument = ${OPTARG}"
-			Alt_db=${OPTARG};;
+			alt_db=${OPTARG};;
 		l)
 			echo "Option -l triggered, argument = ${OPTARG}"
 			list=${OPTARG};;
