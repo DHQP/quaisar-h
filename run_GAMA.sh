@@ -106,18 +106,18 @@ fi
 
 if [[ "${plasmid}" == "true" ]]; then
 	assembly_source="${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_plasmid_assembly_trimmed.fasta"
+	OUTDATADIR="${processed}/${project}/${sample_name}/GAMA_plasFlow"
 	if [ ! -d "$OUTDATADIR/GAMA_plasFlow" ]; then  #create outdir if absent
 		echo "Creating $OUTDATADIR/GAMA_plasFlow"
 		mkdir -p "$OUTDATADIR/GAMA_plasFlow"
 	fi
-	OUTDATADIR="${processed}/${project}/${sample_name}/GAMA_plasFlow"
 else
 	assembly_source="${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta"
+	OUTDATADIR="${processed}/${project}/${sample_name}/GAMA"
 	if [ ! -d "$OUTDATADIR/GAMA" ]; then  #create outdir if absent
 		echo "Creating $OUTDATADIR/GAMA"
 		mkdir -p "$OUTDATADIR/GAMA"
 	fi
-	OUTDATADIR="${processed}/${project}/${sample_name}/GAMA"
 fi
 
 
