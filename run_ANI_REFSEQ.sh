@@ -30,7 +30,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?c:p:n:a:" option; do
+while getopts ":h?c:p:n:a:d:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -49,7 +49,7 @@ while getopts ":h?c:p:n:a:" option; do
 			config=${OPTARG};;
 		d)
 			echo "Option -d triggered, argument = ${OPTARG}"
-			config=${OPTARG};;
+			alt_db=${OPTARG};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -94,8 +94,7 @@ elif [[ ! -z "${alt_db}" ]]; then
 	else
 		database_path="${alt_DB}"
 		database_basename=$(basename -- "${alt_db}")
-		database_basename2=$(echo ${database_basename##*/} | cut -d'.' -f1)
-		database_and_version=${database_basename2//_srst2/}
+		database_and_version=$(echo ${database_basename##*/} | cut -d'_' -f1,2)
 	fi
 fi
 
