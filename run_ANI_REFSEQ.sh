@@ -6,50 +6,105 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp config_template.sh config.sh
-fi
-. ./config.sh
-
 #
 # Description: Script to calculate the average nucleotide identity of a sample
 #
-# Usage: ./run_ANI.sh sample_name	run_ID
+# Usage: ./run_ANI_REFSEQ.sh -n sample_name -p run_ID [-c path_to_config_file] [-d path_to_alt_DB]
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/ANI/
 #
 # Modules required: Python3/3.5.2, pyani/0.2.7, Mash/2.0
 #
-# V1.0.3(04/29/2020)
+# V1.0.4 (08/24/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
 ml Python3/3.5.2 pyani/0.2.7 Mash/2.0
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-elif [[ -z "${1}" ]]; then
-	echo "Empty sample name supplied to run_ANI_REFSEQ.sh, exiting"
-	exit 1
-# Gives the user a brief usage and help section if requested with the -h option argument
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./run_ANI_REFSEQ.sh sample_name run_ID"
-	echo "Output is saved to in ${processed}/sample_name/ANI"
-	exit 0
-elif [ -z "${2}" ]; then
-	echo "Empty miseq_run_ID name supplied to run_ANI_REFSEQ.sh. Fourth argument should be the run id. Exiting"
-	exit 1
+
+#  Function to print out help blurb
+show_help () {
+	echo "./run_ANI_REFSEQ.sh -n sample_name -p run_ID [-c path_to_config_file] [-d path_to_alt_DB]"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?c:p:n:a:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			sample_name=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		d)
+			echo "Option -d triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
 fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
+
+database="${REFSEQ}"
+database_and_version="${REFSEQ_date}"
+
+if [[ -z "${project}" ]]; then
+	echo "No Project/Run_ID supplied to retry_ANI_best_hit.sh, exiting"
+	exit 33
+elif [[ -z "${sample_name}" ]]; then
+	echo "No sample name supplied to retry_ANI_best_hit.sh, exiting"
+	exit 34
+elif [[ ! -z "${alt_db}" ]]; then
+	if [[ ! -f "${alt_db}" ]]; then
+		echo " No or empty alternate database location supplied to run_c-sstar_altDB.sh, exiting"
+		exit 39
+	else
+		database_path="${alt_DB}"
+		database_basename=$(basename -- "${alt_db}")
+		database_basename2=$(echo ${database_basename##*/} | cut -d'.' -f1)
+		database_and_version=${database_basename2//_srst2/}
+	fi
+fi
+
 
 start_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
 echo "Started ANI at ${start_time}"
 
 # Sets the output folder to the sample_name folder in processed samples
-OUTDATADIR="${processed}/${2}/${1}"
+OUTDATADIR="${processed}/${project}/${sample_name}"
 
 # Checks to see if an ANI folder already exists and creates it if not
 if [ ! -d "${OUTDATADIR}/ANI" ]; then
@@ -70,16 +125,16 @@ fi
 me=$(whoami)
 
 #Copies the samples assembly contigs to the local ANI db folder
-cp "${OUTDATADIR}/Assembly/${1}_scaffolds_trimmed.fasta" "${OUTDATADIR}/ANI/localANIDB_REFSEQ/sample.fasta"
+cp "${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta" "${OUTDATADIR}/ANI/localANIDB_REFSEQ/sample.fasta"
 
-echo "RS-${REFSEQ} --- RSF-${REFSEQ_date}"
+echo "RS-${database_path} --- RSF-${database_and_version}"
 
 # Mashtree trimming to reduce run time for ANI
-mash dist "${OUTDATADIR}/Assembly/${1}_scaffolds_trimmed.fasta" "${REFSEQ}" > "${OUTDATADIR}/ANI/${1}_${REFSEQ_date}_mash.dists"
-sort -k3 -n -o "${OUTDATADIR}/ANI/${1}_${REFSEQ_date}_mash_sorted.dists" "${OUTDATADIR}/ANI/${1}_${REFSEQ_date}_mash.dists"
-rm "${OUTDATADIR}/ANI/${1}_${REFSEQ_date}_mash.dists"
+mash dist "${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta" "${database_path}" > "${OUTDATADIR}/ANI/${sample_name}_${database_and_version}_mash.dists"
+sort -k3 -n -o "${OUTDATADIR}/ANI/${sample_name}_${database_and_version}_mash_sorted.dists" "${OUTDATADIR}/ANI/${sample_name}_${database_and_version}_mash.dists"
+rm "${OUTDATADIR}/ANI/${sample_name}_${database_and_version}_mash.dists"
 
-cutoff=$(head -n${max_ani_samples} "${OUTDATADIR}/ANI/${1}_${REFSEQ_date}_mash_sorted.dists" | tail -n1 | cut -d'	' -f3)
+cutoff=$(head -n${max_ani_samples} "${OUTDATADIR}/ANI/${sample_name}_${database_and_version}_mash_sorted.dists" | tail -n1 | cut -d'	' -f3)
 
 echo "Cutoff IS: ${cutoff}"
 
@@ -103,16 +158,16 @@ while IFS= read -r var; do
 	else
 		break
 	fi
-done < ${OUTDATADIR}/ANI/${1}_${REFSEQ_date}_mash_sorted.dists
+done < ${OUTDATADIR}/ANI/${sample_name}_${database_and_version}_mash_sorted.dists
 
 successful_matches=$(ls -l "${OUTDATADIR}/ANI/localANIDB_REFSEQ" | wc -l)
 if [[ ${successful_matches} -gt 2 ]]; then
-"${shareScript}/append_taxonomy_to_ncbi_assembly_filenames.sh" "${OUTDATADIR}/ANI/localANIDB_REFSEQ"
-gunzip ${OUTDATADIR}/ANI/localANIDB_REFSEQ/*.gz
+	"${shareScript}/append_taxonomy_to_ncbi_assembly_filenames.sh" "${OUTDATADIR}/ANI/localANIDB_REFSEQ"
+	gunzip ${OUTDATADIR}/ANI/localANIDB_REFSEQ/*.gz
 else
-echo "No matches were found against REFSEQ Bacterial Database sketch"
-echo "0.00%ID-0.00%COV-NO_MATCHES_FOUND_AGAINST_BACTERIAL_REFSEQ(NONE)" > "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${REFSEQ_date}).txt"
-exit
+	echo "No matches were found against REFSEQ Bacterial Database sketch"
+	echo "0.00%ID-0.00%COV-NO_MATCHES_FOUND_AGAINST_BACTERIAL_REFSEQ(NONE)" > "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${database_and_version}).txt"
+	exit
 fi
 
 #Renames all files in the localANIDB_REFSEQ folder by changing extension from fna to fasta (which pyani needs)
@@ -225,7 +280,7 @@ best_organism_guess="${best_genus} ${best_species}"
 #best_organism_guess="${best_organism_guess_arr[@]:0:2}"
 
 #Creates a line at the top of the file to show the best match in an easily readable format that matches the style on the MMB_Seq log
-echo -e "${best_percent}%ID-${best_coverage}%COV-${best_organism_guess}(${best_file}.fna)\\n$(cat "${OUTDATADIR}/ANI/best_hits_ordered.txt")" > "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_REFSEQ_${REFSEQ_date}).txt"
+echo -e "${best_percent}%ID-${best_coverage}%COV-${best_organism_guess}(${best_file}.fna)\\n$(cat "${OUTDATADIR}/ANI/best_hits_ordered.txt")" > "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_REFSEQ_${REFSEQ_date}).txt"
 
 #Removes the transient hit files
 if [ -s "${OUTDATADIR}/ANI/best_hits.txt" ]; then

@@ -126,7 +126,7 @@ else
 	simnum=${percent_ID}
 fi
 
-if [[ -f "${config}" ]];
+if [[ -f "${config}" ]]; then
 	echo "Loading special config file - ${config}"
 	. "${config}"
 else

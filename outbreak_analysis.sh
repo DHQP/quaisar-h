@@ -9,7 +9,7 @@
 #
 # Description: Pulls out MLST, AR genes, and plasmid repicons and creates a mashtree for the listed samples and consolidates them into one sheet when run from an alternate or old database
 #
-# Usage ./outbreak_analysis.sh -l path_to_list -g gapped/ungapped (analysis ran) -s identity (80/95/98/99/100) -t analysis_type(MATRIX|SNV|BOTH) -n analysis_identifier(e.g. outbreak identifier) -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB]
+# Usage ./outbreak_analysis.sh -l path_to_list -g gapped/ungapped (analysis ran) -s identity (80/95/98/99/100) -t analysis_type(MATRIX|SNV|BOTH) -n analysis_identifier(e.g. outbreak identifier) -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB] [-r alternate_REFSEQ_database]
 #
 # Output location: Parameter
 #
@@ -26,12 +26,12 @@ ml Python3/3.5.2 mashtree/0.29
 
 #  Function to print out help blurb
 show_help () {
-	echo "./outbreak_analysis.sh -l path_to_list -g gapped/ungapped (analysis ran) -s identity (80/95/98/99/100) -t analysis_type (MATRIX|SNV|BOTH)-n analysis_identifier(e.g. outbreak identifier) -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB]"
+	echo "./outbreak_analysis.sh -l path_to_list -g gapped/ungapped (analysis ran) -s identity (80/95/98/99/100) -t analysis_type (MATRIX|SNV|BOTH)-n analysis_identifier(e.g. outbreak identifier) -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB] [-r alternate_REFSEQ_database]"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?l:c:g:n:s:k:d:t:" option; do
+while getopts ":h?l:c:g:n:s:k:d:t:r:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -63,6 +63,9 @@ while getopts ":h?l:c:g:n:s:k:d:t:" option; do
 		t)
 			echo "Option -t triggered, argument = ${OPTARG}"
 			analysis_requested=${OPTARG^^};;
+		r)
+			echo "Option -r triggered, argument = ${OPTARG}"
+			alt_ANI_DB=${OPTARG^^};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -124,6 +127,9 @@ fi
 
 database_path=${ResGANNCBI_srst2}
 database_and_version=${ResGANNCBI_srst2_filename}
+ani_DB=${REFSEQ}
+ani_database_and_version=${REFSEQ_date}
+
 
 if [[ ! -z "${alt_db}" ]]; then
 	if [[ ! -f "${alt_db}" ]]; then
@@ -134,6 +140,17 @@ if [[ ! -z "${alt_db}" ]]; then
 		database_basename=$(basename -- "${alt_db}")
 		database_basename2=$(echo ${database_basename##*/} | cut -d'.' -f1)
 		database_and_version=${database_basename2//_srst2/}
+	fi
+fi
+
+if [[ ! -z "${alt_ANI_DB}" ]]; then
+	if [[ ! -f "${alt_ANI_DB}" ]]; then
+		echo " No or empty alternate refseq database location supplied, exiting"
+		exit 39
+	else
+		ani_database_path="${alt_ANI_DB}"
+		ani_database_basename=$(basename -- "${alt_ANI_DB}")
+		database_and_version=$(echo ${ani_database_basename##*/} | cut -d'_' -f1,2)
 	fi
 fi
 
@@ -211,9 +228,11 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 	run_csstar="false"
 	run_srst2="false"
 	run_GAMA="false"
+	run_ANI="false"
 	> "${output_directory}/${analysis_name}-csstar_todo.txt"
 	> "${output_directory}/${analysis_name}-srst2_todo.txt"
 	> "${output_directory}/${analysis_name}-GAMA_todo.txt"
+	> "${output_directory}/${analysis_name}-ANI_todo.txt"
 
 	# Check that each isolate has been compared to the newest ResGANNCBI DB file
 	if [[ "${clobberness}" == "keep" ]]; then
@@ -272,6 +291,18 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 		cp ${list_file} "${output_directory}/${analysis_name}-GAMA_todo.txt"
 	fi
 
+	while IFS= read -r line || [ -n "$line" ]; do
+		sample_name=$(echo "${line}" | awk -F/ '{ print $2}' | tr -d '[:space:]')
+		project=$(echo "${line}" | awk -F/ '{ print $1}' | tr -d '[:space:]')
+		OUTDATADIR="${processed}/${project}/${sample_name}"
+		echo "checking for ${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${ani_database_and_version}).txt"
+		if [[ ! -s "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${ani_database_and_version}).txt" ]];
+			echo "${project}/${sample_name} - ANI needs to be run against ${ani_database_and_version} at ${sim}"
+			echo "${project}/${sample_name}" >> "${output_directory}/${analysis_name}-ANI_todo.txt"
+			run_ANI="true"
+		fi
+	done < ${list_file}
+
 	# Creating mashtree of all isolates in list
 	echo "Creating mashtree of all samples"
 	${shareScript}/mashtree_of_list.sh -i "${list_file}" -d "${output_directory}/mashtree" -o "${analysis_name}" -c "${config}"
@@ -292,6 +323,10 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 	if [[ "${run_GAMA}" = "true" ]]; then
 		echo "Submitting list for GAMA qsub analysis"
 		qsub -sync y ${shareScript}/abl_mass_qsub_GAMA.sh -l "${output_directory}/${analysis_name}-GAMA_todo.txt" -m 25 -o "${mass_qsub_folder}" -k "${clobberness}" -c "${config}" -d "${database_path}"
+	fi
+	if [[ "${run_ANI}" = "true" ]]; then
+		echo "Submitting list for ANI qsub analysis"
+		qsub -sync y ${shareScript}/abl_mass_qsub_ANI_REFSEQ.sh -l "${output_directory}/${analysis_name}-ANI_todo.txt" -m 25 -o "${mass_qsub_folder}" -k "${clobberness}" -c "${config}" -d "${database_path}"
 	fi
 
 	echo $(date)

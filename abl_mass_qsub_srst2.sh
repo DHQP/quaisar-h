@@ -102,7 +102,7 @@ if [[ "${cloberness}" != "keep" ]] && [[ "${cloberness}" != "clobber" ]]; then
 	exit 1
 fi
 
-if [[ -f "${config}" ]];
+if [[ -f "${config}" ]]; then
 	echo "Loading special config file - ${config}"
 	. "${config}"
 else
