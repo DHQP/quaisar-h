@@ -149,7 +149,7 @@ if [[ ! -d ${output_directory} ]]; then
 fi
 
 # Clean list of any extra spaces and formatting
-"${shareScript}/clean_list.sh" -l "${list}"  -c "${config}"
+"${shareScript}/clean_list.sh" -l "${list}"
 cp "${list}" "${output_directory}/${analysis_name}_samples.txt"
 rm "${list}.original"
 list_file="${output_directory}/${analysis_name}_samples.txt"
