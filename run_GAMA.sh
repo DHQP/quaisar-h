@@ -96,6 +96,7 @@ elif [[ ! -z "${alt_db}" ]]; then
 		echo " No or empty alternate database location supplied to run_c-sstar_altDB.sh, exiting"
 		exit 39
 	else
+		echo "alt_db-${alt_db}"
 		database_path="${alt_DB}"
 		database_basename=$(basename -- "${alt_db}")
 		database_basename2=$(echo ${database_basename##*/} | cut -d'.' -f2)
