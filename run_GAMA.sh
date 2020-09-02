@@ -6,86 +6,128 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Runs the GAMA AR classification tool
 #
-# Usage: ./run_GAMA.sh sample_name run_ID -c|p [path_to_alt_DB]
+# Usage: ./run_GAMA.sh -n sample_name -p run_ID [-l] [-d path_to_alt_DB] [-c path_to_config_file]
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/GAMA/
 #
 # Modules required: blat, Python3/3.5.2
 #
-# v1.0.3 (1/17/2020)
+# v1.0.4 (9/2/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
 ml blat Python3/3.5.4
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-elif [[ -z "${1}" ]]; then
-	echo "Empty sample name supplied to run_GAMA.sh, exiting"
-	exit 1
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./run_GAMA.sh   sample_name    run_ID	c|p	[path_to_alt_DB]"
-	echo "Output is saved to ${processed}/miseq_run_ID/sample_name/GAMA/"
-	exit 0
-elif [ -z "$2" ]; then
-	echo "Empty project id name supplied to run_GAMA.sh, exiting"
-	exit 1
-elif [ -z "$3" ]; then
-	echo "Empty assembly source supplied to run_GAMA.sh (must be -c or -p, chromosome or plasmid respectively), exiting"
-	exit 1
-elif [[ "${3}" != "-c" &&  "${3}" != "-p" ]]; then
-	echo "Incorrect assembly source supplied to run_GAMA.sh (must be -c or -p, chromosome or plasmid respectively), exiting"
-	exit 1
-elif [ ! -z "${4}" ]; then
-	ARDB="${4}"
-	ARDB_short=$(echo "${ARDB}" | rev | cut -d'/' -f1 | rev | cut -d'.' -f1)
-else
-	ARDB="${ResGANNCBI_srst2}"
-	ARDB_short="${ResGANNCBI_srst2_filename}"
+#  Function to print out help blurb
+show_help () {
+	echo "Usage: ./run_GAMA.sh -n sample_name -p run_ID [-l] [-d path_to_alt_DB] [-c path_to_config_file]"
+}
+
+plasmid="false"
+
+# Parse command line options
+options_found=0
+while getopts ":h?c:p:n:d:l" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			sample_name=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		d)
+			echo "Option -d triggered, argument = ${OPTARG}"
+			alt_db=${OPTARG};;
+		l)
+			echo "Option -l triggered, argument = ${OPTARG}"
+			plasmid="true"
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
 fi
 
-echo "${4} - Using DB - ${ARDB}"
-
-# Sets the output folder of GAMA classifier to the GAMA folder under the sample_name folder in processed samples
-OUTDATADIR="${processed}/${2}/${1}"
-
-# Create necessary output directories
-echo "Running GAMA Antibiotic Resistance Gene Identifier"
-
-OUTDATA="${OUTDATADIR}"
-
-if [[ "${3}" == "-c" ]]; then
-	assembly_source="${OUTDATADIR}/Assembly/${1}_scaffolds_trimmed.fasta"
-	if [ ! -d "$OUTDATADIR/GAMA" ]; then  #create outdir if absent
-		echo "Creating $OUTDATADIR/GAMA"
-		mkdir -p "$OUTDATADIR/GAMA"
+if [[ -f "${config}" ]];
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
 	fi
-	OUTDATADIR="${OUTDATADIR}/GAMA"
-elif [[ "${3}" == "-p" ]]; then
-	assembly_source="${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta"
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
+
+database_path="${ResGANNCBI_srst2}"
+database_and_version="${ResGANNCBI_srst2_filename}"
+
+if [[ -z "${project}" ]]; then
+	echo "No Project/Run_ID supplied to run_c-sstar_altDB.sh, exiting"
+	exit 33
+elif [[ -z "${sample_name}" ]]; then
+	echo "No sample name supplied to run_c-sstar_altDB.sh, exiting"
+	exit 34
+elif [[ ! -z "${alt_db}" ]]; then
+	if [[ ! -f "${alt_db}" ]]; then
+		echo " No or empty alternate database location supplied to run_c-sstar_altDB.sh, exiting"
+		exit 39
+	else
+		database_path="${alt_DB}"
+		database_basename=$(basename -- "${alt_db}")
+		database_basename2=$(echo ${database_basename##*/} | cut -d'.' -f1)
+		database_and_version=${database_basename2//_srst2/}
+	fi
+fi
+
+if [[ "${plasmid}" == "true" ]]; then
+	assembly_source="${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_plasmid_assembly_trimmed.fasta"
 	if [ ! -d "$OUTDATADIR/GAMA_plasFlow" ]; then  #create outdir if absent
 		echo "Creating $OUTDATADIR/GAMA_plasFlow"
 		mkdir -p "$OUTDATADIR/GAMA_plasFlow"
 	fi
-	OUTDATADIR="${OUTDATADIR}/GAMA_plasFlow"
+	OUTDATADIR="${processed}/${project}/${sample_name}/GAMA_plasFlow"
 else
-	echo "Unknown Assembly source identifier, exiting"
-	exit 5564
+	assembly_source="${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta"
+	if [ ! -d "$OUTDATADIR/GAMA" ]; then  #create outdir if absent
+		echo "Creating $OUTDATADIR/GAMA"
+		mkdir -p "$OUTDATADIR/GAMA"
+	fi
+	OUTDATADIR="${processed}/${project}/${sample_name}/GAMA"
 fi
+
+
+echo "${database_path} - Using DB - ${database_and_version}"
+
+
+# Create necessary output directories
+echo "Running GAMA Antibiotic Resistance Gene Identifier"
+
 ### GAMA AR Classifier ### in species mode
-python3 GAMA_ResGANNCBI_SciComp_Exe.py -i "${assembly_source}" -d "${ARDB}" -o "${OUTDATADIR}/${1}.${ARDB_short}.GAMA"
+python3 GAMA_ResGANNCBI_SciComp_Exe.py -i "${assembly_source}" -d "${database_path}" -o "${OUTDATADIR}/${sample_name}.${database_and_version}.GAMA"
 
 ml -blat -Python3/3.5.4
 
