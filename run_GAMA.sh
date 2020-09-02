@@ -100,8 +100,7 @@ elif [[ ! -z "${alt_db}" ]]; then
 		echo "alt_db-${alt_db}"
 		database_path="${alt_db}"
 		database_basename=$(basename -- "${alt_db}")
-		database_basename2=$(echo ${database_basename##*/} | cut -d'.' -f2)
-		database_and_version=${database_basename2//_srst2/}
+		database_and_version=$(echo ${database_basename##*/} | cut -d'_' -f1,2)
 		echo "1 - ${database_path} and ${database_and_version}"
 	fi
 fi
