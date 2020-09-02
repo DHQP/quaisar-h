@@ -153,6 +153,7 @@ while [ ${counter} -lt ${arr_size} ] ; do
 	# Check if counter is below max submission limit
 	if [[ ${counter} -lt ${max_subs} ]]; then
 		# Check if old data exists, skip if so
+		echo "Checking assembly of - ${OUTDATADIR}/Assembly/${sample}_scaffolds_trimmed.fasta"
 		if [[ -s "${OUTDATADIR}/Assembly/${sample}_scaffolds_trimmed.fasta" ]]; then
 			if [[ ! -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample}_vs_${database_and_version}).txt" ]]; then
 				echo  "Index is below max submissions, submitting"

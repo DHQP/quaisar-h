@@ -264,6 +264,9 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 				fi
 			fi
 			echo "checking for ${OUTDATADIR}/GAMA/${sample_name}_${database_and_version}.GAMA"
+			if [[ -s "${OUTDATADIR}/GAMA/${sample_name}_${database_and_version}.GAMA" ]]; then
+				mv "${OUTDATADIR}/GAMA/${sample_name}_${database_and_version}.GAMA" "${OUTDATADIR}/GAMA/${sample_name}.${database_and_version}.GAMA"
+			fi
 			if [[ -s "${OUTDATADIR}/GAMA/${sample_name}_${database_and_version}.GAMA" ]];
 			then
 				mv "${OUTDATADIR}/GAMA/${sample_name}_${database_and_version}.GAMA" "${OUTDATADIR}/GAMA/${sample_name}.${database_and_version}.GAMA"
