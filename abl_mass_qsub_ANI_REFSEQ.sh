@@ -99,6 +99,18 @@ elif [[ ! -z "${alt_db}" ]]; then
 	fi
 fi
 
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
 
 
 
@@ -136,12 +148,12 @@ cp ./config.sh ${main_dir}
 
 start_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
 
-OUTDATADIR="${processed}/${project}/${sample}"
-
 # Create and submit qsub scripts to get ANI for all isolates
 while [ ${counter} -lt ${arr_size} ] ; do
 	sample=$(echo "${arr[${counter}]}" | cut -d'/' -f2 | cut -d':' -f1)
 	project=$(echo "${arr[${counter}]}" | cut -d'/' -f1)
+
+	OUTDATADIR="${processed}/${project}/${sample}"
 
 	if [[ "${clobberness}" == "clobber" ]]; then
 		echo "Trying to remove ${OUTDATADIR}/ANI/aniM_REFSEQ"
