@@ -9,7 +9,7 @@
 #
 # Description: Pulls out MLST, AR genes, and plasmid repicons and creates a mashtree for the listed samples and consolidates them into one sheet when run from an alternate or old database
 #
-# Usage ./outbreak_analysis.sh -l path_to_list -g gapped/ungapped (analysis ran) -s identity (80/95/98/99/100) -o output_directory(will create a folder at this location with name of analysis_identifier) -n analysis_identifier(e.g. outbreak identifier) -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB]
+# Usage ./outbreak_analysis.sh -l path_to_list -g gapped/ungapped (analysis ran) -s identity (80/95/98/99/100) -t analysis_type(MATRIX|SNV|BOTH) -n analysis_identifier(e.g. outbreak identifier) -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB]
 #
 # Output location: Parameter
 #
@@ -26,12 +26,12 @@ ml Python3/3.5.2 mashtree/0.29
 
 #  Function to print out help blurb
 show_help () {
-	echo "./outbreak_analysis.sh -l path_to_list -g gapped/ungapped (analysis ran) -s identity (80/95/98/99/100) -n analysis_identifier(e.g. outbreak identifier) -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB]"
+	echo "./outbreak_analysis.sh -l path_to_list -g gapped/ungapped (analysis ran) -s identity (80/95/98/99/100) -t analysis_type (MATRIX|SNV|BOTH)-n analysis_identifier(e.g. outbreak identifier) -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB]"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?l:c:g:n:s:k:d:" option; do
+while getopts ":h?l:c:g:n:s:k:d:t:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -60,6 +60,9 @@ while getopts ":h?l:c:g:n:s:k:d:" option; do
 		l)
 			echo "Option -l triggered, argument = ${OPTARG}"
 			list=${OPTARG};;
+		t)
+			echo "Option -t triggered, argument = ${OPTARG}"
+			analysis_requested=${OPTARG^^};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
