@@ -78,7 +78,7 @@ else
 	config="${cwd}/config.sh"
 fi
 
-database="${REFSEQ}"
+database_path="${REFSEQ}"
 database_and_version="${REFSEQ_date}"
 
 if [[ -z "${project}" ]]; then
@@ -92,7 +92,8 @@ elif [[ ! -z "${alt_db}" ]]; then
 		echo " No or empty alternate database location supplied to run_c-sstar_altDB.sh, exiting"
 		exit 39
 	else
-		database_path="${alt_DB}"
+		echo "alt_db-${alt_db}"
+		database_path="${alt_db}"
 		database_basename=$(basename -- "${alt_db}")
 		database_and_version=$(echo ${database_basename##*/} | cut -d'_' -f1,2)
 	fi
