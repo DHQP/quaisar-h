@@ -1,8 +1,8 @@
 #!/bin/sh -l
 
-#$ -o ablmq-anim.out
-#$ -e ablmq-anim.err
-#$ -N ablmq-anim
+#$ -o ablmq-animrq.out
+#$ -e ablmq-animrq.err
+#$ -N ablmq-animrq
 #$ -cwd
 #$ -q short.q
 
@@ -115,7 +115,7 @@ fi
 arr=()
 while IFS= read -r line || [ "$line" ];  do
   arr+=("$line")
-done < ${1}
+done < ${list}
 
 arr_size="${#arr[@]}"
 last_index=$(( arr_size -1 ))
@@ -123,10 +123,9 @@ echo "-${arr_size}:${arr[@]}-"
 
 # Create counter and set max number of concurrent submissions
 counter=0
-max_subs=${2}
 
 # Set script directory
-main_dir="${3}/ANI_REFSEQ_subs"
+main_dir="${script_output}/ANI_REFSEQ_subs"
 
 if [[ ! -d "${main_dir}" ]]; then
 	mkdir -p "${main_dir}/complete"

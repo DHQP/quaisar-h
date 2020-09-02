@@ -85,7 +85,7 @@ elif ! [[ ${max_subs} =~ $number ]] || [[ -z "${max_subs}" ]]; then
 elif [[ -z "${script_output}" ]]; then
 	echo "Script output directory parameter is empty...exiting"
 	exit 1
-elif [[ -z "${cloberness}" ]]; then
+elif [[ -z "${clobberness}" ]]; then
 	echo "Clobberness was not input, be sure to add keep or clobber as 4th parameter...exiting"
 	exit 1
 elif [[ ! -z "${alt_db}" ]]; then
@@ -99,7 +99,7 @@ elif [[ ! -z "${alt_db}" ]]; then
 fi
 
 # Check that clobberness is a valid option
-if [[ "${clobberness}" != "keep" ]] && [[ "${cloberness}" != "clobber" ]]; then
+if [[ "${clobberness}" != "keep" ]] && [[ "${clobberness}" != "clobber" ]]; then
 	echo "Clobberness was not input, be sure to add keep or clobber as 4th parameter...exiting"
 	exit 1
 fi
