@@ -9,26 +9,26 @@
 #
 # Description: A script to submit a list of isolates to the cluster to perform csstar on many isolates in parallel
 #
-# Usage is ./abl_mass_qsub_csstar.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -s %ID(optional)[80|95|98|99|100] -c path_to_config_file(optional)
+# Usage is ./abl_mass_qsub_csstar.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -s %ID(optional)[80|95|98|99|100] [-c path_to_config_file] [-d path_to_alt_DB]
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/c-sstar/. Temp scripts will be in default_mass_qsubs_folder_from_config.sh/c-sstar_subs
 #
 # Modules required: None, run_c-sstar.sh will load Python3/3.5.2 and ncbi-blast+/LATEST
 #
-# v1.0.1 (08/18/2020)
+# v1.0.2 (09/02/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./abl_mass_qsub_csstar.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -s %ID(optional)[80|95|98|99|100] -c path_to_config_file(optional)"
-	echo "Output is saved to ${processed}/run_ID/sample_name/csstar where processed is retrieved from config file, either default or imported"
+	echo "Usage is ./abl_mass_qsub_csstar.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -s %ID(optional)[80|95|98|99|100] [-c path_to_config_file] [-d path_to_alt_DB]"
+	echo "Output is saved to *processed/run_ID/sample_name/csstar where processed is retrieved from config file, either default or imported"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?l:o:m:s:k:c:" option; do
+while getopts ":h?l:o:m:s:k:c:d:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -54,6 +54,9 @@ while getopts ":h?l:o:m:s:k:c:" option; do
 		c)
 			echo "Option -c triggered, argument = ${OPTARG}"
 			config=${OPTARG};;
+		d)
+			echo "Option -d triggered, argument = ${OPTARG}"
+			alt_db=${OPTARG};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -85,6 +88,14 @@ elif [[ -z "${script_output}" ]]; then
 elif [[ -z "${cloberness}" ]]; then
 	echo "Clobberness was not input, be sure to add keep or clobber as 4th parameter...exiting"
 	exit 1
+elif [[ ! -z "${alt_db}" ]]; then
+	if [[ ! -f "${alt_db}" ]]; then
+		echo " No or empty alternate database location supplied to run_c-sstar_altDB.sh, exiting"
+		exit 39
+	else
+		use_alt_db="true"
+		database_path="${alt_DB}"
+	fi
 fi
 
 # Check that clobberness is a valid option
@@ -183,7 +194,11 @@ while [ ${counter} -lt ${arr_size} ] ; do
 				echo -e "module load Python/3.6.1\n" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
 				# Defaulting to gapped/98, change if you want to include user preferences
 				echo -e "cd ${shareScript}" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-				echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample}\" -g gapped -s \"${sim}\" -p \"${project}\" -c \"${config}\""  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+				if [[ "${use_alt_db}" == "true" ]]; then
+					echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample}\" -g g -s \"${sim}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\""  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+				else
+					echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample}\" -g g -s \"${sim}\" -p \"${project}\" -c \"${config}\""  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+				fi
 				echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_csstarn_complete.txt\"" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
 				cd "${main_dir}"
 				echo "submitting ${main_dir}/csstn_${sample}_${start_time}.sh"
@@ -220,7 +235,11 @@ while [ ${counter} -lt ${arr_size} ] ; do
 						echo -e "module load Python/3.6.1\n" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
 						# Defaulting to gapped/98, change if you want to include user preferences
 						echo -e "cd ${shareScript}" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-						echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample}\" -g gapped -s \"${sim}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+						if [[ "${use_alt_db}" == "true" ]]; then
+							echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample}\" -g g -s \"${sim}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\""  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+						else
+							echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample}\" -g g -s \"${sim}\" -p \"${project}\" -c \"${config}\""  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+						fi
 						echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_csstarn_complete.txt\"" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
 						cd ${main_dir}
 						qsub "${main_dir}/csstn_${sample}_${start_time}.sh"

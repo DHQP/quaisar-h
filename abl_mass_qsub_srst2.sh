@@ -9,26 +9,26 @@
 #
 # Description: A script to submit a list of isolates to the cluster to perform SRST2 AR on many isolates in parallel
 #
-# Usage: Usage is ./abl_mass_qsub_srst2.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -c path_to_config_file(optional)
+# Usage: Usage is ./abl_mass_qsub_srst2.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB]
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/c-sstar/. Temp scripts will be in default_mass_qsubs_folder_from_config.sh/srst2_subs
 #
 # Modules required: None, run_srst2AR.sh will load srst2/0.2.0
 #
-# v1.0.1 (08/18/2020)
+# v1.0.2 (09/02/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./abl_mass_qsub_srst2.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -c path_to_config_file(optional)"
-	echo "Output is saved to ${processed}/run_ID/sample_name/srst2 where processed is retrieved from config file, either default or imported"
+	echo "Usage is ./abl_mass_qsub_srst2.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB]"
+	echo "Output is saved to *processed/run_ID/sample_name/srst2 where processed is retrieved from config file, either default or imported"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?l:p:m:s:b:c:" option; do
+while getopts ":h?l:p:m:s:b:c:d:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -51,6 +51,9 @@ while getopts ":h?l:p:m:s:b:c:" option; do
 		c)
 			echo "Option -c triggered, argument = ${OPTARG}"
 			config=${OPTARG};;
+		d)
+			echo "Option -d triggered, argument = ${OPTARG}"
+			alt_DB=${OPTARG};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -83,6 +86,14 @@ elif [[ -z "${script_output}" ]]; then
 elif [[ -z "${cloberness}" ]]; then
 	echo "Clobberness was not input, be sure to add keep or clobber as 4th parameter...exiting"
 	exit 1
+elif [[ ! -z "${alt_db}" ]]; then
+	if [[ ! -f "${alt_db}" ]]; then
+		echo " No or empty alternate database location supplied to run_c-sstar_altDB.sh, exiting"
+		exit 39
+	else
+		use_alt_db="true"
+		database_path="${alt_DB}"
+	fi
 fi
 
 # Check that clobberness is a valid option
@@ -151,7 +162,11 @@ while [ ${counter} -lt ${arr_size} ] ; do
 			echo -e "#$ -q short.q\n"  >> "${main_dir}/srst2AR_${sample}_${start_time}.sh"
 			# Can we somehow consolidate into one srst2 analysis to do MLST/AR/SEROTYPE
 			echo -e "cd ${shareScript}" >> "${main_dir}/srst2AR_${sample}_${start_time}.sh"
-			echo -e "\"${shareScript}/run_srst2AR.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/srst2AR_${sample}_${start_time}.sh"
+			if [[ "${use_alt_db}" == "true" ]]; then
+				echo -e "\"${shareScript}/run_srst2AR.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/srst2AR_${sample}_${start_time}.sh"
+			else
+				echo -e "\"${shareScript}/run_srst2AR.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/srst2AR_${sample}_${start_time}.sh"
+			fi
 			echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_srst2AR_complete.txt\"" >> "${main_dir}/srst2AR_${sample}_${start_time}.sh"
 
 			#cd "${main_dir}"
@@ -191,7 +206,11 @@ while [ ${counter} -lt ${arr_size} ] ; do
 					echo -e "#$ -q short.q\n"  >> "${main_dir}/srst2AR_${sample}_${start_time}.sh"
 					# Can we somehow consolidate into one srst2 analysis to do MLST/AR/SEROTYPE
 					echo -e "cd ${shareScript}" >> "${main_dir}/srst2AR_${sample}_${start_time}.sh"
-					echo -e "\"${shareScript}/run_srst2AR.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/srst2AR_${sample}_${start_time}.sh"
+					if [[ "${use_alt_db}" == "true" ]]; then
+						echo -e "\"${shareScript}/run_srst2AR.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/srst2AR_${sample}_${start_time}.sh"
+					else
+						echo -e "\"${shareScript}/run_srst2AR.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/srst2AR_${sample}_${start_time}.sh"
+					fi
 					echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_srst2AR_complete.txt\"" >> "${main_dir}/srst2AR_${sample}_${start_time}.sh"
 					cd "${main_dir}"
 					qsub "${main_dir}/srst2AR_${sample}_${start_time}.sh"

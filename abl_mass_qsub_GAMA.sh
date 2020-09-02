@@ -9,26 +9,26 @@
 #
 # Description: A script to submit a list of isolates to the cluster to perform GAMA on many isolates in parallel
 #
-# ./abl_mass_qsub_GAMA.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -c path_to_config_file(optional)
+# ./abl_mass_qsub_GAMA.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alternate_DB]
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/GAMA/. Temp scripts will be in default_mass_qsubs_folder_from_config.sh/GAMA_subs
 #
 # Modules required: None, run_GAMA.sh will load Python3/3.5.2 and blat/35
 #
-# v1.0.1 (08/18/2020)
+# v1.0.2 (09/02/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./abl_mass_qsub_GAMA.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -c path_to_config_file(optional)"
+	echo "Usage is ./abl_mass_qsub_GAMA.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to alternate_database_location]"
 	echo "Output is saved to ${processed}/run_ID/sample_name/GAMA where processed is retrieved from config file, either default or imported"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?l:s:m:s:k:c:" option; do
+while getopts ":h?l:s:m:s:k:c:d:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -51,6 +51,9 @@ while getopts ":h?l:s:m:s:k:c:" option; do
 		c)
 			echo "Option -c triggered, argument = ${OPTARG}"
 			config=${OPTARG};;
+		d)
+			echo "Option -d triggered, argument = ${OPTARG}"
+			alt_db=${OPTARG};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -82,6 +85,14 @@ elif [[ -z "${script_output}" ]]; then
 elif [[ -z "${cloberness}" ]]; then
 	echo "Clobberness was not input, be sure to add keep or clobber as 4th parameter...exiting"
 	exit 1
+elif [[ ! -z "${alt_db}" ]]; then
+	if [[ ! -f "${alt_db}" ]]; then
+		echo " No or empty alternate database location supplied to run_c-sstar_altDB.sh, exiting"
+		exit 39
+	else
+		use_alt_db="true"
+		database_path="${alt_DB}"
+	fi
 fi
 
 # Check that clobberness is a valid option
@@ -149,7 +160,11 @@ while [ ${counter} -lt ${arr_size} ] ; do
 			echo -e "#$ -cwd"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 			echo -e "#$ -q short.q\n"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 			echo -e "cd ${shareScript}" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-			echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -k -c \"${config.sh}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+			if [[ "${use_alt_db}" == "true" ]]; then
+				echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -k -c \"${config.sh}\" -d \"${database_path}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+			else
+				echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -k -c \"${config.sh}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+			fi
 			echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_GAMAAR_complete.txt\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 			if [[ "${counter}" -lt "${last_index}" ]]; then
 				qsub "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
@@ -188,7 +203,7 @@ while [ ${counter} -lt ${arr_size} ] ; do
 					echo -e "#$ -cwd"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 					echo -e "#$ -q short.q\n"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 					echo -e "cd ${shareScript}" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-					echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -k -c \"${config}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+					echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -l -c \"${config}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 					echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_GAMAAR_complete.txt\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 
 					#cd "${main_dir}"
