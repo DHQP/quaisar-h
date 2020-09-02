@@ -69,7 +69,7 @@ if [[ "${options_found}" -eq 0 ]]; then
 	exit
 fi
 
-if [[ -f "${config}" ]];
+if [[ -f "${config}" ]]; then
 	echo "Loading special config file - ${config}"
 	. "${config}"
 else
@@ -98,7 +98,7 @@ elif [[ ! -z "${alt_db}" ]]; then
 	else
 		database_path="${alt_DB}"
 		database_basename=$(basename -- "${alt_db}")
-		database_basename2=$(echo ${database_basename##*/} | cut -d'.' -f1)
+		database_basename2=$(echo ${database_basename##*/} | cut -d'.' -f2)
 		database_and_version=${database_basename2//_srst2/}
 	fi
 fi

@@ -75,7 +75,7 @@ if [[ "${options_found}" -eq 0 ]]; then
 	exit
 fi
 
-if [[ -f "${config}" ]];
+if [[ -f "${config}" ]]; then
 	echo "Loading special config file - ${config}"
 	. "${config}"
 else
