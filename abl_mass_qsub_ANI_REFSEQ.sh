@@ -77,6 +77,8 @@ fi
 # Number regex to test max concurrent submission parametr
 number='^[0-9]+$'
 
+database_path="${REFSEQ}"
+
 if [[ ! -f "${list}" ]]; then
 	echo "${list} (list) does not exist...exiting"
 	exit 1
