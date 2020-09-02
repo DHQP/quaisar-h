@@ -296,7 +296,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 		project=$(echo "${line}" | awk -F/ '{ print $1}' | tr -d '[:space:]')
 		OUTDATADIR="${processed}/${project}/${sample_name}"
 		echo "checking for ${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${ani_database_and_version}).txt"
-		if [[ ! -s "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${ani_database_and_version}).txt" ]];
+		if [[ ! -s "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${ani_database_and_version}).txt" ]]; then
 			echo "${project}/${sample_name} - ANI needs to be run against ${ani_database_and_version} at ${sim}"
 			echo "${project}/${sample_name}" >> "${output_directory}/${analysis_name}-ANI_todo.txt"
 			run_ANI="true"
