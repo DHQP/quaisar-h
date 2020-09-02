@@ -135,6 +135,9 @@ echo "3 - ${database_path} and ${database_and_version}"
 echo "Running GAMA Antibiotic Resistance Gene Identifier"
 
 ### GAMA AR Classifier ### in species mode
+echo "-i ${assembly_source}"
+echo "-d ${database_path}"
+echo "-o ${OUTDATADIR}/${sample_name}.${database_and_version}.GAMA"
 python3 GAMA_ResGANNCBI_SciComp_Exe.py -i "${assembly_source}" -d "${database_path}" -o "${OUTDATADIR}/${sample_name}.${database_and_version}.GAMA"
 
 ml -blat -Python3/3.5.4
