@@ -23,7 +23,7 @@
 
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./abl_mass_qsub_csstar.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] -s %ID(optional)[80|95|98|99|100] [-c path_to_config_file] [-d path_to_alt_DB]"
+	echo "Usage is ./abl_mass_qsub_csstar.sh -l path_to_list -m max_concurrent_submissions -o output_folder_for_scripts -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB]"
 	echo "Output is saved to *processed/run_ID/sample_name/csstar where processed is retrieved from config file, either default or imported"
 }
 
@@ -105,36 +105,11 @@ fi
 # Number regex to test max concurrent submission parametr
 number='^[0-9]+$'
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-# Shows a brief uasge/help section if -h option used as first argument
-elif [[ "$1" = "-h" ]]; then
-	echo "Usage is ./abl_mass_qsub_ANIm.sh path_to_list_file(single sample ID per line, e.g. B8VHY/1700128 (it must include project id also)) max_concurrent_submissions output_directory_for_scripts clobberness[keep|clobber]"
-	exit 1
-elif [[ ! -f "${1}" ]]; then
-	echo "${1} (list) does not exist...exiting"
-	exit 1
-elif ! [[ ${2} =~ $number ]] || [[ -z "${2}" ]]; then
-	echo "${2} is not a number or is empty. Please input max number of concurrent qsub submissions...exiting"
-	exit 2
-elif [[ -z "${3}" ]]; then
-	echo "Output directory parameter empty...exiting"
-	exit 1
-elif [[ -z "${4}" ]]; then
-	echo "Clobberness is empty...exiting"
-	exit 1
-fi
-
 # Check that clobberness is a valid option
-if [[ "${4}" != "keep" ]] && [[ "${4}" != "clobber" ]]; then
+if [[ "${clobberness}" != "keep" ]] && [[ "${clobberness}" != "clobber" ]]; then
 	echo "Clobberness was not input correctly [keep|clobber]...exiting"
 	exit 1
-else
-	clobberness="${4}"
 fi
-
 
 # Create an array of all samples in the list
 arr=()

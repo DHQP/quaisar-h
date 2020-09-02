@@ -127,7 +127,7 @@ fi
 
 database_path=${ResGANNCBI_srst2}
 database_and_version=${ResGANNCBI_srst2_filename}
-ani_DB=${REFSEQ}
+ani_database_path=${REFSEQ}
 ani_database_and_version=${REFSEQ_date}
 
 
@@ -150,7 +150,7 @@ if [[ ! -z "${alt_ANI_DB}" ]]; then
 	else
 		ani_database_path="${alt_ANI_DB}"
 		ani_database_basename=$(basename -- "${alt_ANI_DB}")
-		database_and_version=$(echo ${ani_database_basename##*/} | cut -d'_' -f1,2)
+		ani_database_and_version=$(echo ${ani_database_basename##*/} | cut -d'_' -f1,2)
 	fi
 fi
 
@@ -326,7 +326,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 	fi
 	if [[ "${run_ANI}" = "true" ]]; then
 		echo "Submitting list for ANI qsub analysis"
-		qsub -sync y ${shareScript}/abl_mass_qsub_ANI_REFSEQ.sh -l "${output_directory}/${analysis_name}-ANI_todo.txt" -m 25 -o "${mass_qsub_folder}" -k "${clobberness}" -c "${config}" -d "${database_path}"
+		qsub -sync y ${shareScript}/abl_mass_qsub_ANI_REFSEQ.sh -l "${output_directory}/${analysis_name}-ANI_todo.txt" -m 25 -o "${mass_qsub_folder}" -k "${clobberness}" -c "${config}" -d "${ani_database_path}"
 	fi
 
 	echo $(date)
