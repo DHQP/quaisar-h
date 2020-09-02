@@ -84,6 +84,7 @@ fi
 
 database_path="${ResGANNCBI_srst2}"
 database_and_version="${ResGANNCBI_srst2_filename}"
+echo "0 - ${database_path} and ${database_and_version}"
 
 if [[ -z "${project}" ]]; then
 	echo "No Project/Run_ID supplied to run_c-sstar_altDB.sh, exiting"
@@ -101,8 +102,11 @@ elif [[ ! -z "${alt_db}" ]]; then
 		database_basename=$(basename -- "${alt_db}")
 		database_basename2=$(echo ${database_basename##*/} | cut -d'.' -f2)
 		database_and_version=${database_basename2//_srst2/}
+		echo "1 - ${database_path} and ${database_and_version}"
 	fi
 fi
+
+echo "2 - ${database_path} and ${database_and_version}"
 
 if [[ "${plasmid}" == "true" ]]; then
 	assembly_source="${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_plasmid_assembly_trimmed.fasta"
@@ -121,7 +125,7 @@ else
 fi
 
 
-echo "${database_path} - Using DB - ${database_and_version}"
+echo "3 - ${database_path} and ${database_and_version}"
 
 
 # Create necessary output directories
