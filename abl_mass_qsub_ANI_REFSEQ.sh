@@ -154,7 +154,7 @@ while [ ${counter} -lt ${arr_size} ] ; do
 	if [[ ${counter} -lt ${max_subs} ]]; then
 		# Check if old data exists, skip if so
 		if [[ -s "${OUTDATADIR}/Assembly/${sample}_scaffolds_trimmed.fasta" ]]; then
-			if [[ ! -f "${OUTDATADIR}/ANI/best_anim_hits_ordered(${sample}_vs_${database_and_version})" ]]; then
+			if [[ ! -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample}_vs_${database_and_version}).txt" ]]; then
 				echo  "Index is below max submissions, submitting"
 				echo "Going to make ${main_dir}/anim_refseq_${sample}_${start_time}.sh"
 				echo -e "#!/bin/bash -l\n" > "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
@@ -175,7 +175,7 @@ while [ ${counter} -lt ${arr_size} ] ; do
 				qsub "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
 			# Old data exists, skipping
 			else
-				echo "${project}/${sample} already has ANI summary"
+				echo "${project}/${sample} already has ANI REFSEQ summary"
 				echo "$(date)" > "${main_dir}/complete/${sample}_anim_refseq_complete.txt"
 			fi
 		# No Assembly file to run ANI on, skipping
