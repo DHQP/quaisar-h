@@ -136,23 +136,25 @@ cp ./config.sh ${main_dir}
 
 start_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
 
+OUTDATADIR="${processed}/${project}/${sample}"
+
 # Create and submit qsub scripts to get ANI for all isolates
 while [ ${counter} -lt ${arr_size} ] ; do
 	sample=$(echo "${arr[${counter}]}" | cut -d'/' -f2 | cut -d':' -f1)
 	project=$(echo "${arr[${counter}]}" | cut -d'/' -f1)
 
 	if [[ "${clobberness}" == "clobber" ]]; then
-		echo "Trying to remove ${processed}/${project}/${sample}/ANI/aniM_REFSEQ"
-		rm -r "${processed}/${project}/${sample}/ANI/aniM_REFSEQ"
-		rm -r "${processed}/${project}/${sample}/ANI/localANIDB_REFSEQ"
-		rm -r "${processed}/${project}/${sample}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_"*").txt"
+		echo "Trying to remove ${OUTDATADIR}/ANI/aniM_REFSEQ"
+		rm -r "${OUTDATADIR}/ANI/aniM_REFSEQ"
+		rm -r "${OUTDATADIR}/ANI/localANIDB_REFSEQ"
+		rm -r "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_"*").txt"
 	fi
 
 	# Check if counter is below max submission limit
 	if [[ ${counter} -lt ${max_subs} ]]; then
 		# Check if old data exists, skip if so
-		if [[ -s "${processed}/${project}/${sample}/Assembly/${sample}_scaffolds_trimmed.fasta" ]]; then
-			if [[ ! -f "${processed}/${sample}/ANI/best_anim_hits_ordered(${sample}_vs_${REFSEQ_date})" ]]; then
+		if [[ -s "${OUTDATADIR}/Assembly/${sample}_scaffolds_trimmed.fasta" ]]; then
+			if [[ ! -f "${OUTDATADIR}/ANI/best_anim_hits_ordered(${sample}_vs_${database_and_version})" ]]; then
 				echo  "Index is below max submissions, submitting"
 				echo "Going to make ${main_dir}/anim_refseq_${sample}_${start_time}.sh"
 				echo -e "#!/bin/bash -l\n" > "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
@@ -198,9 +200,9 @@ while [ ${counter} -lt ${arr_size} ] ; do
 			# Check if "waiting" sample is complete
 			if [[ -f "${main_dir}/complete/${waiting_sample}_anim_refseq_complete.txt" ]]; then
 				# Check if an assembly exists to run ANI on
-				if [[ -s "${processed}/${project}/${sample}/Assembly/${sample}_scaffolds_trimmed.fasta" ]]; then
+				if [[ -s "${OUTDATADIR}/Assembly/${sample}_scaffolds_trimmed.fasta" ]]; then
 					# Check if old data exists, skip if so
-					if [[ ! -f "${processed}/${project}/${sample}/ANI/best_anim_hits_ordered(${sample}_vs_${genus,})" ]]; then
+					if [[ ! -f "${OUTDATADIR}/ANI/best_anim_hits_ordered(${sample}_vs_${genus,})" ]]; then
 						echo  "${waiting_sample}(${waiting_for_index}) is not complete, submitting ${sample} ($counter)"
 						echo -e "#!/bin/bash -l\n" > "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
 						echo -e "#$ -o anim_refseq_${sample}.out" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
