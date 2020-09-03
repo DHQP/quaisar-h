@@ -78,7 +78,7 @@ fi
 number='^[0-9]+$'
 
 database_path="${REFSEQ}"
-
+echo "0 - ${database_path} and ${database_and_version}"
 if [[ ! -f "${list}" ]]; then
 	echo "${list} (list) does not exist...exiting"
 	exit 1
@@ -98,6 +98,7 @@ elif [[ ! -z "${alt_db}" ]]; then
 	else
 		use_alt_db="true"
 		database_path="${alt_DB}"
+		echo "1 - ${database_path} and ${database_and_version}"
 	fi
 fi
 
@@ -184,7 +185,7 @@ while [ ${counter} -lt ${arr_size} ] ; do
 				else
 					echo -e "\"${shareScript}/run_ANI_REFSEQ.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
 				fi
-				echo -e "\"${shareScript}/determine_taxID.sh\" \"${sample}\" \"${project}\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+				echo -e "\"${shareScript}/determine_taxID.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
 				echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_anim_refseq_complete.txt\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
 				cd "${main_dir}"
 				qsub "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
@@ -226,8 +227,11 @@ while [ ${counter} -lt ${arr_size} ] ; do
 						echo -e "#$ -cwd"  >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
 						echo -e "#$ -q short.q\n"  >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
 						echo -e "cd ${shareScript}" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-						echo -e "\"${shareScript}/run_ANI_REFSEQ.sh\" \"${sample}\" \"${project}\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-	  				echo -e "\"${shareScript}/determine_taxID.sh\" \"${sample}\" \"${project}\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+						if [[ "${use_alt_db}" == "true" ]]; then
+							echo -e "\"${shareScript}/run_ANI_REFSEQ.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+						else
+							echo -e "\"${shareScript}/run_ANI_REFSEQ.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+						fi
 						echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_anim_refseq_complete.txt\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
 						cd "${main_dir}"
 						qsub "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
