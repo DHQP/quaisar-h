@@ -256,4 +256,6 @@ for item in "${arr[@]}"; do
 	fi
 done
 
+rm "${main_dir}"/complete/*.txt
+
 exit 0

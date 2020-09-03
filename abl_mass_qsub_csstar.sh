@@ -300,6 +300,8 @@ for item in "${arr[@]}"; do
 	fi
 done
 
+rm "${main_dir}"/complete/*.txt
+
 echo "All isolates completed"
 global_end_time=$(date "+%m-%d-%Y @ %Hh_%Mm_%Ss")
 printf "%s %s" "abl_mass_qsub_csstar.sh has completed" "${global_end_time}" | mail -s "abl_mass_qsub_csstar.sh complete" nvx4@cdc.gov
