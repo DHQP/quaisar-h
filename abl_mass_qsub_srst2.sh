@@ -28,7 +28,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?l:p:m:s:b:c:d:o:" option; do
+while getopts ":h?l:m:c:d:o:k:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
