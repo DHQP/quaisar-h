@@ -116,7 +116,7 @@ elif [[ ! -z "${alt_db}" ]]; then
 fi
 
 # Sets the parent output folder as the sample name folder in the processed samples folder in MMB_Data
-OUTDATADIR="${processed}/${project}/${sample_name}/c-sstar"
+OUTDATADIR="${processed}/${project}/${sample_name}"
 
 
 #Set similarity threshold (set in config.sh) to values given in arguments
@@ -136,6 +136,8 @@ else
 	echo "Unknown similarity threshold set (use 'l,m,h,u,or p' for 80,95,98,99,or 100% respectively). Defaulting to 98%"
 	sim=${csstar_high}
 fi
+
+
 # Check if there was a request to run it on the plasmid assembly of the sample, change fasta source as necessary
 if [[ "${plasmid}" == "true" ]]; then
 	if [[ -s "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_plasmid_assembly_trimmed.fasta" ]]; then
@@ -146,6 +148,9 @@ if [[ "${plasmid}" == "true" ]]; then
 		#echo "No anti-microbial genes were found using c-SSTAR because there were No Plasmids Found" > "${OUTDATADIR}/${database_and_version}_${suffix}/${sample_name}.${database_and_version}.${suffix}_${sim}.sstar"
 		exit
 	fi
+else
+	OUTDATADIR="${OUTDATADIR}/c-sstar"
+	source_assembly="${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta"
 fi
 
 
