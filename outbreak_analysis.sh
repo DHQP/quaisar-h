@@ -334,7 +334,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 	fi
 	if [[ "${run_ANI}" = "true" ]]; then
 		echo "Submitting list for ANI qsub analysis"
-		qsub -sync y ${shareScript}/abl_mass_qsub_ANI_REFSEQ.sh -l "${output_directory}/${analysis_name}-ANI_todo.txt" -m 25 -o "${mass_qsub_folder}" -c "${config}" -d "${ani_database_path}" -k clobber # -k "${clobberness}"
+		qsub -sync y ${shareScript}/abl_mass_qsub_ANI_REFSEQ.sh -l "${output_directory}/${analysis_name}-ANI_todo.txt" -m 25 -o "${mass_qsub_folder}" -c "${config}" -d "${ani_database_path}" -k "${clobberness}"
 	fi
 
 	echo $(date)
