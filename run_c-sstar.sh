@@ -149,8 +149,8 @@ if [[ "${plasmid}" == "true" ]]; then
 		exit
 	fi
 else
-	OUTDATADIR="${OUTDATADIR}/c-sstar"
 	source_assembly="${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta"
+	OUTDATADIR="${OUTDATADIR}/c-sstar"
 fi
 
 
