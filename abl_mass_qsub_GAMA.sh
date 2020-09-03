@@ -91,7 +91,7 @@ elif [[ ! -z "${alt_db}" ]]; then
 		exit 39
 	else
 		use_alt_db="true"
-		database_path="${alt_DB}"
+		database_path="${alt_db}"
 	fi
 fi
 
