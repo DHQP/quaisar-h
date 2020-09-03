@@ -137,7 +137,7 @@ else
 	sim=${csstar_high}
 fi
 # Check if there was a request to run it on the plasmid assembly of the sample, change fasta source as necessary
-if [[ "${plasmid}" == "true" ]];
+if [[ "${plasmid}" == "true" ]]; then
 	if [[ -s "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_plasmid_assembly_trimmed.fasta" ]]; then
 			source_assembly="${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_plasmid_assembly_trimmed.fasta"
 			OUTDATADIR="${OUTDATADIR}/c-sstar_plasFlow"
