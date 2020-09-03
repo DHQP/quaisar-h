@@ -161,9 +161,9 @@ while [ ${counter} -lt ${arr_size} ] ; do
 			echo -e "#$ -q short.q\n"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 			echo -e "cd ${shareScript}" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 			if [[ "${use_alt_db}" == "true" ]]; then
-				echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -l -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+				echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 			else
-				echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -l -c \"${config}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+				echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 			fi
 			echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_GAMAAR_complete.txt\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 			if [[ "${counter}" -lt "${last_index}" ]]; then
@@ -203,7 +203,11 @@ while [ ${counter} -lt ${arr_size} ] ; do
 					echo -e "#$ -cwd"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 					echo -e "#$ -q short.q\n"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 					echo -e "cd ${shareScript}" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-					echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -l -c \"${config}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+					if [[ "${use_alt_db}" == "true" ]]; then
+						echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+					else
+						echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+					fi
 					echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_GAMAAR_complete.txt\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
 
 					#cd "${main_dir}"
