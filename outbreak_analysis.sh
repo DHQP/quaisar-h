@@ -149,7 +149,7 @@ if [[ ! -z "${alt_ANI_DB}" ]]; then
 		exit 39
 	else
 		ani_database_path="${alt_ANI_DB}"
-		ani_database_basename=$(basename -- "${alt_ANI_DB}")
+		ani_database_basename=$(basename -- "${ani_database_path}")
 		ani_database_and_version=$(echo ${ani_database_basename##*/} | cut -d'_' -f1,2)
 	fi
 fi
