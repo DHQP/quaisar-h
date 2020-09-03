@@ -131,6 +131,8 @@ ani_database_path=${REFSEQ}
 ani_database_and_version=${REFSEQ_date}
 
 echo "0 - ${database_path} and ${database_and_version}"
+echo "A - ${ani_database_path} and ${ani_database_and_version}"
+
 if [[ ! -z "${alt_db}" ]]; then
 	if [[ ! -f "${alt_db}" ]]; then
 		echo " No or empty alternate database location supplied to run_c-sstar_altDB.sh, exiting"
@@ -155,8 +157,11 @@ if [[ ! -z "${alt_ANI_DB}" ]]; then
 		ani_database_path="${alt_ANI_DB}"
 		ani_database_basename=$(basename -- "${ani_database_path}")
 		ani_database_and_version=$(echo ${ani_database_basename##*/} | cut -d'_' -f1,2)
+		echo "B - ${ani_database_path} and ${ani_database_and_version}"
 	fi
 fi
+
+echo "C - ${ani_database_path} and ${ani_database_and_version}"
 
 if [[ -f "${shareScript}/outbreak_analysis.out" ]]; then
 	truncate -s 0 "${shareScript}/outbreak_analysis.out"
@@ -300,7 +305,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 		OUTDATADIR="${processed}/${project}/${sample_name}"
 		echo "checking for ${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${ani_database_and_version}).txt"
 		if [[ ! -s "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${ani_database_and_version}).txt" ]]; then
-			echo "${project}/${sample_name} - ANI needs to be run against ${ani_database_and_version} at ${sim}"
+			echo "${project}/${sample_name} - ANI needs to be run against ${ani_database_and_version}"
 			echo "${project}/${sample_name}" >> "${output_directory}/${analysis_name}-ANI_todo.txt"
 			run_ANI="true"
 		fi
