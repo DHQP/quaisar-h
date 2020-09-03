@@ -6,48 +6,72 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Script to clean up script and mass qsub folders of proscripts made while mass submitting many parallele jobs
 #
-# Usage ./clear_mass_qsub_folders 1|2|3 (1-qsub folders, 2-sharescript outs/errs, 3-Both) folder_containing_script_files_to_be_deleted
+# Usage ./clear_mass_qsub_folders -l path_to_folder_to_clean -t type_of_cleaning (1=home_Script_folder=errs/outs 2=mass_qsub_folder=errs/outs/sh's...be VERY careful with #2)
 #
 # Output location: No output created
 #
 # Modules required: None
 #
-# v1.0.1 (10/9/2019)
+# v1.0.2 (08/18/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
+
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./clear_mass_qsub_folders -l path_to_folder_to_clean -t type_of_cleaning (1=home_script_folder=errs/outs 2=mass_qsub_folder=errs/outs/sh's...be VERY careful with #2)"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?l:t:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		l)
+			echo "Option -l triggered, argument = ${OPTARG}"
+			location=${OPTARG};;
+		t)
+			echo "Option -t triggered, argument = ${OPTARG}"
+			type=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+# Show help info for when no options are given
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
 
 # Number regex to test max concurrent submission parametr
 number='^[1-3]+$'
 
 # Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
+if [[ -z "${location}" ]] || [[ ! -d ${location} ]]; then
+	echo "Empty or non-existent folder supplied, exiting"
 	exit 1
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./clear_mass_qsub_folders.sh  1|2|3 (1-qsub folders, 2-sharescript outs/errs, 3-Both) folder_containing_script_files_to_be_deleted"
-	echo "Output by default is downloaded to ${processed}/run_ID and extracted to ${processed}/run_ID/sample_name/FASTQs"
-	exit 0
-elif [[ -z "${2}" ]]; then
-	echo "Empty folder supplied to $0, exiting"
-	exit 1
-elif ! [[ ${1} =~ $number ]]; then
-	echo "Arg1 is not a number or is empty. Please input 1,2, or 3 (1-qsub folders, 2-sharescript outs/errs, 3-Both)...exiting"
+elif ! [[ ${type} =~ $number ]]; then
+	echo "Type is not a number or is empty. Please input 1 or 2 (1 for just out/err, 2 for out/err/sh)...exiting"
 	exit 2
 fi
 
-# Clears out script folder of all .sh, .err, and .out files and the complete folders within each qsub type folder
-if [[ ${1} -eq 1 ]] || [[ ${1} -eq 3 ]]; then
-	for folder in ${2}/*
+# Clears out mass qsub script folder of all .sh, .err, and .out files and the complete folders within each qsub type folder
+if [[ ${type} -eq 2 ]]; then
+	for folder in ${location}/*
 	do
 		if [[ -d ${folder} ]]; then
 			for folder1 in ${folder}
@@ -67,83 +91,83 @@ elif [[ ${1} = "-h" ]]; then
 fi
 
 # Deletes all straggling .err and .out files left in the home shareScript directory
-if [[ ${1} -eq 2 ]] || [[ ${1} -eq 3 ]]; then
-	rm ${shareScript}/blast16sID_*.out
-	rm ${shareScript}/blast16sID_*.err
-	rm ${shareScript}/blast16s_*.out
-	rm ${shareScript}/blast16s_*.err
-	rm ${shareScript}/ani_*.out
-	rm ${shareScript}/ani_*.err
-	rm ${shareScript}/ANI_*.out
-	rm ${shareScript}/ANI_*.err
-	rm ${shareScript}/BTQC_*.out
-	rm ${shareScript}/BTQC_*.err
-	rm ${shareScript}/BUSCO_*.out
-	rm ${shareScript}/BUSCO_*.err
-	rm ${shareScript}/getFASTQR1_*.out
-	rm ${shareScript}/getFASTQR1_*.err
-	rm ${shareScript}/getFASTQR2_*.out
-	rm ${shareScript}/getFASTQR2_*.err
-	rm ${shareScript}/csstn_*.out
-	rm ${shareScript}/csstn_*.err
-	rm ${shareScript}/csstp_*.out
-	rm ${shareScript}/csstp_*.err
-	rm ${shareScript}/kraka_*.out
-	rm ${shareScript}/kraka_*.err
-	rm ${shareScript}/krakr_*.out
-	rm ${shareScript}/krakr_*.err
-	rm ${shareScript}/gott_*.out
-	rm ${shareScript}/gott_*.err
-	rm ${shareScript}/mlst_*.out
-	rm ${shareScript}/mlst_*.err
-	rm ${shareScript}/pFinf_*.out
-	rm ${shareScript}/pFinf_*.err
-	rm ${shareScript}/pFinp_*.out
-	rm ${shareScript}/pFinp_*.err
-	rm ${shareScript}/SPAdn_*.out
-	rm ${shareScript}/SPAdn_*.err
-	rm ${shareScript}/SPAdp_*.out
-	rm ${shareScript}/SPAdp_*.err
-	rm ${shareScript}/plasFlow_*.out
-	rm ${shareScript}/plasFlow_*.err
-	rm ${shareScript}/pFlow_*.out
-	rm ${shareScript}/pFlow_*.err
-	rm ${shareScript}/pFinf_*.out
-	rm ${shareScript}/pFinf_*.err
-	rm ${shareScript}/PROKK_*.out
-	rm ${shareScript}/PROKK_*.err
-	rm ${shareScript}/PROKK_*.e*
-	rm ${shareScript}/srst2AR_*.out
-	rm ${shareScript}/srst2AR_*.err
-	rm ${shareScript}/srst2MLST_*.out
-	rm ${shareScript}/srst2MLST_*.err
-	rm ${shareScript}/srst22MLST_*.out
-	rm ${shareScript}/srst22MLST_*.err
-	rm ${shareScript}/QUAST_*.out
-	rm ${shareScript}/QUAST_*.err
-	rm ${shareScript}/QC_*.out
-	rm ${shareScript}/QC_*.err
-	rm ${shareScript}/MLST_*.out
-	rm ${shareScript}/MLST_*.err
-	rm ${shareScript}/taxID_*.out
-	rm ${shareScript}/taxID_*.err
-	rm ${shareScript}/validate_*.out
-	rm ${shareScript}/validate_*.err
-	rm ${shareScript}/sum_*.out
-	rm ${shareScript}/sum_*.err
-	rm ${shareScript}/pFn_*.out
-	rm ${shareScript}/pFn_*.err
-	rm ${shareScript}/pFp_*.out
-	rm ${shareScript}/pFp_*.err
-	rm ${shareScript}/aniB_*.out
-	rm ${shareScript}/aniB_*.err
-	rm ${shareScript}/aniM_*.out
-	rm ${shareScript}/aniM_*.err
-	rm ${shareScript}/node_*.out
-	rm ${shareScript}/node_*.err
-	rm ${shareScript}/core.*
-	rm ${shareScript}/quaisar_*.out
-	rm ${shareScript}/quaisar_*.err
-	rm ${shareScript}/SNVPhyl_*.out
-	rm ${shareScript}/SNVPhyl_*.err
+if [[ ${type} -eq 1 ]]; then
+	rm ${location}/blast16sID_*.out
+	rm ${location}/blast16sID_*.err
+	rm ${location}/blast16s_*.out
+	rm ${location}/blast16s_*.err
+	rm ${location}/ani_*.out
+	rm ${location}/ani_*.err
+	rm ${location}/ANI_*.out
+	rm ${location}/ANI_*.err
+	rm ${location}/BTQC_*.out
+	rm ${location}/BTQC_*.err
+	rm ${location}/BUSCO_*.out
+	rm ${location}/BUSCO_*.err
+	rm ${location}/getFASTQR1_*.out
+	rm ${location}/getFASTQR1_*.err
+	rm ${location}/getFASTQR2_*.out
+	rm ${location}/getFASTQR2_*.err
+	rm ${location}/csstn_*.out
+	rm ${location}/csstn_*.err
+	rm ${location}/csstp_*.out
+	rm ${location}/csstp_*.err
+	rm ${location}/kraka_*.out
+	rm ${location}/kraka_*.err
+	rm ${location}/krakr_*.out
+	rm ${location}/krakr_*.err
+	rm ${location}/gott_*.out
+	rm ${location}/gott_*.err
+	rm ${location}/mlst_*.out
+	rm ${location}/mlst_*.err
+	rm ${location}/pFinf_*.out
+	rm ${location}/pFinf_*.err
+	rm ${location}/pFinp_*.out
+	rm ${location}/pFinp_*.err
+	rm ${location}/SPAdn_*.out
+	rm ${location}/SPAdn_*.err
+	rm ${location}/SPAdp_*.out
+	rm ${location}/SPAdp_*.err
+	rm ${location}/plasFlow_*.out
+	rm ${location}/plasFlow_*.err
+	rm ${location}/pFlow_*.out
+	rm ${location}/pFlow_*.err
+	rm ${location}/pFinf_*.out
+	rm ${location}/pFinf_*.err
+	rm ${location}/PROKK_*.out
+	rm ${location}/PROKK_*.err
+	rm ${location}/PROKK_*.e*
+	rm ${location}/srst2AR_*.out
+	rm ${location}/srst2AR_*.err
+	rm ${location}/srst2MLST_*.out
+	rm ${location}/srst2MLST_*.err
+	rm ${location}/srst22MLST_*.out
+	rm ${location}/srst22MLST_*.err
+	rm ${location}/QUAST_*.out
+	rm ${location}/QUAST_*.err
+	rm ${location}/QC_*.out
+	rm ${location}/QC_*.err
+	rm ${location}/MLST_*.out
+	rm ${location}/MLST_*.err
+	rm ${location}/taxID_*.out
+	rm ${location}/taxID_*.err
+	rm ${location}/validate_*.out
+	rm ${location}/validate_*.err
+	rm ${location}/sum_*.out
+	rm ${location}/sum_*.err
+	rm ${location}/pFn_*.out
+	rm ${location}/pFn_*.err
+	rm ${location}/pFp_*.out
+	rm ${location}/pFp_*.err
+	rm ${location}/aniB_*.out
+	rm ${location}/aniB_*.err
+	rm ${location}/aniM_*.out
+	rm ${location}/aniM_*.err
+	rm ${location}/node_*.out
+	rm ${location}/node_*.err
+	rm ${location}/core.*
+	rm ${location}/quaisar_*.out
+	rm ${location}/quaisar_*.err
+	rm ${location}/SNVPhyl_*.out
+	rm ${location}/SNVPhyl_*.err
 fi
