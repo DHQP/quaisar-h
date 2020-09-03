@@ -128,7 +128,7 @@ fi
 database_path=${ResGANNCBI_srst2}
 database_and_version=${ResGANNCBI_srst2_filename}
 ani_database_path=${REFSEQ}
-ani_database_and_version=${REFSEQ_date}
+ani_database_and_version="${REFSEQ_date}"
 
 echo "0 - ${database_path} and ${database_and_version}"
 echo "A - ${ani_database_path} and ${ani_database_and_version}"
@@ -156,7 +156,7 @@ if [[ ! -z "${alt_ANI_DB}" ]]; then
 	else
 		ani_database_path="${alt_ANI_DB}"
 		ani_database_basename=$(basename -- "${ani_database_path}")
-		ani_database_and_version=$(echo ${ani_database_basename##*/} | cut -d'_' -f1,2)
+		ani_database_and_version=$(echo ${ani_database_basename##*/} | cut -d'_' -f2)
 		echo "B - ${ani_database_path} and ${ani_database_and_version}"
 	fi
 fi
@@ -303,9 +303,9 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 		sample_name=$(echo "${line}" | awk -F/ '{ print $2}' | tr -d '[:space:]')
 		project=$(echo "${line}" | awk -F/ '{ print $1}' | tr -d '[:space:]')
 		OUTDATADIR="${processed}/${project}/${sample_name}"
-		echo "checking for ${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${ani_database_and_version}).txt"
-		if [[ ! -s "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${ani_database_and_version}).txt" ]]; then
-			echo "${project}/${sample_name} - ANI needs to be run against ${ani_database_and_version}"
+		echo "checking for ${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_REFSEQ_${ani_database_and_version}).txt"
+		if [[ ! -s "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_REFSEQ_${ani_database_and_version}).txt" ]]; then
+			echo "${project}/${sample_name} - ANI needs to be run against REFSEQ_${ani_database_and_version}"
 			echo "${project}/${sample_name}" >> "${output_directory}/${analysis_name}-ANI_todo.txt"
 			run_ANI="true"
 		fi
@@ -528,6 +528,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 		tax_file="${OUTDATADIR}/${sample_name}.tax"
 		sed -i '/^$/d' "${OUTDATADIR}/${sample_name}.tax"
 		tax_header=$(head -n1 "${OUTDATADIR}/${sample_name}.tax")
+		echo "${header}"
 		taxonomy_source_type=$(echo "${tax_header}" | cut -d'(' -f2 | cut -d')' -f1)
 		taxonomy_source=$(echo "${tax_header}" | cut -d'-' -f4-)
 		#echo "Test-${tax_header};${taxonomy_source_type};${taxonomy_source}"
