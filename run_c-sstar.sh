@@ -100,7 +100,7 @@ elif [[ -z "${sample_name}" ]]; then
 elif [[ -z "${gapping}" ]] || [[ "${gapping}" != "g" ]] && [[ "${gapping}" != "u" ]]; then
 	echo "No or incorrect gapping provided to run_c-sstar_altDB.sh, exiting"
 	exit 37
-elif [[ -z "${sim}" ]]; then
+elif [[ -z "${sim_letter}" ]]; then
 	echo "No similarity supplied to run_c-sstar_altDB.sh, exiting"
 	exit 38
 elif [[ ! -z "${alt_db}" ]]; then
