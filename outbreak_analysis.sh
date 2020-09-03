@@ -130,7 +130,7 @@ database_and_version=${ResGANNCBI_srst2_filename}
 ani_database_path=${REFSEQ}
 ani_database_and_version=${REFSEQ_date}
 
-
+echo "0 - ${database_path} and ${database_and_version}"
 if [[ ! -z "${alt_db}" ]]; then
 	if [[ ! -f "${alt_db}" ]]; then
 		echo " No or empty alternate database location supplied to run_c-sstar_altDB.sh, exiting"
@@ -140,8 +140,11 @@ if [[ ! -z "${alt_db}" ]]; then
 		database_basename=$(basename -- "${alt_db}")
 		database_basename2=$(echo ${database_basename##*/} | cut -d'.' -f1)
 		database_and_version=${database_basename2//_srst2/}
+		echo "1 - ${database_path} and ${database_and_version}"
 	fi
 fi
+
+echo "2 - ${database_path} and ${database_and_version}"
 
 if [[ ! -z "${alt_ANI_DB}" ]]; then
 	if [[ ! -f "${alt_ANI_DB}" ]]; then
