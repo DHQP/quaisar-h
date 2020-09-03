@@ -97,7 +97,7 @@ if [[ -z "${project}" ]]; then
 elif [[ -z "${sample_name}" ]]; then
 	echo "No sample name supplied to run_c-sstar_altDB.sh, exiting"
 	exit 34
-elif [[ -z "${gapping}" ]] || [[ "${gapping}" != "g"]] && [[ "${gapping}" != "u"]]; then
+elif [[ -z "${gapping}" ]] || [[ "${gapping}" != "g" ]] && [[ "${gapping}" != "u" ]]; then
 	echo "No or incorrect gapping provided to run_c-sstar_altDB.sh, exiting"
 	exit 37
 elif [[ -z "${sim}" ]]; then
