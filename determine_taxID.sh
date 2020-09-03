@@ -10,7 +10,7 @@
 # Description: Creates a single file that attempts to pull the best taxonomic information from the isolate. Currently, it operates in a linear fashion, e.g. 1.ANI, 2.16s, 3.kraken, 4.Gottcha
 # 	The taxon is chosen based on the highest ranked classifier first
 #
-# Usage: ./determine_texID.sh -s sample_name -p project_ID [-d alternate_database_location] [-c path_to_config_file]
+# Usage: ./determine_texID.sh -n sample_name -p project_ID [-d alternate_database_location] [-c path_to_config_file]
 #
 # Modules required: None
 #
@@ -21,13 +21,13 @@
 
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./determine_taxID.sh -s sample_name -p project_ID [-d alternate_database_location] [-c path_to_config_file]"
+	echo "Usage is ./determine_taxID.sh -n sample_name -p project_ID [-d alternate_database_location] [-c path_to_config_file]"
 	echo "Output is saved to ${processed}/run_ID/sample_name/ where processed is retrieved from config file, either default or imported"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?s:p:d:c:" option; do
+while getopts ":h?n:p:d:c:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -35,7 +35,7 @@ while getopts ":h?s:p:d:c:" option; do
       show_help
       exit 0
       ;;
-		s)
+		n)
 			echo "Option -s triggered, argument = ${OPTARG}"
 			sample_name=${OPTARG};;
 		p)
@@ -238,11 +238,9 @@ do_GOTTCHA() {
 		# Grab first letter of line (indicating taxonomic level)
 		first=${line::1}
 		# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken, 3rd-true % of total reads, 4th-identifier)
-		if [ "${first}" = "s" ]
-		then
+		if [ "${first}" = "s" ]; then
 			species=$(echo "${line}" | awk -F ' ' '{print $5}')
-		elif [ "${first}" = "G" ]
-		then
+		elif [ "${first}" = "G" ]; then
 			Genus=$(echo "${line}" | awk -F ' ' '{print $4}')
 		fi
 		confidence_index=$(tail -n1 "${source_file}" | cut -d' ' -f2)
