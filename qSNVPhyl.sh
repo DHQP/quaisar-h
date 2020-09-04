@@ -107,7 +107,7 @@ echo "Created and ran run_SNVPhyl_${counter}.sh"
 
 # Submit the new snyphyl run file
 qsub -sync y "${shareScript}/run_SNVPhyl_${counter}.sh" "$@"
-#rm ${shareScript}/run_SNVPhyl_${counter}.sh
+rm ${shareScript}/run_SNVPhyl_${counter}.sh
 
 # Sent an email showing that the script has completed
 submitter=$(whoami)
