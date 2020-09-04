@@ -78,7 +78,7 @@ do
 	sample=$(basename $k)
 	echo "qSNVPhyl.sh -l $k -o ${outFolder}/${analysisName} -n ${sample:0: -8}"
 	qsub qSNVPhyl.sh -l $k -o ${outFolder}/${analysisName} -n ${sample:0: -8}
-	sleep 2
+	sleep 5
 done
 
 short_list=$(basename ${list})
