@@ -6,37 +6,73 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: The wrapper script that runs the run_SNVPhyl_template.sh script on the cluster, allowing multiple instances to run different sets of isolates
 #
-# Usage: ./qSNVPhyl path_to_list_file output_directory project_identifier
+# Usage: ./qSNVPhyl -l path_to_list_file -o output_directory -p project_identifier [-c path_to_config_file]
 #
 # Output location: Parameter
 #
 # Modules required: None
 #
-# v1.0 (10/3/2019)
+# v1.0.1 (08/24/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
-# Shows a brief uasge/help section if -h option used as first argument
-if [[ "$1" = "-h" ]]; then
-	echo -e "\\n\\n\\n"
-	echo "Usage: ./qSNVPhylsh path_to_list output_directory project_identifier"
-	echo "Must only be run on the cluster (ASPEN)"
-	echo -e "\\n\\n\\n"
-	exit 0
-# Checks for proper argumentation
-elif [[ $# -lt 3 ]]; then
-	echo "Improper argument quantity supplied to $0, exiting"
-	exit 1
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./qSNVPhyl.sh -l path_to_list -o output_directory -n tree_output_name"
+	echo "Output is saved to output_directory/tree_output_namepath_to_folder"
+}
+
+options_found=0
+while getopts ":h?l:n:o:c:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		l)
+			echo "Option -l triggered, argument = ${OPTARG}"
+			input=${OPTARG};;
+		o)
+			echo "Option -o triggered, argument = ${OPTARG}"
+			outdir=${OPTARG};;
+		n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			output_file=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
 fi
 
 # Not being run on cluster=no run
@@ -71,7 +107,7 @@ echo "Created and ran run_SNVPhyl_${counter}.sh"
 
 # Submit the new snyphyl run file
 qsub -sync y "${shareScript}/run_SNVPhyl_${counter}.sh" "$@"
-rm ${shareScript}/run_SNVPhyl_${counter}.sh
+#rm ${shareScript}/run_SNVPhyl_${counter}.sh
 
 # Sent an email showing that the script has completed
 submitter=$(whoami)

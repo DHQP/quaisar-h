@@ -76,8 +76,8 @@ python MLST_compare.py -i ${list} -o ${outFolder}/${analysisName}/${analysisName
 for k in ${outFolder}/${analysisName}/*.samples
 do
 	sample=$(basename $k)
-	echo "qSNVPhyl.sh -l $k -o ${outFolder}/$nalysisName -n ${sample:0: -8}"
-	qsub qSNVPhyl.sh -l $k -o ${outFolder}/$analysisName -n ${sample:0: -8}
+	echo "qSNVPhyl.sh -l $k -o ${outFolder}/${analysisName} -n ${sample:0: -8}"
+	qsub qSNVPhyl.sh -l $k -o ${outFolder}/${analysisName} -n ${sample:0: -8}
 done
 
 short_list=$(basename ${list})
