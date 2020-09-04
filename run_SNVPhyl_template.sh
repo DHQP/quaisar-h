@@ -81,12 +81,12 @@ fi
 
 # Checks for proper argumentation
 if [[ -z "${list}" ]] || [[ ! -f ${list} ]] ; then
-	echo "Empty group name (${1}) or non-existent sample list file supplied to run_SNVPhyl.sh, exiting"
+	echo "Empty group name (${list}) or non-existent sample list file supplied to run_SNVPhyl.sh, exiting"
 	exit 1
-elif [[ -z "${2}" ]]; then
+elif [[ -z "${outdir}" ]]; then
 	echo "Empty output directory name, exiting"
 	exit 1
-elif [[ -z "${3}" ]]; then
+elif [[ -z "${analysis_name}" ]]; then
 	echo "Empty analysis identifier, exiting"
 	exit 1
 fi
@@ -182,8 +182,8 @@ sed -i "s/reference/${ref}/g" "${OUTDATADIR}/output/phylogeneticTree.newick"
 
 echo -e "\nReference:\t${ref}\nSNVPhyl core estimate:\t${snv_est}%\n" >> "${OUTDATADIR}/output/snvMatrix.tsv"
 
-cp "${OUTDATADIR}/output/snvMatrix.tsv" "${OUTDATADIR}/${3}_snvMatrix.tsv"
-cp "${OUTDATADIR}/output/phylogeneticTree.newick" "${OUTDATADIR}/${3}_SNVPhyl.newick"
+cp "${OUTDATADIR}/output/snvMatrix.tsv" "${OUTDATADIR}/${analysis_name}_snvMatrix.tsv"
+cp "${OUTDATADIR}/output/phylogeneticTree.newick" "${OUTDATADIR}/${analysis_name}_SNVPhyl.newick"
 
 ml -snvphyl-galaxy-cli/1.3.0 -Python2/2.7.13 -Mash/2.0
 
