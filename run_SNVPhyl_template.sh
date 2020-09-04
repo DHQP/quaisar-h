@@ -6,22 +6,16 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f ./config.sh ]]; then
-	cp config_template.sh config.sh
-fi
-. ./config.sh
-
 #
 # Description: Runs SNVPhyl on a group of samples to determine relatedness
 #
-# Usage: ./run_SNVPhyl.sh path_to_list_file (First sample on list will be reference) output_directory analysis_identifier (outbreak or project name)
+# Usage: ./run_SNVPhyl.sh -l path_to_list_file (First sample on list will be reference) -o output_directory -n analysis_identifier [-c path_to_config]
 #
 # Output location: parameter
 #
 # Modules required: snvphyl-galaxy-cli/1.3.0, Python/2.7.13 Mash/2.0
 #
-# v1.0.1 (1/15/2020)
+# v1.0.2 (09/04/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -29,19 +23,66 @@ fi
 ml purge
 ml snvphyl-galaxy-cli/1.3.0 -Python/2.7.15 Python2/2.7.13 Mash/2.0 Python3/3.5.2
 
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./run_SNVPhyl.sh -l path_to_list_file (First sample on list will be reference) -o output_directory -n analysis_identifier [-c path_to_config]"
+	echo "Output is saved to output_directory/analysis_identifier"
+}
+
+options_found=0
+while getopts ":h?l:n:o:c:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		l)
+			echo "Option -l triggered, argument = ${OPTARG}"
+			list=${OPTARG};;
+		o)
+			echo "Option -o triggered, argument = ${OPTARG}"
+			outdir=${OPTARG};;
+		n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			run_name=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
+
+
 # Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-elif [[ -z "${1}" ]] || [[ ! -f ${1} ]] ; then
+if [[ -z "${list}" ]] || [[ ! -f ${list} ]] ; then
 	echo "Empty group name (${1}) or non-existent sample list file supplied to run_SNVPhyl.sh, exiting"
 	exit 1
-# Gives the user a brief usage and help section if requested with the -h option argument
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./run_SNVPhyl.sh path_to_list_file (to identify the different groups analyzed) output_directory folder_name(e.g. outbreak number)"
-	echo "Phylogeny_analyses folder must contain list of samples (in format of project_id/sample_name) to be compared labelled by group_name.samples. First sample on list will be reference"
-	echo "Output is saved to ${2}/${3}"
-	exit 0
 elif [[ -z "${2}" ]]; then
 	echo "Empty output directory name, exiting"
 	exit 1
@@ -57,7 +98,7 @@ if [[ ${host} != "cluster"* ]]; then
 fi
 
 # Sets output folder to group_name under Phylogeny_analyses in MMB_Data folder
-OUTDATADIR=${2}/${3}
+OUTDATADIR=${outdir}/${analysis_name}
 if [[ ! -d "${OUTDATADIR}/FASTQs" ]]; then
 	mkdir -p "${OUTDATADIR}/FASTQs"
 fi
@@ -67,10 +108,10 @@ fi
 
 echo $(python3 -V)
 
-${shareScript}/clean_list.sh ${1}
-cp ${1} ${OUTDATADIR}
-centroid_filename=$(basename ${1}).centroid
-python3 ${shareScript}/Mash_centroid.py -i ${1} -o ${OUTDATADIR}/${centroid_filename}
+${shareScript}/clean_list.sh ${list}
+cp ${list} ${OUTDATADIR}
+centroid_filename=$(basename ${list}).centroid
+python3 ${shareScript}/Mash_centroid.py -i ${list} -o ${OUTDATADIR}/${centroid_filename}
 
 ml -Python3/3.5.2 Python2/2.7.13
 
