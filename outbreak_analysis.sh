@@ -44,7 +44,7 @@ while getopts ":h?l:c:g:n:s:k:d:t:r:" option; do
 			config=${OPTARG};;
 		g)
 			echo "Option -g triggered, argument = ${OPTARG}"
-			gapping=${OPTARG};;
+			gapping=${OPTARG,,};;
 		n)
 			echo "Option -n triggered, argument = ${OPTARG}"
 			analysis_name=${OPTARG};;
@@ -53,7 +53,7 @@ while getopts ":h?l:c:g:n:s:k:d:t:r:" option; do
 			sim=${OPTARG};;
 		k)
 			echo "Option -k triggered, argument = ${OPTARG}"
-			clobberness=${OPTARG};;
+			clobberness=${OPTARG,,};;
 		d)
 			echo "Option -d triggered, argument = ${OPTARG}"
 			alt_db=${OPTARG};;
@@ -672,7 +672,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 fi
 
 if [[ "${analysis_requested}" == "BOTH" ]] || [[ "${analysis_requested}" == "SNV" ]]; then
-	"${shareScript}/SNVPhyl_OA.sh" -l "${list_file}" -a "${analysis_name}" -o "${Phyl_OA}" -c "${config}"
+	"${shareScript}/SNVPhyl_OA.sh" -l "${list_file}" -a "${analysis_name}" -o "${Phyl_OA}"
 fi
 
 
