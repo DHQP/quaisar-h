@@ -86,7 +86,7 @@ if [[ -z "${list}" ]] || [[ ! -f ${list} ]] ; then
 elif [[ -z "${outdir}" ]]; then
 	echo "Empty output directory name, exiting"
 	exit 1
-elif [[ -z "${analysis_name}" ]]; then
+elif [[ -z "${run_name}" ]]; then
 	echo "Empty analysis identifier, exiting"
 	exit 1
 fi
@@ -98,7 +98,7 @@ if [[ ${host} != "cluster"* ]]; then
 fi
 
 # Sets output folder to group_name under Phylogeny_analyses in MMB_Data folder
-OUTDATADIR=${outdir}/${analysis_name}
+OUTDATADIR=${outdir}/${run_name}
 if [[ ! -d "${OUTDATADIR}/FASTQs" ]]; then
 	mkdir -p "${OUTDATADIR}/FASTQs"
 fi
@@ -182,8 +182,8 @@ sed -i "s/reference/${ref}/g" "${OUTDATADIR}/output/phylogeneticTree.newick"
 
 echo -e "\nReference:\t${ref}\nSNVPhyl core estimate:\t${snv_est}%\n" >> "${OUTDATADIR}/output/snvMatrix.tsv"
 
-cp "${OUTDATADIR}/output/snvMatrix.tsv" "${OUTDATADIR}/${analysis_name}_snvMatrix.tsv"
-cp "${OUTDATADIR}/output/phylogeneticTree.newick" "${OUTDATADIR}/${analysis_name}_SNVPhyl.newick"
+cp "${OUTDATADIR}/output/snvMatrix.tsv" "${OUTDATADIR}/${run_name}_snvMatrix.tsv"
+cp "${OUTDATADIR}/output/phylogeneticTree.newick" "${OUTDATADIR}/${run_name}_SNVPhyl.newick"
 
 ml -snvphyl-galaxy-cli/1.3.0 -Python2/2.7.13 -Mash/2.0
 
