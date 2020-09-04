@@ -34,7 +34,7 @@ if [[ $# -eq 0 ]]; then
 	echo "No argument supplied to $0, exiting"
 	exit 1
 elif [[ -z "${1}" ]] || [[ ! -f ${1} ]] ; then
-	echo "Empty group name or non-existent sample list file supplied to run_SNVPhyl.sh, exiting"
+	echo "Empty group name (${1}) or non-existent sample list file supplied to run_SNVPhyl.sh, exiting"
 	exit 1
 # Gives the user a brief usage and help section if requested with the -h option argument
 elif [[ "${1}" = "-h" ]]; then

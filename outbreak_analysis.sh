@@ -469,7 +469,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 					fi
 				fi
 				confers=${confers//_resistance/}
-				allele=$(echo "${line}" | cut -d'	' -f4)
+				allele=$(echo "${line}" | cut -d'	' -f4 | cut -d'_' -f1)
 				if [[ "${allele}" = "Zn-dependent" ]]; then
 					allele="${allele}_hydrolase"
 				fi
@@ -662,7 +662,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 	python3 "${shareScript}/project_parser.py" -s "${output_directory}/${analysis_name}-sample_summary.txt" -p "${output_directory}/${analysis_name}-plasmid_summary.txt" -o "${output_directory}/${analysis_name}_AR_plasmid_report.csv" -d "${database_and_version}"
 
 	declare -a move_list
-	move_list=(csstar_todo GAMA_todo srst2_todo alt_mlst_summary csstar_rejects csstar_summary GAMA_rejects GAMA_summary mlst_summary plasmid_summary sample_summary srst2 srst2_rejects)
+	move_list=(csstar_todo GAMA_todo srst2_todo alt_mlst_summary csstar_rejects csstar_summary GAMA_rejects GAMA_summary mlst_summary plasmid_summary sample_summary srst2 srst2_rejects ANI_todo)
 	if [[ ! -d "${output_directory}/OA_files" ]]; then
 		mkdir "${output_directory}/OA_files"
 	fi
