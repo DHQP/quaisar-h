@@ -469,7 +469,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 					fi
 				fi
 				confers=${confers//_resistance/}
-				allele=$(echo "${line}" | cut -d'	' -f4 | rev | cut -d'_' -f2- | rev)
+				allele=$(echo "${line}" | cut -d'	' -f4)
 				if [[ "${allele}" = "Zn-dependent" ]]; then
 					allele="${allele}_hydrolase"
 				fi
