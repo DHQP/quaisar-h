@@ -6,30 +6,53 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-. ./config.sh
-#Import the module file that loads all necessary mods
-#. "${mod_changers}/pipeline_mods"
-
 #
 # Usage ./append_taxonomy_to_ncbi_assembly_filenames.sh path_to_list
-# The list needs to have project/old_name:new_name
+# The folder needs to have ncbi source assembly files gzipped
 #
 
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./append_taxonomy_to_ncbi_assembly_filenames.sh -i path_to_folder"
+	echo "Output is done in folder"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?i:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		i)
+			echo "Option -i triggered, argument = ${OPTARG}"
+			folder=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
 
 # Checks for proper argumentation
 if [[ $# -eq 0 ]]; then
 	echo "No argument supplied to $0, exiting"
+	show_help
 	exit 1
-# Shows a brief uasge/help section if -h option used as first argument
-elif [[ "$1" = "-h" ]]; then
-	echo "Usage is ./append_taxonomy_to_ncbi_assembly_filenames.sh path_to_folder_of_assemblies"
-		exit 0
+elif [[ ! -d "${folder}" ]]; then
+	echo "No folder provided to work on...exiting"
+	show_help
+	exit 0
 fi
 
 # Loop through and act on each sample name in the passed/provided list
 
-for i in ${1}/*.gz; do
+for i in ${folder}/*.gz; do
 	old_name=$(basename ${i} | rev | cut -d'.' -f2- | rev)
 	new_name=$(echo ${old_name} | tr -d '[],')
 	dir_name=$(dirname ${i})
@@ -39,4 +62,4 @@ for i in ${1}/*.gz; do
 	echo "Taxes: ${tax_genus}:${tax_species}"
 	mv ${dir_name}/${old_name} ${dir_name}/${tax_genus}_${tax_species}_${new_name}
 	gzip ${dir_name}/${tax_genus}_${tax_species}_${new_name}
-done < "${1}"
+done

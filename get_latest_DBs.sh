@@ -10,7 +10,7 @@
 #
 # Description: Allows script to source this file to be able to pull out latest database filenames
 #
-# Usage ./get_latest_DBs.sh path_to_database_folder
+# Usage ./get_latest_DBs.sh -d path_to_database_folder
 #
 # Output loction: std_out
 #
@@ -21,23 +21,46 @@
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-elif [[ -z "${1}" ]]; then
-	echo "Empty database location supplied to get_latest_DBs, exiting"
-	exit 1
-elif [[ ! -d "${1}" ]]; then
-	echo "Database location (${1}) does not exist, exiting"
-	exit 1
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./get_latest_DBs.sh path_to_database_folder"
-	exit 0
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./get_latest_DBs.sh -d path_to_database_folder"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?d:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		d)
+			echo "Option -d triggered, argument = ${OPTARG}"
+			databases=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+# Show help info for when no options are given
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
 fi
 
-databases="${1}"
-#echo "Using ${1} as database location"
+# Checks for proper argumentation
+if [[ -z "${databases}" ]] || [[ ! -d "${databases}" ]]; then
+	echo "Empty/non-existent database folder (${databases}) supplied, exiting"
+	exit 1
+fi
+
 
 function get_ANI_REFSEQ {
 	REFSEQ="NOT_FOUND"

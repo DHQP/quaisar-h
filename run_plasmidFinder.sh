@@ -6,113 +6,155 @@
 #$ -cwd
 #$ -q short.q
 
-# Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Will attempt to find any plasmids in sample
 #
-# Usage ./run_plasmidFinder.sh sample_name run_ID force
+# Usage ./run_plasmidFinder.sh -n sample_name -p run_ID -o output_folder [plasmidFinder|plasmidFinder_on_plasFlow] [-f force against all] [-c path_to_config_file]
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/plasmidFinder(on_plasFlow)/
 #
 # Modules required: PlasmidFinder/1.3
 #
-# v1.0.1 (02/25/2020)
+# v1.0.2 (09/08/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
 ml PlasmidFinder/1.3
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-elif [[ -z "${1}" ]]; then
-	echo "Empty sample name supplied to run_plasmidFinder.sh, exiting"
-	exit 1
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./run_plasmidFinder.sh  sample_name run_ID output_folder(plasmid|plasmid_on_plasFlow) (-i number_minimum_identity, optional) (-f to force against all databases, optional)"
-	echo "Output by default is ${processed}/miseq_run_ID/sample_name/plasmid"
-	exit 0
-elif [[ -z "${2}" ]]; then
-	echo "Empty miseq_run_ID supplied to run_plasmidFinder.sh, exiting"
-	exit 1
-elif [[ "${4}" == "-f" ]] || [[ "${6}" == "-f" ]]; then
-	force="true"
+#  Function to print out help blurb
+show_help () {
+	echo "Usage: ./run_plasmidFinder.sh -n sample_name -p run_ID -o output_folder [plasmidFinder|plasmidFinder_on_plasFlow] [-f force against all] [-c path_to_config_file]"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?c:p:n:o:f" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			sample_name=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		f)
+			echo "Option -f triggered, argument = ${OPTARG}"
+			force="true";;
+		o)
+			echo "Option -o triggered, argument = ${OPTARG}"
+			output_dir=${OPTARG,,};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
 fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
+
+# Checks for proper argumentation
+if [[ -z "${sample_name}" ]]; then
+	echo "Empty sample name supplied to run_kraken.sh, exiting"
+	exit 1
+elif [ -z "${project}" ]; then
+	echo "Empty project name given. Exiting"
+	exit 1
+elif [ -z "${output_dir}" ] || [[ "${output_dir}" != "plasmidfinder" ]] && [[ "${output_dir}" != "plasmidfinder_on_plasflow" ]]; then
+	echo "Output folder must be plasmidFinder or plasmidFinder_on_plasFlow"
+	exit 1
+fi
+
+# Sets the output folder to the sample_name folder in processed samples
+OUTDATADIR="${processed}/${project}/${sample_name}"
 
 # Create output directory
-if [[ ! -d ${processed}/${2}/${1}/${3} ]]; then
-	echo "Making ${processed}/${2}/${1}/${3}"
-	mkdir ${processed}/${2}/${1}/${3}
+if [[ ! -d ${OUTDATADIR} ]]; then
+	echo "Making ${OUTDATADIR}"
+	mkdir ${OUTDATADIR}
 fi
 
-# Set output directory
-OUTDATADIR=${processed}/${2}/${1}/${3}
+
 # Get proper input file based on output directory (whether it is full assembly or plasmid)
-# if [[ "${3}" == "plasmid_on_plasFlow" ]]; then
-# 	inpath="plasmidAssembly/${1}_plasmid_scaffolds_trimmed.fasta"
+# if [[ "${output_dir}" == "plasmid_on_plasFlow" ]]; then
+# 	inpath="plasmidAssembly/${sample_name}_plasmid_scaffolds_trimmed.fasta"
 # el
-if [[ "${3}" == "plasmidFinder" ]]; then
-	inpath="Assembly/${1}_scaffolds_trimmed.fasta"
-elif [[ "${3}" == "plasmidFinder_on_plasFlow" ]]; then
-	if [[ -f "${processed}/${2}/${1}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/assembly.fasta" ]]; then
-		mv "${processed}/${2}/${1}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/assembly.fasta" "${processed}/${2}/${1}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_assembly.fasta"
-		mv "${processed}/${2}/${1}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/assembly.gfa" "${processed}/${2}/${1}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_assembly.gfa"
+if [[ "${output_dir}" == "plasmidfinder" ]]; then
+	output_dir="plasmidFinder"
+	inpath="Assembly/${sample_name}_scaffolds_trimmed.fasta"
+elif [[ "${output_dir}" == "plasmidfinder_on_plasflow" ]]; then
+	output_dir="plasmidFinder_on_plasFlow"
+	if [[ -f "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/assembly.fasta" ]]; then
+		mv "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/assembly.fasta" "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_assembly.fasta"
+		mv "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/assembly.gfa" "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_assembly.gfa"
 	fi
-	if 	[[ -f "${processed}/${2}/${1}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta" ]]; then
-		inpath="plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta"
+	if 	[[ -f "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_plasmid_assembly_trimmed.fasta" ]]; then
+		inpath="plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_plasmid_assembly_trimmed.fasta"
 	else
-		if [[ ! -d "${processed}/${2}/${1}/plasFlow" ]]; then
-			echo "plasFlow folder does not exist for ${2}/${1}, it likely is not in the Enterobacteriaceae family"
+		if [[ ! -d "${OUTDATADIR}/plasFlow" ]]; then
+			echo "plasFlow folder does not exist for ${project}/${sample_name}, it likely is not in the Enterobacteriaceae family"
 		else
-			echo "No ${processed}/${2}/${1}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta"
+			echo "No ${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_plasmid_assembly_trimmed.fasta"
 		fi
 		exit
 	fi
 else
 	echo "Non standard output location, using full assembly to find plasmids"
-	inpath="Assembly/${1}_scaffolds_trimmed.fasta"
+	inpath="Assembly/${sample_name}_scaffolds_trimmed.fasta"
 fi
-
-# If flag was set to change % ID threshold then use it, otherwise use default from config.sh
-if [[ "${4}" = "-i" ]]; then
-	pl_id="${5}"
-else
-	pl_id="${plasmid_identity}"
-fi
-
 
 #If force flag is set, then run it against all databases
 if [[ "${force}" == "true" ]]; then
 	echo "Checking against ALL plasmids, but unlikely to find anything"
-	plasmidfinder -i ${processed}/${2}/${1}/${inpath} -o ${OUTDATADIR} -k ${plasmidFinder_identity} -p enterobacteriaceae
+	plasmidfinder -i ${OUTDATADIR}/${inpath} -o ${OUTDATADIR}/${output_dir} -k ${plasmidFinder_identity} -p enterobacteriaceae
 	# Rename all files to include ID
-	mv ${OUTDATADIR}/Hit_in_genome_seq.fsa ${OUTDATADIR}/${1}_Hit_in_genome_seq_entero.fsa
-	mv ${OUTDATADIR}/Plasmid_seq.fsa ${OUTDATADIR}/${1}_Plasmid_seq_enetero.fsa
-	mv ${OUTDATADIR}/results.txt ${OUTDATADIR}/${1}_results_entero.txt
-	mv ${OUTDATADIR}/results_tab.txt ${OUTDATADIR}/${1}_results_tab_entero.txt
-	mv ${OUTDATADIR}/results_table.txt ${OUTDATADIR}/${1}_results_table_entero.txt
-	plasmidfinder -i ${processed}/${2}/${1}/${inpath} -o ${OUTDATADIR} -k ${plasmidFinder_identity} -p gram_positive
+	mv ${OUTDATADIR}/${output_dir}/Hit_in_genome_seq.fsa ${OUTDATADIR}/${output_dir}/${sample_name}_Hit_in_genome_seq_entero.fsa
+	mv ${OUTDATADIR}/${output_dir}/Plasmid_seq.fsa ${OUTDATADIR}/${output_dir}/${sample_name}_Plasmid_seq_enetero.fsa
+	mv ${OUTDATADIR}/${output_dir}/results.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_entero.txt
+	mv ${OUTDATADIR}/${output_dir}/results_tab.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_tab_entero.txt
+	mv ${OUTDATADIR}/${output_dir}/results_table.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_table_entero.txt
+	plasmidfinder -i ${OUTDATADIR}/${inpath} -o ${OUTDATADIR}/${output_dir} -k ${plasmidFinder_identity} -p gram_positive
 	# Rename all files to include ID
-	mv ${OUTDATADIR}/Hit_in_genome_seq.fsa ${OUTDATADIR}/${1}_Hit_in_genome_seq_gramp.fsa
-	mv ${OUTDATADIR}/Plasmid_seq.fsa ${OUTDATADIR}/${1}_Plasmid_seq_gramp.fsa
-	mv ${OUTDATADIR}/results.txt ${OUTDATADIR}/${1}_results_gramp.txt
-	mv ${OUTDATADIR}/results_tab.txt ${OUTDATADIR}/${1}_results_tab_gramp.txt
-	mv ${OUTDATADIR}/results_table.txt ${OUTDATADIR}/${1}_results_table_gramp.txt
-	cat	${OUTDATADIR}/${1}_results_table_gramp.txt ${OUTDATADIR}/${1}_results_table_entero.txt > ${OUTDATADIR}/${1}_results_table_summary.txt
+	mv ${OUTDATADIR}/${output_dir}/Hit_in_genome_seq.fsa ${OUTDATADIR}/${output_dir}/${sample_name}_Hit_in_genome_seq_gramp.fsa
+	mv ${OUTDATADIR}/${output_dir}/Plasmid_seq.fsa ${OUTDATADIR}/${output_dir}/${sample_name}_Plasmid_seq_gramp.fsa
+	mv ${OUTDATADIR}/${output_dir}/results.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_gramp.txt
+	mv ${OUTDATADIR}/${output_dir}/results_tab.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_tab_gramp.txt
+	mv ${OUTDATADIR}/${output_dir}/results_table.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_table_gramp.txt
+	cat	${OUTDATADIR}/${output_dir}/${sample_name}_results_table_gramp.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_table_entero.txt > ${OUTDATADIR}/${output_dir}/${sample_name}_results_table_summary.txt
 # Else, if the force flag is not set, then TRY to limit search to family (it will still check against all if it does not match the family)
 else
 	# Checks to see if a tax file is available to extract the family of the sample
-	if [[ -f ${processed}/${2}/${1}/${1}.tax ]]; then
+	if [[ -f ${OUTDATADIR}/${sample_name}.tax ]]; then
 		#Extracts the 6th line from the tax file containing all family information
-		family=$(sed -n '6p' < ${processed}/${2}/${1}/${1}.tax)
-		genus=$(sed -n '7p' < ${processed}/${2}/${1}/${1}.tax)
+		family=$(sed -n '6p' < ${OUTDATADIR}/${sample_name}.tax)
+		genus=$(sed -n '7p' < ${OUTDATADIR}/${sample_name}.tax)
 		#Extracts family name from line
 		family=$(echo ${family}  | cut -d' ' -f4)
 		genus=$(echo ${genus}  | cut -d' ' -f4)
@@ -120,46 +162,46 @@ else
 		# If family is enterobacteriaceae, then run against that DB
 		if [[ "${family,}" == "enterobacteriaceae" ]]; then
 			echo "Checking against Enterobacteriaceae plasmids"
-			plasmidfinder -i ${processed}/${2}/${1}/${inpath} -o ${OUTDATADIR} -k ${plasmidFinder_identity} -p enterobacteriaceae
+			plasmidfinder -i ${OUTDATADIR}/${inpath} -o ${OUTDATADIR}/${output_dir} -k ${plasmidFinder_identity} -p enterobacteriaceae
 			# Rename all files to include ID
-			mv ${OUTDATADIR}/Hit_in_genome_seq.fsa ${OUTDATADIR}/${1}_Hit_in_genome_seq_entero.fsa
-			mv ${OUTDATADIR}/Plasmid_seq.fsa ${OUTDATADIR}/${1}_Plasmid_seq_enetero.fsa
-			mv ${OUTDATADIR}/results.txt ${OUTDATADIR}/${1}_results_entero.txt
-			mv ${OUTDATADIR}/results_tab.txt ${OUTDATADIR}/${1}_results_tab_entero.txt
-			mv ${OUTDATADIR}/results_table.txt ${OUTDATADIR}/${1}_results_table_summary.txt
+			mv ${OUTDATADIR}/${output_dir}/Hit_in_genome_seq.fsa ${OUTDATADIR}/${output_dir}/${sample_name}_Hit_in_genome_seq_entero.fsa
+			mv ${OUTDATADIR}/${output_dir}/Plasmid_seq.fsa ${OUTDATADIR}/${output_dir}/${sample_name}_Plasmid_seq_enetero.fsa
+			mv ${OUTDATADIR}/${output_dir}/results.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_entero.txt
+			mv ${OUTDATADIR}/${output_dir}/results_tab.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_tab_entero.txt
+			mv ${OUTDATADIR}/${output_dir}/results_table.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_table_summary.txt
 		# If family is staph, strp, or enterococcus, then run against the gram positive database
 		elif [[ "${genus,}" == "staphylococcus" ]] || [[ "${3,}" == "streptococcus" ]] || [[ "${3,}" == "enterococcus" ]]; then
 			echo "Checking against Staph, Strep, and Enterococcus plasmids"
-			plasmidfinder -i ${processed}/${2}/${1}/${inpath} -o ${OUTDATADIR} -k ${plasmidFinder_identity} -p gram_positive
+			plasmidfinder -i ${OUTDATADIR}/${inpath} -o ${OUTDATADIR}/${output_dir} -k ${plasmidFinder_identity} -p gram_positive
 			# Rename all files to include ID
-			mv ${OUTDATADIR}/Hit_in_genome_seq.fsa ${OUTDATADIR}/${1}_Hit_in_genome_seq_gramp.fsa
-			mv ${OUTDATADIR}/Plasmid_seq.fsa ${OUTDATADIR}/${1}_Plasmid_seq_gramp.fsa
-			mv ${OUTDATADIR}/results.txt ${OUTDATADIR}/${1}_results_gramp.txt
-			mv ${OUTDATADIR}/results_tab.txt ${OUTDATADIR}/${1}_results_tab_gramp.txt
-			mv ${OUTDATADIR}/results_table.txt ${OUTDATADIR}/${1}_results_table_summary.txt
+			mv ${OUTDATADIR}/${output_dir}/Hit_in_genome_seq.fsa ${OUTDATADIR}/${output_dir}/${sample_name}_Hit_in_genome_seq_gramp.fsa
+			mv ${OUTDATADIR}/${output_dir}/Plasmid_seq.fsa ${OUTDATADIR}/${output_dir}/${sample_name}_Plasmid_seq_gramp.fsa
+			mv ${OUTDATADIR}/${output_dir}/results.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_gramp.txt
+			mv ${OUTDATADIR}/${output_dir}/results_tab.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_tab_gramp.txt
+			mv ${OUTDATADIR}/${output_dir}/results_table.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_table_summary.txt
 		# Family is not one that has been designated by the creators of plasmidFinder to work well, but still attempting to run against both databases
 		else
 			echo "Checking against ALL plasmids, but unlikely to find anything"
-			plasmidfinder -i ${processed}/${2}/${1}/${inpath} -o ${OUTDATADIR} -k ${plasmidFinder_identity} -p enterobacteriaceae
+			plasmidfinder -i ${OUTDATADIR}/${inpath} -o ${OUTDATADIR}/${output_dir} -k ${plasmidFinder_identity} -p enterobacteriaceae
 			# Rename all files to include ID
-			mv ${OUTDATADIR}/Hit_in_genome_seq.fsa ${OUTDATADIR}/${1}_Hit_in_genome_seq_entero.fsa
-			mv ${OUTDATADIR}/Plasmid_seq.fsa ${OUTDATADIR}/${1}_Plasmid_seq_enetero.fsa
-			mv ${OUTDATADIR}/results.txt ${OUTDATADIR}/${1}_results_entero.txt
-			mv ${OUTDATADIR}/results_tab.txt ${OUTDATADIR}/${1}_results_tab_entero.txt
-			mv ${OUTDATADIR}/results_table.txt ${OUTDATADIR}/${1}_results_table_entero.txt
-			plasmidfinder -i ${processed}/${2}/${1}/${inpath} -o ${OUTDATADIR} -k ${plasmidFinder_identity} -p gram_positive
+			mv ${OUTDATADIR}/${output_dir}/Hit_in_genome_seq.fsa ${OUTDATADIR}/${output_dir}/${sample_name}_Hit_in_genome_seq_entero.fsa
+			mv ${OUTDATADIR}/${output_dir}/Plasmid_seq.fsa ${OUTDATADIR}/${output_dir}/${sample_name}_Plasmid_seq_enetero.fsa
+			mv ${OUTDATADIR}/${output_dir}/results.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_entero.txt
+			mv ${OUTDATADIR}/${output_dir}/results_tab.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_tab_entero.txt
+			mv ${OUTDATADIR}/${output_dir}/results_table.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_table_entero.txt
+			plasmidfinder -i ${OUTDATADIR}/${inpath} -o ${OUTDATADIR}/${output_dir} -k ${plasmidFinder_identity} -p gram_positive
 			# Rename all files to include ID
-			mv ${OUTDATADIR}/Hit_in_genome_seq.fsa ${OUTDATADIR}/${1}_Hit_in_genome_seq_gramp.fsa
-			mv ${OUTDATADIR}/Plasmid_seq.fsa ${OUTDATADIR}/${1}_Plasmid_seq_gramp.fsa
-			mv ${OUTDATADIR}/results.txt ${OUTDATADIR}/${1}_results_gramp.txt
-			mv ${OUTDATADIR}/results_tab.txt ${OUTDATADIR}/${1}_results_tab_gramp.txt
-			mv ${OUTDATADIR}/results_table.txt ${OUTDATADIR}/${1}_results_table_gramp.txt
-			cat	${OUTDATADIR}/${1}_results_table_gramp.txt ${OUTDATADIR}/${1}_results_table_entero.txt > ${OUTDATADIR}/${1}_results_table_summary.txt
+			mv ${OUTDATADIR}/${output_dir}/Hit_in_genome_seq.fsa ${OUTDATADIR}/${output_dir}/${sample_name}_Hit_in_genome_seq_gramp.fsa
+			mv ${OUTDATADIR}/${output_dir}/Plasmid_seq.fsa ${OUTDATADIR}/${output_dir}/${sample_name}_Plasmid_seq_gramp.fsa
+			mv ${OUTDATADIR}/${output_dir}/results.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_gramp.txt
+			mv ${OUTDATADIR}/${output_dir}/results_tab.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_tab_gramp.txt
+			mv ${OUTDATADIR}/${output_dir}/results_table.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_table_gramp.txt
+			cat	${OUTDATADIR}/${output_dir}/${sample_name}_results_table_gramp.txt ${OUTDATADIR}/${output_dir}/${sample_name}_results_table_entero.txt > ${OUTDATADIR}/${output_dir}/${sample_name}_results_table_summary.txt
 
 		fi
 	# No assembly file exists and cannot be used to determine family of sample
 	else
-		echo "Cant guess the genus of the sample, please try again with the force option or check the contents of the .tax file for complete taxonomic classification (${processed}/${2}/${1}/${1}.tax)"
+		echo "Cant guess the genus of the sample, please try again with the force option or check the contents of the .tax file for complete taxonomic classification (${OUTDATADIR}/${sample_name}.tax)"
 	fi
 
 	ml -PlasmidFinder/1.3

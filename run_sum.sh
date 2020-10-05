@@ -6,16 +6,10 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Creates a summary file for the run and prints out a one word status and a short description of each step being reported
 #
-# Usage ./run_sum.sh run_ID
+# Usage ./run_sum.sh -p run_ID [-c path_to_config_file]
 #
 # Output location: default_config.sh_output_location/run_ID/
 #
@@ -26,58 +20,106 @@ fi
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-elif [[ -z "${1}" ]]; then
-	echo "Empty run_ID supplied to run_sum.sh, exiting"
-	exit 1
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./run_sum.sh miseq_run_ID -vo(optional)"
-	echo "Output is saved to ${processed}/miseq_run_ID"
-	exit 0
+#  Function to print out help blurb
+show_help () {
+	echo "Usage: ./run_sum.sh -p run_ID [-c path_to_config_file]"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?c:p:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
 fi
 
-echo "Checking for ${processed}/${1}/${1}_list(_ordered).txt"
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
+
+# Checks for proper argumentation
+if [ -z "${project}" ]; then
+	echo "Empty project name given. Exiting"
+	exit 1
+fi
+
+# Sets the output folder to the sample_name folder in processed samples
+OUTDATADIR="${processed}/${project}"
+
+
+echo "Checking for ${OUTDATADIR}/${project}_list(_ordered).txt"
 
 # Checks for existence of list files in specific order
-if [[ -z ${2} ]]; then
-	if [[ -f ${processed}/${1}/${1}_list_ordered.txt ]]; then
-		list="${processed}/${1}/${1}_list_ordered.txt"
-	elif [[ -f ${processed}/${1}/${1}_list.txt ]]; then
-		list="${processed}/${1}/${1}_list.txt"
+#if [[ -z ${2} ]]; then
+	if [[ -f "${OUTDATADIR}/${project}_list_ordered.txt" ]]; then
+		list="${OUTDATADIR}/${project}_list_ordered.txt"
+	elif [[ -f "${OUTDATADIR}/${project}_list.txt" ]]; then
+		list="${OUTDATADIR}/${project}_list.txt"
 	else
 		echo "No list file exists, cannot do a summary, unless I add in an automagic creator later"
 		exit
 	fi
-	type="project"
-else
-	type="list"
-	list=${1}
-fi
+#	type="project"
+#else
+#	type="list"
+#	list=${project}
+#fi
 
 # Gets todays date to show when summary was run
 runsumdate=$(date "+%Y_%m_%d_at_%Hh_%Mm")
 echo "Creating run summary at ${runsumdate}"
 # Status of each individual sample is updated in its own folder and the run_summary file
-if [[ "${type}" = "project" ]]; then
-	sum_name="${1}_run_summary_at_${runsumdate}.sum"
-	echo "named as project"
-else
-	sum_name="list_summary_at_${runsumdate}.sum"
-	echo "named as list"
-fi
+#if [[ "${type}" = "project" ]]; then
+sum_name="${project}_run_summary_at_${runsumdate}.sum"
+#	echo "named as project"
+#else
+#	sum_name="list_summary_at_${runsumdate}.sum"
+#	echo "named as list"
+#fi
+
+echo "List=${list}"
 
 # Run validate_piperun.sh on every sample in the list and cat output into one summary file
 while IFS= read -r samples || [ -n "$samples" ]; do
-	echo ${file}
 	file=$(echo "${samples}" | awk -F/ '{ print $2}' | tr -d '[:space:]')
 	proj=$(echo "${samples}" | awk -F/ '{ print $1}' | tr -d '[:space:]')
-	"${shareScript}/validate_piperun.sh" "${file}" "${proj}" > "${processed}/${proj}/${file}/${file}_pipeline_stats.txt"
-	if [[ "${type}" = "project" ]]; then
+	echo ${file}
+	"${shareScript}/validate_piperun.sh" -n "${file}" -p "${proj}" -c "${config}" > "${processed}/${proj}/${file}/${file}_pipeline_stats.txt"
+	#if [[ "${type}" = "project" ]]; then
 		cat "${processed}/${proj}/${file}/${file}_pipeline_stats.txt" >> "${processed}/${proj}/${sum_name}"
-	else
-		cat "${processed}/${proj}/${file}/${file}_pipeline_stats.txt" >> "${3}/${sum_name}"
-	fi
+	#else
+	#	cat "${processed}/${proj}/${file}/${file}_pipeline_stats.txt" >> "${3}/${sum_name}"
+	#fi
 done < ${list}

@@ -6,36 +6,106 @@
 #$ -cwd
 #$ -q all.q
 
-# Sets the sharescript variable temporarily to the current working directory, allowing it to find the original config.sh file
-shareScript=$(pwd)
-#Import the config file with shortcuts and settings
-. ${shareScript}/config.sh
-
 #
 # Description: The wrapper script that runs the QuAISAR-H pipeline in a grid scheduler environment.
 # There are 2 ways to call the script. 1. If there is a default location and format that reads are kept then set that in the config file and use -p and the subfolder name containing the fastq files,
-# or if the location is not in a standard place then use -i and the format number matching the reads post_fix and set output directory with -o as follows
+# or if the location is not in a standard place then use -i and the format number matching the reads postfix and set output directory with -o as follows
 #
 # Usage 1: ./parallel_quaisar.sh -p name_of_subfolder_within_default_read_location
-# Usage 2: ./parallel_quaisar.sh -i path_to_reads_folder 1|2|3|4 -o path_to_parent_output_folder_location name_of_output_folder
+# Usage 2: ./parallel_quaisar.sh -i path_to_reads_folder -f 1|2|3|4 -o path_to_parent_output_folder_location -p name_of_output_folder [-c path_to_config_file] [-a assemblies_only]
 #
 # Output location: Parameter or default_config.sh_output_location if p flag is used
 #
 # Modules required: None
 #		*script must be run on cluster or grid scheduler machine
 #
-# v1.0 (10/3/2019)
+# v1.0.1 (08/24/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
+#  Function to print out help blurb
+show_help () {
+	echo -e "Usage 1: ./parallel_quaisar.sh -p MiSeq_Run_ID\n Usage 2: ./parallel_quaisar.sh -i path_to_reads_folder -f 1|2|3|4 -o path_to_parent_output_folder_location -n name_of_output_folder [-c path_to_config_file] [-a assemblies_only]"
+}
+
+change_processed="false"
+
+# Parse command line options
+options_found=0
+while getopts ":h?c:p:i:f:o:n:a" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			PROJECT=${OPTARG};;
+		n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			named_project=${OPTARG};;
+		i)
+			echo "Option -i triggered, argument = ${OPTARG}"
+			INDATADIR=${OPTARG}
+			# Checks for proper argumentation
+			if [[ -d  ${INDATADIR} ]]; then
+				do_download="true"
+			else
+					echo "${INDATADIR} does not exist...exiting"
+					exit 1
+			fi
+			indir_set="true";;
+		f)
+			echo "Option -f triggered, argument = ${OPTARG}"
+			postfix=${OPTARG};;
+		o)
+			echo "Option -o triggered, argument = ${OPTARG}"
+			new_processed=${OPTARG}
+			change_processed="true";;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		a)
+			echo "Option -a triggered, argument = ${OPTARG}"
+			assemblies="true";;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+# Show help info for when no options are given
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
 
 # Creates a copy of config file to use for each run of the script, in case there is a change in output locations
 echo "${shareScript}"
 config_counter=0
 while true
 do
-	if [[ "${config_counter}" -gt ${max_quaisars} ]]; then
+	if [[ "${config_counter}" -gt "${max_quaisars}" ]]; then
 		echo "Already ${max_quaisars} parallel quaisar sets running, please wait until one finishes (or check script directory for any straggling config_X.sh files that may not be being used anymore)...exiting"
 		exit 324
 	fi
@@ -43,7 +113,18 @@ do
 		if [[ -f "${shareScript}/config_template.sh" ]]; then
 			echo "Trying to copy ${shareScript}/config_template.sh to ${shareScript}/config_${config_counter}.sh"
 			cp "${shareScript}/config_template.sh" "${shareScript}/config_${config_counter}.sh"
-			break
+			echo "CP-${change_processed}"
+			if [[ "${change_processed}" == "true" ]]; then
+				echo "Changing processed location in config file"
+				echo "processed=${new_processed}" >> "${shareScript}/config_${config_counter}.sh"
+			fi
+			if [[ -f "${shareScript}/config_${config_counter}.sh" ]]; then
+				. "${shareScript}/config_${config_counter}.sh"
+				break
+			else
+				echo "New config file was NOT created....find out why, exiting"
+				exit
+			fi
 		else
 			echo "config_template.sh does not exist, cannot copy and must exit..."
 			exit 333
@@ -53,15 +134,55 @@ do
 	fi
 done
 
+BASEDIR="${processed}"
+
+# Apply default values to other variables if a
+if [[ ! -z "${PROJECT}" ]]; then
+	is_proj="true"
+	for instrument in "${all_instruments[@]}"
+	do
+		# Goes through each subfolder of the current instrument
+		for run_folder in "${instrument}"/*
+		do
+			# Gets folder names in current directory
+			run_ID=${run_folder##*/}
+			#echo "${run_ID} - ${PROJECT}"
+			# If folder name matches project name
+			if [[ "${run_ID}" == "${PROJECT}" ]]; then
+				# Print that a match was found
+				echo "Found project ${run_ID} in ${instrument}"
+				# Go through every file in the Basecalls folder of the found folder (all files will only be fastq.gzs)
+				INDATADIR="${instrument}/${run_ID}/Data/Intensities/BaseCalls"
+				break
+			fi
+		done
+	done
+	if [[ ! -d "${INDATADIR}" ]]; then
+		echo "No FOLDER ${INDATADIR} exists on any MiSeq instrument, exiting"
+		exit 123
+	fi
+	postfix=1
+else
+		if [[ -z "${named_project}" ]]; then
+			echo "No project name given for the alternate output location"
+		elif [[ -z "${postfix}" ]] || [[ ${postfix} -lt 1 ]] || [[ ${postfix} -gt 4 ]]; then
+			echo "No read postfix, or it is outside the 1-4 range, to know how to deal with reads...exiting"
+		fi
+		PROJECT="${named_project}"
+
+fi
+
+list_path="${processed}/${PROJECT}/${PROJECT}_list.txt"
+
+
+
 #Print out which type of machine the script is running on (Biolinux or Aspen as an interactive session or node based)
 if [ "${host}" = "biolinux" ];
 then
 	echo "Running pipeline on Biolinux"
-elif [ "${host}" = "aspen_login" ];
-then
+elif [ "${host}" = "aspen_login" ]; then
 	echo "Running pipeline on Aspen interactive node"
-elif [[ "${host}" = "cluster"* ]];
-then
+elif [[ "${host}" = "cluster"* ]]; then
 	echo "Running pipeline on Aspen ${host}"
 fi
 
@@ -72,119 +193,9 @@ then
 	exit 1;
 fi
 
-# Checking for proper number of arguments from command line
-if [[ $# -lt 1  || $# -gt 7 ]]; then
-	echo "If reads are in default location set in config file then"
-  echo "Usage: ./parallel_quaisar.sh -p project_name"
-	echo "else if you are running it on reads not in the default location or format"
-	echo "Usage: ./parallel_quaisar.sh -i location_of_reads 1|2|3|4 -o path_to_parent_output_folder_location name_of_output_folder [-a]"
-	echo "filename postfix numbers are as follows 1:_SX_L001_RX_00X.fastq.gz 2: _(R)X.fastq.gz 3: _RX_00X.fastq.gz 4: _SX_RX_00X.fastq.gz"
-  echo "You have used $# args"
-  exit 3
-fi
-
-# Checks the arguments (more to come)
-nopts=$#
-do_download=false
-global_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
-requestor=$(whoami)
-PROJECT="${requestor}_${global_time}"
-BASEDIR="${processed}"
-
-for ((i=1 ; i <= nopts ; i++)); do
-	#echo "${1} ${2}"
-	case "${1}" in
-		#Help/Usage section
-		-h | --help)
-			echo -e "\\n\\n\\n"
-			echo "If reads are in default location set in config file then"
-		  echo "Usage: ./parallel_quaisar.sh -p project_name"
-			echo "else if you are running it on reads not in the default location or format"
-			echo "Usage: ./parallel_quaisar.sh -i location_of_reads 1|2|3|4 -o path_to_parent_output_folder_location name_of_output_folder [-a]"
-			echo "filename postfix numbers are as follows 1:_SX_L001_RX_00X.fastq.gz 2: _(R)X.fastq.gz 3: _RX_00X.fastq.gz 4: _SX_RX_00X.fastq.gz"
-			echo -e "\\n\\n\\n"
-			exit 0
-			;;
-		#Gets name of folder that FASTA files will be in
-		-i | --in-dir)
-			INDATADIR="$2"
-			if [[ -d  ${INDATADIR} ]]; then
-				do_download="true"
-				list_path="${BASEDIR}/${PROJECT}/${PROJECT}_list.txt"
-			else
-					echo "${INDATADIR} does not exist...exiting"
-					exit 1
-			fi
-			indir_set="true"
-			postfix="$3"
-			#is_full_run="false"
-			#echo "$INDATADIR $2"
-			shift 3
-			;;
-		#Gets output directory name of folder that all output files will be stored
-		-o | --out-dir)
-			BASEDIR="$2"
-			PROJECT="$3"
-			shift 3
-
-			echo "processed=${BASEDIR}" >> "${shareScript}/config_${config_counter}.sh"
-			. ${shareScript}/config_${config_counter}.sh
-			echo "${processed}"
-			list_path="${BASEDIR}/${PROJECT}/${PROJECT}_list.txt"
-			if [[ ! -d ${BASEDIR} ]]; then
-				mkdir -p ${BASEDIR}
-			fi
-			;;
-		#Checks for (project) name of folder that all output files will be stored
-		-p | --project-name)
-			PROJECT="$2"
-			is_proj="true"
-			#Copies over and unzips all 'Determined' zipped FASTQ files from the sequencing instrument for the requested project_id
-			for instrument in "${all_instruments[@]}"
-			do
-				# Goes through each subfolder of the current instrument
-				for run_folder in "${instrument}"/*
-				do
-					# Gets folder names in current directory
-					run_ID=${run_folder##*/}
-					#echo "${run_ID} - ${PROJECT}"
-					# If folder name matches project name
-					if [[ "${run_ID}" = "${PROJECT}" ]]; then
-						# Print that a match was found
-						echo "Found project ${run_ID} in ${instrument}"
-						# Go through every file in the Basecalls folder of the found folder (all files will only be fastq.gzs)
-						INDATADIR="${instrument}/${run_ID}/Data/Intensities/BaseCalls"
-						break
-					fi
-				done
-			done
-			if [[ ! -d "${INDATADIR}" ]]; then
-				echo "No FOLDER ${INDATADIR} exists on any MiSeq instrument, exiting"
-				exit 123
-			fi
-			if [[ ${BASEDIR} = "${requestor}_${global_time}" ]]; then
-				BASEDIR="${processed}"
-			fi
-			list_path="${processed}/${PROJECT}/${PROJECT}_list.txt"
-			postfix=1
-			shift 2
-			;;
-			# If the target files assemblies only
-			-a | --assemblies)
-				assemblies="true"
-				shift
-				;;
-		#Captures any other characters in the args
-		\?)
-			echo "ERROR: ${BOLD}$2${NORM} is not a valid argument" >&2
-			usage
-			exit 1
-			;;
-	esac
-done
-
 # Short print out summary of run settings
 echo -e "Source folder: ${INDATADIR}\\nOutput folder: ${BASEDIR}\\nList based analysis:  ${list_path}"
+
 
 # Checks that a full FASTQ source path is given
 if [ "${INDATADIR:0:1}" != "/" ] && [ "${INDATADIR:0:1}" != "$" ]; then
@@ -195,9 +206,9 @@ fi
 
 # Copies reads from source location to working directory and creates a list of IDs
 if [[ "${assemblies}" == "true" ]]; then
-	"${shareScript}/get_Assemblies_from_folder.sh" "${PROJECT}" "${INDATADIR}" "${processed}"
+	"${shareScript}/get_Assemblies_from_folder.sh" -p "${PROJECT}" -i "${INDATADIR}" -o "${processed}" -c "${shareScript}/config_${config_counter}.sh"
 else
-	"${shareScript}/get_Reads_from_folder.sh" "${PROJECT}" "${INDATADIR}" "${postfix}" "${processed}"
+	"${shareScript}/get_Reads_from_folder.sh" -p "${PROJECT}" -i "${INDATADIR}" -f "${postfix}" -o "${processed}" -c "${shareScript}/config_${config_counter}.sh"
 fi
 
 # Loops through list file to create an array of all isolates to run through pipeline
@@ -246,11 +257,11 @@ if [[ "${assemblies}" == "true" ]]; then
 			sed -i -e "s/qoa_X/qoa_${file}/g" "${shareScript}/quaisar_on_assembly_${file}.sh"
 			sed -i -e "s/qoaX/qoa_${file}/g" "${shareScript}/quaisar_on_assembly_${file}.sh"
 			echo "Entering ${shareScript}/quaisar_on_assembly_${file}.sh" "${file}" "${proj}" "${shareScript}/config_${config_counter}.sh"
-			qsub "${shareScript}/quaisar_on_assembly_${file}.sh" "${file}" "${proj}" "${shareScript}/config_${config_counter}.sh"
+			qsub "${shareScript}/quaisar_on_assembly_${file}.sh" -n "${file}" -p "${proj}" -c "${shareScript}/config_${config_counter}.sh"
 			echo "Created and ran quaisar_on_assembly_${file}.sh"
 		else
 			echo "${shareScript}/quaisar_on_assembly_${file}.sh already exists, will resubmit"
-			qsub "${shareScript}/quaisar_on_assembly_${file}.sh" "${file}" "${proj}" "${shareScript}/config_${config_counter}.sh"
+			qsub "${shareScript}/quaisar_on_assembly_${file}.sh" -n "${file}" -p "${proj}" -c "${shareScript}/config_${config_counter}.sh"
 		fi
 	done
 else
@@ -268,11 +279,11 @@ else
 			sed -i -e "s/quaisar_X/quaisar_${file}/g" "${shareScript}/quaisar_${file}.sh"
 			sed -i -e "s/quasX/quasp_${file}/g" "${shareScript}/quaisar_${file}.sh"
 			echo "Entering ${shareScript}/quaisar_${file}.sh" "${file}" "${proj}" "${shareScript}/config_${config_counter}.sh"
-			qsub "${shareScript}/quaisar_${file}.sh" "${file}" "${proj}" "${shareScript}/config_${config_counter}.sh" "${BASEDIR}"
+			qsub "${shareScript}/quaisar_${file}.sh" -n "${file}" -p "${proj}" -c "${shareScript}/config_${config_counter}.sh"
 			echo "Created and ran quaisar_${file}.sh"
 		else
 			echo "${shareScript}/quaisar_${file}.sh already exists, will resubmit"
-			qsub "${shareScript}/quaisar_${file}.sh" "${file}" "${proj}" "${shareScript}/config_${config_counter}.sh" "${BASEDIR}"
+			qsub "${shareScript}/quaisar_${file}.sh" -n "${file}" -p "${proj}" -c "${shareScript}/config_${config_counter}.sh"
 		fi
 	done
 fi
@@ -289,7 +300,7 @@ for run_sample in "${file_list[@]}"; do
 		while :
 		do
 				if [[ ${timer} -gt 1440 ]]; then
-					echo "Timer exceeded limit of 86400 seconds(24 hours), Must complete other steps manually for ${project}"
+					echo "Timer exceeded limit of 86400 seconds(24 hours), Must complete other steps manually for ${PROJECT}"
 					exit 1
 				fi
 				if [[ -f "${processed}/${PROJECT}/${waiting_sample}/${waiting_sample}_pipeline_stats.txt" ]]; then
@@ -318,14 +329,14 @@ fi
 
 # Run the Seqlog creator on the proper file
 if [ "${is_proj}" = "true" ]; then
-	"${shareScript}/make_Seqlog_from_log.sh" "${PROJECT}"
+	"${shareScript}/make_Seqlog_from_log.sh" -p "${PROJECT}" -c "${shareScript}/config_${config_counter}.sh"
 else
-	"${shareScript}/make_Seqlog_from_list.sh" "${processed}/${PROJECT}/${PROJECT}_list.txt"
+	"${shareScript}/make_Seqlog_from_list.sh" -l "${processed}/${PROJECT}/${PROJECT}_list.txt"  -c "${shareScript}/config_${config_counter}.sh"
 fi
 
 # Get run summary info to send in an email
 runsumdate=$(date "+%m_%d_%Y_at_%Hh_%Mm")
-${shareScript}/run_sum.sh ${PROJECT}
+${shareScript}/run_sum.sh -p ${PROJECT} -c "${shareScript}/config_${config_counter}.sh"
 runsum=$(${shareScript}/view_sum.sh ${PROJECT})
 outarray+="${runsum}"
 

@@ -6,72 +6,103 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-#. "${mod_changers}/perl_5221_to_5123.sh"
-
 #
 # Description: Runs prokka gene identifier on sample to discover all identifiable genes. Also necessary for downstream busco processing
 #
-# Usage ./run_prokka.sh   sample_name   run_ID
+# Usage ./run_prokka.sh -n sample_name -p run_ID [-c path_to_config_file]
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/prokka
 #
-# Modules required: prokka/1.12, perl/5.12.3
+# Modules required: prokka/1.12, perl/5.12.3 java/jdk1.8.0_221
 #
-# v1.0 (10/3/2019)
+# v1.0.1 (09/08/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
-ml prokka/1.12 perl/5.12.3
+ml prokka/1.12 perl/5.12.3 java/jdk1.8.0_221
+
+#  Function to print out help blurb
+show_help () {
+	echo "Usage: ./run_prokka.sh -n sample_name -p run_ID [-c path_to_config_file]"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?c:p:n:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			sample_name=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
 
 # Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
+if [[ -z "${sample_name}" ]]; then
+	echo "Empty sample name supplied to run_kraken.sh, exiting"
 	exit 1
-elif [[ -z "${1}" ]]; then
-	echo "Empty sample name supplied to run_prokka.sh, exiting"
-	exit 1
-# Gives the user a brief usage and help section if requested with the -h option argument
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./run_prokka.sh sample_name run_ID"
-	echo "Output is saved to ${processed}/miseq_run_ID/sample_name/prokka"
-	exit 0
-elif [ -z "$2" ]; then
-	echo "Empty project id supplied to run_prokka.sh, exiting"
+elif [ -z "${project}" ]; then
+	echo "Empty project name given. Exiting"
 	exit 1
 fi
 
-# Sets the parent output folder as the sample name folder in the processed samples folder in MMB_Data
-OUTDATADIR="${processed}/${2}/${1}"
+# Sets the output folder to the sample_name folder in processed samples
+OUTDATADIR="${processed}/${project}/${sample_name}"
 
 # Checks for existence of prokka output folder and deletes and recreates it if there
-if [ -d "$OUTDATADIR/prokka" ]; then  #removes old prokka results before continuing (it will complain otherwise)
-	echo "Removing old prokka results $OUTDATADIR/prokka"
-	rm -rf "$OUTDATADIR/prokka"
+if [ -d "${OUTDATADIR}/prokka" ]; then  #removes old prokka results before continuing (it will complain otherwise)
+	echo "Removing old prokka results ${OUTDATADIR}/prokka"
+	rm -rf "${OUTDATADIR}/prokka"
 fi
 
 ### Prokka to identify genes in ###
 echo "Running Prokka for gene identification"
 # Run prokka
-prokka --outdir "${OUTDATADIR}/prokka" "${OUTDATADIR}/Assembly/${1}_scaffolds_trimmed.fasta"
-#Rename all PROKKA files with sample name instead of date
-if [ ! -d "${OUTDATADIR}/prokka" ]; then
-	echo "prokka did not complete...exiting"
-	# reload perl to 5.22.1 before exiting
-	. "${mod_changers}/perl_5123_to_5221.sh"
-	exit 1
-fi
+prokka --outdir "${OUTDATADIR}/prokka" "${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta"
+
 #echo "About to rename files"
 for pfile in ${OUTDATADIR}/prokka/*.*; do
 	fullname=$(basename "${pfile}")
 	ext="${fullname##*.}"
-	echo "Renaming ${pfile} to ${OUTDATADIR}/prokka/${1}_PROKKA.${ext}"
-	mv "${pfile}" "${OUTDATADIR}/prokka/${1}_PROKKA.${ext}"
+	echo "Renaming ${pfile} to ${OUTDATADIR}/prokka/${sample_name}_PROKKA.${ext}"
+	mv "${pfile}" "${OUTDATADIR}/prokka/${sample_name}_PROKKA.${ext}"
 done
 
 #Script exited gracefully (unless something else inside failed)

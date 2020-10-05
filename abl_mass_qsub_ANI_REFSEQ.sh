@@ -29,7 +29,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?l:o:m:s:k:c:d:" option; do
+while getopts ":h?l:o:m:k:c:d:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -153,51 +153,51 @@ start_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
 
 # Create and submit qsub scripts to get ANI for all isolates
 while [ ${counter} -lt ${arr_size} ] ; do
-	sample=$(echo "${arr[${counter}]}" | cut -d'/' -f2 | cut -d':' -f1)
+	sample_name=$(echo "${arr[${counter}]}" | cut -d'/' -f2 | cut -d':' -f1)
 	project=$(echo "${arr[${counter}]}" | cut -d'/' -f1)
 
-	OUTDATADIR="${processed}/${project}/${sample}"
+	OUTDATADIR="${processed}/${project}/${sample_name}"
 
 	if [[ "${clobberness}" == "clobber" ]]; then
 		echo "Trying to remove ${OUTDATADIR}/ANI/aniM_REFSEQ"
 		rm -r "${OUTDATADIR}/ANI/aniM_REFSEQ"
 		rm -r "${OUTDATADIR}/ANI/localANIDB_REFSEQ"
-		rm -r "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample}_vs_REFSEQ_"*").txt"
+		rm -r "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_REFSEQ_"*").txt"
 	fi
 
 	# Check if counter is below max submission limit
 	if [[ ${counter} -lt ${max_subs} ]]; then
 		# Check if old data exists, skip if so
-		echo "Checking assembly of - ${OUTDATADIR}/Assembly/${sample}_scaffolds_trimmed.fasta"
-		if [[ -s "${OUTDATADIR}/Assembly/${sample}_scaffolds_trimmed.fasta" ]]; then
-			if [[ ! -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample}_vs_${database_and_version}).txt" ]]; then
+		echo "Checking assembly of - ${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta"
+		if [[ -s "${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta" ]]; then
+			if [[ ! -f "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${database_and_version}).txt" ]]; then
 				echo  "Index is below max submissions, submitting"
-				echo "Going to make ${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-				echo -e "#!/bin/bash -l\n" > "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-				echo -e "#$ -o anim_refseq_${sample}.out" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-				echo -e "#$ -e anim_refseq_${sample}.err" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-				echo -e "#$ -N anim_refseq_${sample}"   >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-				echo -e "#$ -cwd"  >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-				echo -e "#$ -q short.q\n"  >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-				echo -e "cd ${shareScript}" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+				echo "Going to make ${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+				echo -e "#!/bin/bash -l\n" > "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+				echo -e "#$ -o anim_refseq_${sample_name}.out" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+				echo -e "#$ -e anim_refseq_${sample_name}.err" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+				echo -e "#$ -N anim_refseq_${sample_name}"   >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+				echo -e "#$ -cwd"  >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+				echo -e "#$ -q short.q\n"  >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+				echo -e "cd ${shareScript}" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
 				if [[ "${use_alt_db}" == "true" ]]; then
-					echo -e "\"${shareScript}/run_ANI_REFSEQ.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+					echo -e "\"${shareScript}/run_ANI_REFSEQ.sh\" -n \"${sample_name}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
 				else
-					echo -e "\"${shareScript}/run_ANI_REFSEQ.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+					echo -e "\"${shareScript}/run_ANI_REFSEQ.sh\" -n \"${sample_name}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
 				fi
-				echo -e "\"${shareScript}/determine_taxID.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-				echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_anim_refseq_complete.txt\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+				echo -e "\"${shareScript}/determine_taxID.sh\" -n \"${sample_name}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+				echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample_name}_anim_refseq_complete.txt\"" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
 				cd "${main_dir}"
-				qsub "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+				qsub "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
 			# Old data exists, skipping
 			else
-				echo "${project}/${sample} already has ANI REFSEQ summary"
-				echo "$(date)" > "${main_dir}/complete/${sample}_anim_refseq_complete.txt"
+				echo "${project}/${sample_name} already has ANI REFSEQ summary"
+				echo "$(date)" > "${main_dir}/complete/${sample_name}_anim_refseq_complete.txt"
 			fi
 		# No Assembly file to run ANI on, skipping
 		else
-			echo "${project}/${sample} does not have assembly"
-			echo "$(date)" > "${main_dir}/complete/${sample}_anim_refseq_complete.txt"
+			echo "${project}/${sample_name} does not have assembly"
+			echo "$(date)" > "${main_dir}/complete/${sample_name}_anim_refseq_complete.txt"
 		fi
 	# Counter is above limit, wait until "slot" opens up"
 	else
@@ -216,34 +216,34 @@ while [ ${counter} -lt ${arr_size} ] ; do
 			# Check if "waiting" sample is complete
 			if [[ -f "${main_dir}/complete/${waiting_sample}_anim_refseq_complete.txt" ]]; then
 				# Check if an assembly exists to run ANI on
-				if [[ -s "${OUTDATADIR}/Assembly/${sample}_scaffolds_trimmed.fasta" ]]; then
+				if [[ -s "${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta" ]]; then
 					# Check if old data exists, skip if so
-					if [[ ! -f "${OUTDATADIR}/ANI/best_anim_hits_ordered(${sample}_vs_${genus,})" ]]; then
-						echo  "${waiting_sample}(${waiting_for_index}) is not complete, submitting ${sample} ($counter)"
-						echo -e "#!/bin/bash -l\n" > "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-						echo -e "#$ -o anim_refseq_${sample}.out" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-						echo -e "#$ -e anim_refseq_${sample}.err" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-						echo -e "#$ -N anim_refseq_${sample}"   >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-						echo -e "#$ -cwd"  >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-						echo -e "#$ -q short.q\n"  >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
-						echo -e "cd ${shareScript}" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+					if [[ ! -f "${OUTDATADIR}/ANI/best_anim_hits_ordered(${sample_name}_vs_${genus,})" ]]; then
+						echo  "${waiting_sample}(${waiting_for_index}) is not complete, submitting ${sample_name} ($counter)"
+						echo -e "#!/bin/bash -l\n" > "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+						echo -e "#$ -o anim_refseq_${sample_name}.out" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+						echo -e "#$ -e anim_refseq_${sample_name}.err" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+						echo -e "#$ -N anim_refseq_${sample_name}"   >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+						echo -e "#$ -cwd"  >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+						echo -e "#$ -q short.q\n"  >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
+						echo -e "cd ${shareScript}" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
 						if [[ "${use_alt_db}" == "true" ]]; then
-							echo -e "\"${shareScript}/run_ANI_REFSEQ.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+							echo -e "\"${shareScript}/run_ANI_REFSEQ.sh\" -n \"${sample_name}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
 						else
-							echo -e "\"${shareScript}/run_ANI_REFSEQ.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+							echo -e "\"${shareScript}/run_ANI_REFSEQ.sh\" -n \"${sample_name}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
 						fi
-						echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_anim_refseq_complete.txt\"" >> "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+						echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample_name}_anim_refseq_complete.txt\"" >> "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
 						cd "${main_dir}"
-						qsub "${main_dir}/anim_refseq_${sample}_${start_time}.sh"
+						qsub "${main_dir}/anim_refseq_${sample_name}_${start_time}.sh"
 					# Old data exists, skipping
 					else
-						echo "${project}/${sample} already has ANI summary"
-						echo "$(date)" > "${main_dir}/complete/${sample}_anim_refseq_complete.txt"
+						echo "${project}/${sample_name} already has ANI summary"
+						echo "$(date)" > "${main_dir}/complete/${sample_name}_anim_refseq_complete.txt"
 					fi
 					# No Assembly file to run ANI on, skipping
 				else
-					echo "${project}/${sample} does not have assembly"
-					echo "$(date)" > "${main_dir}/complete/${sample}_anim_refseq_complete.txt"
+					echo "${project}/${sample_name} does not have assembly"
+					echo "$(date)" > "${main_dir}/complete/${sample_name}_anim_refseq_complete.txt"
 				fi
 				break
 			# Wait 5 seconds before checking if "waiting" sample is complete

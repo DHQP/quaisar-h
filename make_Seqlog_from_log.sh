@@ -6,49 +6,93 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Creates a tsv file that matches the order of samples on the seq_log (instead of matching the list created in QuAISAR)
 #
-# Usage: ./make_Seqlog_from_list.sh run_ID [year]
+# Usage: ./make_Seqlog_from_list.sh -p run_ID [-y year] [-c path_to_config_file]
 #
 # Output location: /deafult_config.sh_output_location/run_ID
 #
 # Modules required: Python3/3.5.4
 #
-# v1.0.8 (07/71/2020)
+# v1.0.9 (08/21/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
 ml Python3/3.5.4
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1F
-elif [[ -z "${1}" ]]; then
-	echo "Empty run name supplied to $0, exiting"
-	exit 1
-# Gives the user a brief usage and help section if requested with the -h option argument
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./make_Seqlog_from_log.sh MiSeq_Run_ID [Log_year, if not current]"
-	echo "Output is saved to ${processed}/${1}/Seqlog_output.txt"
-	exit 0
+
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./make_Seqlog_from_log.sh -p run_ID [-y year] [-c path_to_config_file]"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?p:c:y:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		y)
+			echo "Option -y triggered, argument = ${OPTARG}"
+			year=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+# Show help info for when no options are given
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
 fi
 
-if [[ -z "${2}" ]] || [[ "${2}" = "2019_2020" ]]; then
-	year=2019_2020
-elif [[ "${2}" -lt 2017 ]] || [[ "${2}" -gt 2099 ]]; then
-	echo "Year must be between 2017 and 2099, exiting"
-	exit 44
+# Checks for proper argumentation
+if [[ -z "${project}" ]]; then
+	echo "List empty or non-existent, exiting"
+	exit 1
+fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
 else
-	year=${2}
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
+
+
+
+if [[ -z "${year}" ]] || [[ "${year}" = "2019_2020" ]] || [[ "${year}" = "2019" ]] || [[ "${year}" = "2020" ]]; then
+	year=2019_2020
+elif [[ "${year}" = "2017" ]]; then
+	year=2017
+elif [[ "${year}" = "2018" ]]; then
+	year=2018
+else
+	echo "Year does not fall between 2017 and 2020, retry, exiting"
+	exit 43
 fi
 
 # Creates a dictionary of commonly found bugs to use when looking up sizes and assembly ratios later
@@ -67,33 +111,32 @@ done < ${local_DBs}/MMB_Bugs.txt
 
 owd=$(pwd)
 
-cd "${processed}/${1}/"
+cd "${processed}/${project}/"
 ls  *run_summary* | sort -n -t _  -k 10,10r -k 8,8r -k 9,9r > "sorted_summaries.txt"
 cd ${owd}
 
-rm "${processed}/${1}/sorted_summaries.txt"
-rm "${processed}/${1}/${1}_list_ordered.txt"
+rm "${processed}/${project}/sorted_summaries.txt"
+rm "${processed}/${project}/${project}_list_ordered.txt"
 
 # Order samples (according to logsheet) in folder if not already done so
-python3 ${shareScript}/order_samples_3.py -i "${local_DBs}/Seqlog_copies/${year}_MMBSeq_Log.xlsx" -r ${1} -s "Miseq Isolate Log" -o "${processed}/${1}/${1}_list_ordered.txt" -l "${processed}/${1}/${1}_list.txt"
-if [[ ! -s "${processed}/${1}/${1}_list_ordered.txt" ]]; then
+python3 ${shareScript}/order_samples_3.py -i "${local_DBs}/Seqlog_copies/${year}_MMBSeq_Log.xlsx" -r ${project} -s "Miseq Isolate Log" -o "${processed}/${project}/${project}_list_ordered.txt" -l "${processed}/${project}/${project}_list.txt"
+if [[ ! -s "${processed}/${project}/${project}_list_ordered.txt" ]]; then
 	echo "Isolates were not able to be sorted, something wrong with MiSeq Log entries or list file, or....?"
 	exit
 else
 	echo "sorted file contains entries"
 fi
 
-if [[ -f "${processed}/${1}/seqlog_output.txt" ]]; then
-	rm -r "${processed}/${1}/seqlog_output.txt"
+if [[ -f "${processed}/${project}/seqlog_output.txt" ]]; then
+	rm -r "${processed}/${project}/seqlog_output.txt"
 fi
 
-> "${processed}/${1}/Seqlog_output.txt"
+> "${processed}/${project}/Seqlog_output.txt"
 
 # Goes through each item on the list and pulls all relevant info
 while IFS= read -r var || [ -n "$var" ]; do
 	# Current (8/16/17) order of expected run output
 	#  kraken - QC - estimated coverage - #contigs - cumulative length assmbly - BUSCO - ANI
-	project="${1}"
 	sample_name=$(echo "${var}" | awk -F/ '{ print $2}' | tr -d '[:space:]')
 	OUTDATADIR="${processed}/${project}/${sample_name}"
 
@@ -108,11 +151,9 @@ while IFS= read -r var || [ -n "$var" ]; do
 	if [[ -s "${OUTDATADIR}/kraken/postAssembly/${sample_name}_kraken_summary_assembled_BP.txt" ]]; then
 		while IFS= read -r line  || [ -n "$line" ]; do
 			first=${line::1}
-			if [ "${first}" = "s" ]
-			then
+			if [ "${first}" = "s" ]; then
 				species_post=$(echo "${line}" | awk -F ' ' '{print $4}')
-			elif [ "${first}" = "G" ]
-			then
+			elif [ "${first}" = "G" ]; then
 				genus_post=$(echo "${line}" | awk -F ' ' '{print $4}')
 			fi
 		done < "${OUTDATADIR}/kraken/postAssembly/${sample_name}_kraken_summary_assembled_BP.txt"
@@ -130,11 +171,9 @@ while IFS= read -r var || [ -n "$var" ]; do
 	if [[ -s "${OUTDATADIR}/kraken/preAssembly/${sample_name}_kraken_summary_paired.txt" ]]; then
 		while IFS= read -r line  || [ -n "$line" ]; do
 			first=${line::1}
-			if [ "${first}" = "s" ]
-			then
+			if [ "${first}" = "s" ]; then
 				species_reads=$(echo "${line}" | awk -F ' ' '{print $4}')
-			elif [ "${first}" = "G" ]
-			then
+			elif [ "${first}" = "G" ]; then
 				genus_reads=$(echo "${line}" | awk -F ' ' '{print $4}')
 			fi
 		done < "${OUTDATADIR}/kraken/preAssembly/${sample_name}_kraken_summary_paired.txt"
@@ -193,11 +232,9 @@ while IFS= read -r var || [ -n "$var" ]; do
 		if [[ -s "${OUTDATADIR}/Assembly_Stats/${sample_name}_report.tsv" ]]; then
 		counter=0
 		while IFS= read -r line  || [ -n "$line" ]; do
-			if [ ${counter} -eq 0 ]
-			then
+			if [ ${counter} -eq 0 ]; then
 				num_contigs=$(sed -n '14p' "${OUTDATADIR}/Assembly_Stats/${sample_name}_report.tsv"| sed -r 's/[\t]+/ /g' | cut -d' ' -f3 )
-			elif [ ${counter} -eq 1 ]
-			then
+			elif [ ${counter} -eq 1 ]; then
 				assembly_length=$(sed -n '16p' "${OUTDATADIR}/Assembly_Stats/${sample_name}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
 				#Check Assembly ratio against expected size to see if it is missing a large portion or if there is contamination/double genome
 				dec_genus_initial="${dec_genus:0:1}"
@@ -229,12 +266,10 @@ while IFS= read -r var || [ -n "$var" ]; do
 			then
 				#echo "C-"${line}
 				found_buscos=$(echo "${line}" | awk -F ' ' '{print $1}')
-			elif [[ ${line} == *"Total BUSCO groups searched"* ]];
-			then
+			elif [[ ${line} == *"Total BUSCO groups searched"* ]]; then
 				#echo "T-"${line}
 				total_buscos=$(echo "${line}" | awk -F ' ' '{print $1}')
-			elif [[ "${line}" == *"The lineage dataset is:"* ]];
-			then
+			elif [[ "${line}" == *"The lineage dataset is:"* ]]; then
 				#echo "L-"${line}
 				db=$(echo "${line}" | awk -F ' ' '{print $6}')
 			fi
@@ -289,8 +324,8 @@ while IFS= read -r var || [ -n "$var" ]; do
 	NOW=$(date +"%m/%d/%Y")
 
 	# Add all pertinent info to the output file in the correct formatting to add to MMB_Seq log
-	echo -e "${sample_name}\\t${NOW}\\t${g_s_reads}\\t${g_s_assembled}\\t${g_s_16s}\\t${read_qc_info}\\t${avg_coverage}\\t${contig_info}\\t${busco_info}\\t${ani_info}\\r" >> "${processed}/${1}/Seqlog_output.txt"
-done < ${processed}/${1}/${1}_list_ordered.txt
+	echo -e "${sample_name}\\t${NOW}\\t${g_s_reads}\\t${g_s_assembled}\\t${g_s_16s}\\t${read_qc_info}\\t${avg_coverage}\\t${contig_info}\\t${busco_info}\\t${ani_info}\\r" >> "${processed}/${project}/Seqlog_output.txt"
+done < ${processed}/${project}/${project}_list_ordered.txt
 
 ml -Python3/3.5.4
 

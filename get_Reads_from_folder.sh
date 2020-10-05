@@ -6,16 +6,10 @@
 #$ -cwd
 #$ -q short.q
 
-# Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Will find all fastq.gz files within the given folder. It will move and rename them to the location that the pipeline will expect
 #
-# Usage: ./get_Reads_from_folder.sh run_ID folder_with_fastqs postfix_for_reads(1:_SX_L001_RX_00X.fastq.gz 2: _(R)X.fastq.gz 3: _RX_00X.fastq.gz 4: _SX_RX_00X.fastq.gz) output_directory
+# Usage: ./get_Reads_from_folder.sh -p run_ID -i folder_with_fastqs -f postfix_for_reads(1:_SX_L001_RX_00X.fastq.gz 2: _(R)X.fastq.gz 3: _RX_00X.fastq.gz 4: _SX_RX_00X.fastq.gz) -o output_directory [-c path_to_config_file]
 #
 # Output location: output_directory/run_ID
 #
@@ -26,53 +20,105 @@ fi
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./get_reads_from_folder.sh -i input_folder -o output folder -f post-fix_ID -p project_ID [-c path_to_config_file]"
+	echo "Output is saved to ${processed}/run_ID/ where processed is retrieved from config file, either default or imported"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?i:p:o:c:f:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		i)
+			echo "Option -i triggered, argument = ${OPTARG}"
+			input_folder=${OPTARG};;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		o)
+			echo "Option -o triggered, argument = ${OPTARG}"
+			output_folder=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		f)
+			echo "Option -f triggered, argument = ${OPTARG}"
+			postfix_index=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+# Show help info for when no options are given
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
+
 number='^[0-9]+$'
 
 # Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
+if [[ -z "${input_folder}" ]] || [[ ! -d "${input_folder}" ]]; then
+	echo "Empty/non-existent input folder (${input_folder}) supplied, exiting"
 	exit 1
-elif [[ -z "${1}" ]]; then
-	echo "Empty project name supplied to $0, exiting"
+elif [[ -z "${output_folder}" ]] || [[ ! -d "${output_folder}" ]]; then
+	echo "Empty/non-existent output folder (${output}) supplied, exiting"
 	exit 1
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./get_Reads_from_folder.sh  run_ID location_of_fastqs postfix_for_reads( 1: _SX_L001_RX_00X.fastq.gz 2: _(R)X.fastq.gz 3: _RX_00X.fastq.gz 4: _SX_RX_00X.fastq.gz)"
-	echo "Output by default is downloaded to ${processed}/run_ID and extracted to ${processed}/run_ID/sample_name/FASTQs"
-	exit 0
-elif [[ -z "${2}" ]]; then
-	echo "Empty folder supplied to $0, exiting"
+elif [[ -z "${project}" ]]; then
+	echo "Empty project ID supplied, can not place files correctly, must exit"
 	exit 1
-elif ! [[ ${3} =~ $number ]] || [[ -z "${3}" ]]; then
-	echo "postfix is not a number or is empty. Please input max number of concurrent qsub submissions...exiting"
-	exit 2
-elif [[ ! -d ${4} ]]; then
-	echo "Output directory ${4} doesnt exist...exiting"
+elif ! [[ ${postfix_index} =~ $number ]] || [[ -z "${postfix_index}" ]]; then
+	echo "postfix index is not a number or is empty. Please input max number of concurrent qsub submissions...exiting"
 	exit 2
 fi
 
-if [[ "${3}" -gt 4 ]] || [[ "${3}" -lt 1 ]]; then
+if [[ "${postfix_index}" -gt 4 ]] || [[ "${postfix_index}" -lt 1 ]]; then
 	echo "postfix for reads is TOO high, only 4 options...1:_SX_L001_RX_00X.fastq.gz 2: _(R)X.fastq.gz 3: _RX_00X.fastq.gz 4: _SX_RX_00X.fastq.gz , exiting"
 	exit
 fi
 
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
 
 # Sets folder to where files will be downloaded to
-OUTDATADIR="${4}/${1}"
+OUTDATADIR="${output_folder}/${project}"
 if [ ! -d "${OUTDATADIR}" ]; then
 	echo "Creating $OUTDATADIR"
 	mkdir -p "${OUTDATADIR}"
 fi
-if [ -f "${OUTDATADIR}/${1}_list.txt" ]; then
-	mv "${OUTDATADIR}/${1}_list.txt" "${OUTDATADIR}/${1}_list_original.txt"
+if [ -f "${OUTDATADIR}/${project}_list.txt" ]; then
+	mv "${OUTDATADIR}/${project}_list.txt" "${OUTDATADIR}/${project}_list_original.txt"
 fi
-out_list="${OUTDATADIR}/${1}_list.txt"
+out_list="${OUTDATADIR}/${project}_list.txt"
 
 ####### Set trailing match pattern (everything after R in filename, to call unzip once for each pair) ######
-match="${3}"
+match="${postfix_index}"
 
 # Goes through given folder
-echo "${2}"
-for file in ${2}/*
+echo "${input_folder}"
+for file in ${input_folder}/*
 do
 	# Check if file is a zipped reads file
 	if [[ "${file}" = *.gz ]] || [[ "${file}" = *.fastq ]] && [[ "${file}" != *_L001_I1_001.fastq.gz ]]; then
@@ -208,61 +254,12 @@ do
 						fi
 					fi
 				fi
-				if grep -Fxq "${1}/${short_name}" "${out_list}"
+				if grep -Fxq "${project}/${short_name}" "${out_list}"
 				then
-					echo -e "${1}/${short_name} already on list ${out_list}, not adding again"
+					echo -e "${project}/${short_name} already on list ${out_list}, not adding again"
 				else
-					echo -e "${1}/${short_name}" >> "${out_list}"
+					echo -e "${project}/${short_name}" >> "${out_list}"
 				fi
-			# elif [[ "${match}" -eq 3 ]]; then
-			# 	if [[ "${postfix}" = *"1.fast"* ]]; then
-			# 		if [[ "${full_sample_name}" = *".fastq.gz" ]]; then
-			# 			echo "${source_path}/${full_sample_name} to ${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz"
-			# 			cp "${source_path}/${full_sample_name}" "${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz"
-			# 			#clumpify.sh in="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz" out="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz"
-			# 		elif [[ "${full_sample_name}" = *".fastq" ]]; then
-			# 			echo "${source_path}/${full_sample_name} to ${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz"
-			# 			gzip -c "${source_path}/${full_sample_name}" > "${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz"
-			# 			#clumpify.sh in="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz" out="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz"
-			# 		fi
-			# 		echo -e "${1}/${short_name}" >> "${out_list}"
-			# 	elif [[ "${postfix}" = *"2.fast"* ]]; then
-			# 		if [[ "${full_sample_name}" = *".fastq.gz" ]]; then
-			# 			echo "${source_path}/${full_sample_name} to ${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz"
-			# 			cp "${source_path}/${full_sample_name}" "${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz"
-			# 			#clumpify.sh in="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz" out="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz"
-			# 		elif [[ "${full_sample_name}" = *".fastq" ]]; then
-			# 			echo "${source_path}/${full_sample_name} to ${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz"
-			# 			gzip -c "${source_path}/${full_sample_name}" > "${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz"
-			# 			#clumpify.sh in="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz" out="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz"
-			# 		fi
-			# 	fi
-			# elif [[ "${match}" -eq 2 ]]; then
-			# 	if [[ "${postfix}" = *"R1.fast"* ]]; then
-			# 		if [[ "${full_sample_name}" = *".fastq.gz" ]]; then
-			# 			echo "${source_path}/${full_sample_name} to ${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz"
-			# 			cp "${source_path}/${full_sample_name}" "${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz"
-			# 			#clumpify.sh in="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz" out="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz"
-			# 		elif [[ "${full_sample_name}" = *".fastq" ]]; then
-			# 			echo "${source_path}/${full_sample_name} to ${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz"
-			# 			gzip -c "${source_path}/${full_sample_name}" > "${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz"
-			# 			#clumpify.sh in="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz" out="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R1_001.fastq.gz"
-			# 		fi
-			# 		echo -e "${1}/${short_name}" >> "${out_list}"
-			# 	elif [[ "${postfix}" = *"R2.fast"* ]]; then
-			# 		if [[ "${full_sample_name}" = *".fastq.gz" ]]; then
-			# 			echo "${source_path}/${full_sample_name} to ${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz"
-			# 			cp "${source_path}/${full_sample_name}" "${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz"
-			# 			#clumpify.sh in="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz" out="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz"
-			# 		elif [[ "${full_sample_name}" = *".fastq" ]]; then
-			# 			echo "${source_path}/${full_sample_name} to ${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz"
-			# 			gzip -c "${source_path}/${full_sample_name}" > "${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz"
-			# 			#clumpify.sh in="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz" out="${OUTDATADIR}/${short_name}/FASTQs/${short_name}_R2_001.fastq.gz"
-			# 		fi
-			# 	fi
-			# else
-			# 	echo "Unrecognized postfix type, but how did it get this far?"
-			# fi
 		fi
 	else
 		echo "${file} is not a FASTQ(.gz) read file, not acting on it"

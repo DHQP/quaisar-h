@@ -26,7 +26,7 @@ ml Python3/3.5.2 mashtree/0.29
 
 #  Function to print out help blurb
 show_help () {
-	echo "./outbreak_analysis.sh -l path_to_list -g gapped/ungapped (analysis ran) -s identity (80/95/98/99/100) -t analysis_type (MATRIX|SNV|BOTH)-n analysis_identifier(e.g. outbreak identifier) -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB] [-r alternate_REFSEQ_database]"
+	echo "./outbreak_analysis.sh -l path_to_list -g gapped/ungapped (analysis ran) -s identity (80/95/98/99/100) -t analysis_type (MATRIX|SNV|BOTH) -n analysis_identifier(e.g. outbreak identifier) -k clobberness[keep|clobber] [-c path_to_config_file] [-d path_to_alt_DB] [-r alternate_REFSEQ_database]"
 }
 
 # Parse command line options
@@ -469,7 +469,7 @@ if [[ "${analysis_requested}" == "MATRIX" ]] || [[ "${analysis_requested}" == "B
 					fi
 				fi
 				confers=${confers//_resistance/}
-				allele=$(echo "${line}" | cut -d'	' -f4 | cut -d'_' -f1)
+				allele=$(echo "${line}" | cut -d'	' -f4)
 				if [[ "${allele}" = "Zn-dependent" ]]; then
 					allele="${allele}_hydrolase"
 				fi

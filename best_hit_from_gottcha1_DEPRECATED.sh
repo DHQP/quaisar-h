@@ -6,58 +6,52 @@
 #$ -cwd
 #$ -q short.q
 
+#Import the config file with shortcuts and settings
+if [[ ! -f "./config.sh" ]]; then
+	cp ./config_template.sh ./config.sh
+fi
+. ./config.sh
+
 #
 # Description: Grabs the best species match based on read hits (not relative abundance) from the gottcha tool run
 #
-# Usage: ./best_hit_from_gottcha1.sh -i path_to_sample_folder
+# Usage: ./best_hit_from_gottcha1.sh sample_name run_ID [alt_path-for-output]
 #
-# Output location: path_to_sample_folder/gottcha/sample_name_gottcha_species_summary.txt
-#
+# Output location: default_config.sh_output_location/run_ID/sample_name/gottcha/
+#					or 			alt_path-for-output/run_ID/sample_name/gottcha
 # Modules required: None
 #
-# V1.0.2b (05/15/2020)
+# V1.0.2 (05/13/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
-#  Function to print out help blurb
-show_help () {
-	echo "Usage is ./best_hit_from_gottcha1.sh -i path_to_sample_folder"
-	echo "Output is saved to path_to_sample_folder/gottcha/sample_name_gottcha_species_summary.txt"
-}
-
-# Parse command line options
-options_found=0
-while getopts ":h?n:p:" option; do
-	options_found=$(( options_found + 1 ))
-	case "${option}" in
-		\?)
-			echo "Invalid option found: ${OPTARG}"
-      show_help
-      exit 0
-      ;;
-		i)
-			echo "Option -i triggered, argument = ${OPTARG}"
-			SAMPDATADIR=${OPTARG};;
-		:)
-			echo "Option -${OPTARG} requires as argument";;
-		h)
-			show_help
-			exit 0
-			;;
-	esac
-done
-
-if [[ "${options_found}" -eq 0]]; then
-	echo "No argument supplied to best_hit_from_gottcha1.sh, exiting"
+# Checks for proper argumentation
+if [[ $# -eq 0 ]]; then
+	echo "No argument supplied to $0, exiting"
 	exit 1
-elif [ ! -d "${SAMPDATADIR}" ]; then
-	echo "Path (${SAMPDATADIR}) does not exist, exiting"
-	exit 2
+elif [ -z "$1" ]; then
+	echo "Empty sample name supplied to $0, exiting"
+	exit 1
+elif [ -z "$2" ]; then
+	echo "Empty project_id supplied to $0, exiting"
+	exit 1
+# command line version of usage for script
+elif [ "$1" = "-h" ]; then
+	echo "Usage is ./best_hit_from_gottcha1.sh   sample_name   run_ID [alt_path-for-output]"
+	echo "Output is saved to ${processed}/miseq_run_ID/sample_name/gottcha/"
+	echo "			or		 			alt_path-for-output/run_ID/sample_name/gottcha"
+	exit 0
+elif [ -z "${3}" ]; then
+	echo "Using default path (${processed})"
+	OUTDATADIR="${processed}/${2}/${1}"
+elif [ -d "${3}" ]; then
+	echo "Using given full path - ${3}"
+	OUTDATADIR="${3}/${2}/${1}"
+else
+	echo "Path does not exist - ${3} using default (${processed}) "
+	OUTDATADIR="${processed}/${2}/${1}"
 fi
-
-# Based upon standard naming protocols pulling last portion of path off should result in proper name
-sample_name=$(echo "${SAMPDATADIR}" | rev | cut -d'/' -f1 | rev)
 
 #Sets many of the values of percents/descriptions to default values to guard against null/unset values if a failure occurs during processing
 unclass_percent=0
@@ -86,8 +80,8 @@ genus_reads=0
 species_reads=0
 
 # If the source TSV produced from gottcha does not exist then the script will exit with error code 1
-if [[ ! -s "${SAMPDATADIR}/gottcha/gottcha_S/${sample_name}.gottcha.tsv" ]]; then
-	echo "GOTTCHA output (${SAMPDATADIR}/gottcha/gottcha_S/${sample_name}.gottcha.tsv) does not exist , exiting..."
+if [[ ! -s "${OUTDATADIR}/gottcha/gottcha_S/${1}.gottcha.tsv" ]]; then
+	echo "GOTTCHA output (${OUTDATADIR}/gottcha/gottcha_S/${1}.gottcha.tsv) does not exist , exiting..."
 	exit 1
 fi
 
@@ -165,13 +159,13 @@ while IFS='	' read -r -a line  || [ -n "$line" ]; do
 			species_reads="${reads}"
 		fi
 	fi
-done < "${SAMPDATADIR}/gottcha/gottcha_S/${sample_name}.gottcha.tsv"
+done < "${OUTDATADIR}/gottcha/gottcha_S/${1}.gottcha.tsv"
 
 # Calculate % of unclassified reads using sum of highest taxon level reads against total reads found in QC counts
 # Checks for the existence of the trimmed_counts file for the sample. If found true % classification is performed
-if [[ -s "${SAMPDATADIR}/preQCcounts/${sample_name}_trimmed_counts.txt" ]]; then
+if [[ -s "${OUTDATADIR}/preQCcounts/${1}_trimmed_counts.txt" ]]; then
 	# The total reads is determined by pulling from the trimmed_counts
-	qc_reads=$(tail -n 1 "${SAMPDATADIR}/preQCcounts/${sample_name}_trimmed_counts.txt" | cut -d'	' -f13)
+	qc_reads=$(tail -n 1 "${OUTDATADIR}/preQCcounts/${1}_trimmed_counts.txt" | cut -d'	' -f13)
 	qc_reads=$((qc_reads/2))
 	# Unclassified reads are calculated by subtracting the sum of all phylum reads from the total possible reads
 	unclass_reads=$(( qc_reads - sum_reads ))
@@ -187,7 +181,7 @@ if [[ -s "${SAMPDATADIR}/preQCcounts/${sample_name}_trimmed_counts.txt" ]]; then
 	species_percent_total=$( echo "${species_reads} ${qc_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 # If the trimmed_counts file is not found all true % applied percentages are lableled as unknown
 else
-	echo "Cant find ${SAMPDATADIR}/preQCcounts/${sample_name}_trimmed_counts.txt. Continuing without true % reads used..."
+	echo "Cant find ${OUTDATADIR}/preQCcounts/${1}_trimmed_counts.txt. Continuing without true % reads used..."
 	unclass_percent="UNK"
 	u_percent="UNK"
 	unclass_reads="UNK"
@@ -201,7 +195,7 @@ else
 fi
 
 #Prints the final best taxon identification output (using species output from gottcha) to the gottcha directory for the sample
-echo -e "U: ${unclass_percent} (${u_percent}%-${unclass_reads}) unclassified\\nD: ${domain_percent} (${domain_percent_total}) ${domain}\\nP: ${phylum_percent} (${phylum_percent_total}) ${phylum}\\nC: ${class_percent} (${class_percent_total}) ${class}\\nO: ${order_percent} (${order_percent_total}) ${order}\\nF: ${family_percent} (${family_percent_total}) ${family}\\nG: ${genus_percent} (${genus_percent_total}) ${genus}\\ns: ${species_percent} (${species_percent_total}) ${species}" > "${SAMPDATADIR}/gottcha/${sample_name}_gottcha_species_summary.txt"
+echo -e "U: ${unclass_percent} (${u_percent}%-${unclass_reads}) unclassified\\nD: ${domain_percent} (${domain_percent_total}) ${domain}\\nP: ${phylum_percent} (${phylum_percent_total}) ${phylum}\\nC: ${class_percent} (${class_percent_total}) ${class}\\nO: ${order_percent} (${order_percent_total}) ${order}\\nF: ${family_percent} (${family_percent_total}) ${family}\\nG: ${genus_percent} (${genus_percent_total}) ${genus}\\ns: ${species_percent} (${species_percent_total}) ${species}" > "${OUTDATADIR}/gottcha/${1}_gottcha_species_summary.txt"
 
 #Script exited gracefully (unless something else inside failed...working on finding all possible failure points!)
 exit 0

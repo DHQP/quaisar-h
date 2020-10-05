@@ -30,7 +30,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?c:p:n:a:d:" option; do
+while getopts ":h?c:p:n:d:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -89,7 +89,7 @@ elif [[ -z "${sample_name}" ]]; then
 	exit 34
 elif [[ ! -z "${alt_db}" ]]; then
 	if [[ ! -f "${alt_db}" ]]; then
-		echo " No or empty alternate database location supplied to run_c-sstar_altDB.sh, exiting"
+		echo " No or empty alternate database location supplied to run_ANI_REFSEQ.sh, exiting"
 		exit 39
 	else
 		echo "alt_db-${alt_db}"
@@ -162,7 +162,7 @@ done < ${OUTDATADIR}/ANI/${sample_name}_${database_and_version}_mash_sorted.dist
 
 successful_matches=$(ls -l "${OUTDATADIR}/ANI/localANIDB_REFSEQ" | wc -l)
 if [[ ${successful_matches} -gt 2 ]]; then
-	"${shareScript}/append_taxonomy_to_ncbi_assembly_filenames.sh" "${OUTDATADIR}/ANI/localANIDB_REFSEQ"
+	"${shareScript}/append_taxonomy_to_ncbi_assembly_filenames.sh" -i "${OUTDATADIR}/ANI/localANIDB_REFSEQ"
 	gunzip ${OUTDATADIR}/ANI/localANIDB_REFSEQ/*.gz
 else
 	echo "No matches were found against REFSEQ Bacterial Database sketch"

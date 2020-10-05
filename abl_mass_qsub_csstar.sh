@@ -37,7 +37,7 @@ while getopts ":h?l:o:m:s:k:c:d:" option; do
       exit 0
       ;;
 		l)
-			echo "Option -l triggered, argument = ${OPTARG}"
+			echo "Option -l triggered, plasmid mode activated"
 			list=${OPTARG};;
 		m)
 			echo "Option -m triggered, argument = ${OPTARG}"
@@ -169,51 +169,51 @@ start_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
 
 # Create and submit scripts to run default csstar on all samples on the list
 while [ ${counter} -lt ${arr_size} ] ; do
-	sample=$(echo "${arr[${counter}]}" | cut -d'/' -f2)
+	sample_name=$(echo "${arr[${counter}]}" | cut -d'/' -f2)
 	project=$(echo "${arr[${counter}]}" | cut -d'/' -f1)
 	if [[ "${clobberness}" = "clobber" ]]; then
-		echo "Removing old c-sstar for ${project}/${sample} and ${ResGANNCBI_srst2_filename}"
-		rm ${processed}/${project}/${sample}/c-sstar/${sample}.${ResGANNCBI_srst2_filename}.gapped_${simnum}_sstar_summary.txt
-		rm -r ${processed}/${project}/${sample}/c-sstar/${ResGANNCBI_srst2_filename}_gapped/
+		echo "Removing old c-sstar for ${project}/${sample_name} and ${ResGANNCBI_srst2_filename}"
+		rm ${processed}/${project}/${sample_name}/c-sstar/${sample_name}.${ResGANNCBI_srst2_filename}.gapped_${simnum}_sstar_summary.txt
+		rm -r ${processed}/${project}/${sample_name}/c-sstar/${ResGANNCBI_srst2_filename}_gapped/
 	fi
-	#echo ${counter}-${project}-${sample}
+	#echo ${counter}-${project}-${sample_name}
 	# Check if sample has a usable assembly file
-	if [[ -s "${processed}/${project}/${sample}/Assembly/${sample}_scaffolds_trimmed.fasta" ]]; then
+	if [[ -s "${processed}/${project}/${sample_name}/Assembly/${sample_name}_scaffolds_trimmed.fasta" ]]; then
 		#echo "Test"
 		# Check if counter is below max number of concurrent submissions
 		if [[ ${counter} -lt ${max_subs} ]]; then
 			# Check if old data exists, skip if so
-			if [[ ! -f "${processed}/${project}/${sample}/c-sstar/${sample}.${ResGANNCBI_srst2_filename}.gapped_${simnum}_sstar_summary.txt" ]]; then
+			if [[ ! -f "${processed}/${project}/${sample_name}/c-sstar/${sample_name}.${ResGANNCBI_srst2_filename}.gapped_${simnum}_sstar_summary.txt" ]]; then
 				echo  "Index is below max submissions, submitting"
-				echo -e "#!/bin/bash -l\n" > "${main_dir}/csstn_${sample}_${start_time}.sh"
-				echo -e "#$ -o csstn_${sample}.out" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-				echo -e "#$ -e csstn_${sample}.err" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-				echo -e "#$ -N csstn_${sample}"   >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-				echo -e "#$ -cwd"  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-				echo -e "#$ -q short.q\n"  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-				echo -e "module load Python/3.6.1\n" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+				echo -e "#!/bin/bash -l\n" > "${main_dir}/csstn_${sample_name}_${start_time}.sh"
+				echo -e "#$ -o csstn_${sample_name}.out" >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
+				echo -e "#$ -e csstn_${sample_name}.err" >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
+				echo -e "#$ -N csstn_${sample_name}"   >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
+				echo -e "#$ -cwd"  >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
+				echo -e "#$ -q short.q\n"  >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
+				echo -e "module load Python/3.6.1\n" >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
 				# Defaulting to gapped/98, change if you want to include user preferences
-				echo -e "cd ${shareScript}" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+				echo -e "cd ${shareScript}" >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
 				if [[ "${use_alt_db}" == "true" ]]; then
-					echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample}\" -g g -s \"${sim}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\""  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+					echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample_name}\" -g g -s \"${sim}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\""  >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
 				else
-					echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample}\" -g g -s \"${sim}\" -p \"${project}\" -c \"${config}\""  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+					echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample_name}\" -g g -s \"${sim}\" -p \"${project}\" -c \"${config}\""  >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
 				fi
-				echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_csstarn_complete.txt\"" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+				echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample_name}_csstarn_complete.txt\"" >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
 				cd "${main_dir}"
-				echo "submitting ${main_dir}/csstn_${sample}_${start_time}.sh"
-				qsub "${main_dir}/csstn_${sample}_${start_time}.sh"
+				echo "submitting ${main_dir}/csstn_${sample_name}_${start_time}.sh"
+				qsub "${main_dir}/csstn_${sample_name}_${start_time}.sh"
 			# Old data exists
 			else
-				echo "${project}/${sample} already has the newest ResGANNCBI (${ResGANNCBI_srst2_filename})"
-				echo -e "$(date)" > "${main_dir}/complete/${sample}_csstarn_complete.txt"
+				echo "${project}/${sample_name} already has the newest ResGANNCBI (${ResGANNCBI_srst2_filename})"
+				echo -e "$(date)" > "${main_dir}/complete/${sample_name}_csstarn_complete.txt"
 			fi
 		# Counter is above max number of submissions
 		else
 			waiting_for_index=$(( counter - max_subs ))
 			waiting_sample=$(echo "${arr[${waiting_for_index}]}" | cut -d'/' -f2)
 			timer=0
-			echo "Index is above max submissions, waiting for index ${waiting_for_index}:${waiting_sample} to complete"
+			echo "Index is above max submissions, waiting for index ${waiting_for_index}:${waiting_sample_name} to complete"
 			while :
 			do
 				# Check that the timer has not exceeded max amount of time to wait
@@ -222,37 +222,37 @@ while [ ${counter} -lt ${arr_size} ] ; do
 					break
 				fi
 				# Check if usable assembly exists for current sample or that one does not exist for the waiting sample (therefore there would be no need to wait on it)
-				if [[ -f "${main_dir}/complete/${waiting_sample}_csstarn_complete.txt" ]] || [[ ! -s "${processed}/${project}/${waiting_sample}/Assembly/${waiting_sample}_scaffolds_trimmed.fasta" ]]; then
+				if [[ -f "${main_dir}/complete/${waiting_sample_name}_csstarn_complete.txt" ]] || [[ ! -s "${processed}/${project}/${waiting_sample_name}/Assembly/${waiting_sample_name}_scaffolds_trimmed.fasta" ]]; then
 					# Check if old data exists, skip if so
-					if [[ ! -f "${processed}/${project}/${sample}/c-sstar/${sample}.${ResGANNCBI_srst2_filename}.gapped_${simnum}_sstar_summary.txt" ]]; then
+					if [[ ! -f "${processed}/${project}/${sample_name}/c-sstar/${sample_name}.${ResGANNCBI_srst2_filename}.gapped_${simnum}_sstar_summary.txt" ]]; then
 						echo  "Index is below max submissions, submitting"
-						echo -e "#!/bin/bash -l\n" > "${main_dir}/csstn_${sample}_${start_time}.sh"
-						echo -e "#$ -o csstn_${sample}.out" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-						echo -e "#$ -e csstn_${sample}.err" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-						echo -e "#$ -N csstn_${sample}"   >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-						echo -e "#$ -cwd"  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-						echo -e "#$ -q short.q\n"  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
-						echo -e "module load Python/3.6.1\n" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+						echo -e "#!/bin/bash -l\n" > "${main_dir}/csstn_${sample_name}_${start_time}.sh"
+						echo -e "#$ -o csstn_${sample_name}.out" >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
+						echo -e "#$ -e csstn_${sample_name}.err" >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
+						echo -e "#$ -N csstn_${sample_name}"   >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
+						echo -e "#$ -cwd"  >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
+						echo -e "#$ -q short.q\n"  >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
+						echo -e "module load Python/3.6.1\n" >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
 						# Defaulting to gapped/98, change if you want to include user preferences
-						echo -e "cd ${shareScript}" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+						echo -e "cd ${shareScript}" >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
 						if [[ "${use_alt_db}" == "true" ]]; then
-							echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample}\" -g g -s \"${sim}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\""  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+							echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample_name}\" -g g -s \"${sim}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\""  >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
 						else
-							echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample}\" -g g -s \"${sim}\" -p \"${project}\" -c \"${config}\""  >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+							echo -e "\"${shareScript}/run_c-sstar.sh\" -n \"${sample_name}\" -g g -s \"${sim}\" -p \"${project}\" -c \"${config}\""  >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
 						fi
-						echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_csstarn_complete.txt\"" >> "${main_dir}/csstn_${sample}_${start_time}.sh"
+						echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample_name}_csstarn_complete.txt\"" >> "${main_dir}/csstn_${sample_name}_${start_time}.sh"
 						cd ${main_dir}
-						qsub "${main_dir}/csstn_${sample}_${start_time}.sh"
+						qsub "${main_dir}/csstn_${sample_name}_${start_time}.sh"
 					# Skipping because old data exists
 					else
-						echo "${project}/${sample} already has the newest ResGANNCBI (${ResGANNCBI_srst2_filename})"
-						echo -e "$(date)" > "${main_dir}/complete/${sample}_csstarn_complete.txt"
+						echo "${project}/${sample_name} already has the newest ResGANNCBI (${ResGANNCBI_srst2_filename})"
+						echo -e "$(date)" > "${main_dir}/complete/${sample_name}_csstarn_complete.txt"
 					fi
 					break
 				# If waiting sample has not completed, wait 5 more seconds and try again
 				else
 					timer=$(( timer + 5 ))
-					echo "${main_dir}/complete/${waiting_sample}_csstarn_complete.txt not ready, sleeping for 5 seconds, so far slept for ${timer}"
+					echo "${main_dir}/complete/${waiting_sample_name}_csstarn_complete.txt not ready, sleeping for 5 seconds, so far slept for ${timer}"
 					sleep 5
 				fi
 			done
@@ -266,13 +266,13 @@ timer=0
 ptimer=0
 for item in "${arr[@]}"; do
 	waiting_sample=$(echo "${item}" | cut -d'/' -f2)
-	if [[ -f "${main_dir}/complete/${waiting_sample}_csstarn_complete.txt" ]] || [[ ! -s "${processed}/${project}/${waiting_sample}/Assembly/${waiting_sample}_scaffolds_trimmed.fasta" ]]; then
+	if [[ -f "${main_dir}/complete/${waiting_sample_name}_csstarn_complete.txt" ]] || [[ ! -s "${processed}/${project}/${waiting_sample_name}/Assembly/${waiting_sample_name}_scaffolds_trimmed.fasta" ]]; then
 		echo "${item} is complete normal"
-		if [[ -f "${shareScript}/csstn_${waiting_sample}.out" ]]; then
-			mv "${shareScript}/csstn_${waiting_sample}.out" "${main_dir}"
+		if [[ -f "${shareScript}/csstn_${waiting_sample_name}.out" ]]; then
+			mv "${shareScript}/csstn_${waiting_sample_name}.out" "${main_dir}"
 		fi
-		if [[ -f "${shareScript}/csstn_${waiting_sample}.err" ]]; then
-			mv "${shareScript}/csstn_${waiting_sample}.err" "${main_dir}"
+		if [[ -f "${shareScript}/csstn_${waiting_sample_name}.err" ]]; then
+			mv "${shareScript}/csstn_${waiting_sample_name}.err" "${main_dir}"
 		fi
 	else
 		# Check every 5 seconds to see if the sample has completed normal csstar analysis
@@ -282,13 +282,13 @@ for item in "${arr[@]}"; do
 					echo "Timer exceeded limit of 1800 seconds = 30 minutes"
 					exit 1
 				fi
-				if [[ -f "${main_dir}/complete/${waiting_sample}_csstarn_complete.txt" ]]; then
+				if [[ -f "${main_dir}/complete/${waiting_sample_name}_csstarn_complete.txt" ]]; then
 					echo "${item} is complete"
-					if [[ -f "${shareScript}/csstn_${waiting_sample}.out" ]]; then
-						mv "${shareScript}/csstn_${waiting_sample}.out" "${main_dir}"
+					if [[ -f "${shareScript}/csstn_${waiting_sample_name}.out" ]]; then
+						mv "${shareScript}/csstn_${waiting_sample_name}.out" "${main_dir}"
 					fi
-					if [[ -f "${shareScript}/csstn_${waiting_sample}.err" ]]; then
-						mv "${shareScript}/csstn_${waiting_sample}.err" "${main_dir}"
+					if [[ -f "${shareScript}/csstn_${waiting_sample_name}.err" ]]; then
+						mv "${shareScript}/csstn_${waiting_sample_name}.err" "${main_dir}"
 					fi
 					break
 				else

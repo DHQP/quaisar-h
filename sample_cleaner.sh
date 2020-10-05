@@ -6,50 +6,85 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Script uses Gulviks SPAdes cleaner along with general folder cleanup to decrease footprint of samples after processing
 #
-# Usage ./sample_cleaner.sh   sample_name   run_ID
+# Usage ./sample_cleaner.sh -n sample_name -p run_ID [-c path_config_file]
 #
 # Output location: No output created
 #
 # Modules required: None
 #
-# v1.0.1 (11/18/2019)
+# v1.0.2 (09/08/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
+#  Function to print out help blurb
+show_help () {
+	echo "Usage: ./sample_cleaner.sh -n sample_name -p run_ID [-c path_config_file]"
+}
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-# Shows a brief uasge/help section if -h option used as first argument
-elif [[ "$1" = "-h" ]]; then
-	echo "Usage is ./sample_cleaner.sh  sample_name MiSeq_Run_ID"
-	echo "Will clean ${processed}/${2}/${1} folder"
-	exit 0
-elif [[ ! -d "${processed}/${2}" ]] || [[ ! -d "${processed}/${2}/${1}" ]]; then
-	if [ ! -d "${processed}/${2}" ]; then
-		echo "Project ${processed}/${2} does not exist"
-	elif [ ! -d "${processed}/${2}/${1}" ]; then
-		echo "Isolate ${processed}/${2}/${1} does not exist"
-	fi
-	echo "EXITING..."
-	exit 1
-else
-	echo "Cleaning ${processed}/${2}/${1}"
+# Parse command line options
+options_found=0
+while getopts ":h?c:p:n:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			sample_name=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
 fi
 
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
+
+# Checks for proper argumentation
+if [[ -z "${sample_name}" ]]; then
+	echo "Empty sample name supplied to run_kraken.sh, exiting"
+	exit 1
+elif [ -z "${project}" ]; then
+	echo "Empty project name given. Exiting"
+	exit 1
+fi
+
+
 # Set main sample folder to clean
-sample_folder="${processed}/${2}/${1}"
+sample_folder="${processed}/${project}/${sample_name}"
+echo "Cleaning ${sample_folder}"
 echo "Source - ${sample_folder}"
 sample_name=$(echo "${sample_folder}" | rev | cut -d'/' -f1 | rev)
 echo "Sample_ID - ${sample_name}"
@@ -67,8 +102,12 @@ if [ -d "${sample_folder}/ANI/localANIDB" ]; then
 	echo "removing localANIDb"
 	rm -r "${sample_folder}/ANI/localANIDB"
 fi
+if [ -d "${sample_folder}/ANI/localANIDB_REFSEQ" ]; then
+	echo "removing localANIDB_REFSEQ"
+	rm -r "${sample_folder}/ANI/localANIDB_REFSEQ"
+fi
 if [ -d "${sample_folder}/ANI/localANIDB_full" ]; then
-	echo "removing localANIDb_full"
+	echo "removing localANIDB_full"
 	rm -r "${sample_folder}/ANI/localANIDB_full"
 fi
 if [ -d "${sample_folder}/ANI/temp" ]; then
@@ -263,4 +302,4 @@ fi
 	#if [[ -f "${sample_folder}/trimmed/${sample_name}_R2_001.paired.fq.gz" ]] && [[ -f "${sample_folder}/trimmed/${sample_name}_R2_001.paired.fq.gz" ]]; then
 	#	clumpify in1="${sample_folder}/trimmed/${sample_name}_R1_001.paired.fq.gz" in2="${sample_folder}/trimmed/${sample_name}_R2_001.paired.fq.gz" out1="${sample_folder}/trimmed/${sample_name}_R1_001.paired.fq.clumped.gz" out2="${sample_folder}/trimmed/${sample_name}_R2_001.paired.fq.clumped.gz" reorder
 	#fi
-echo "Sample ${2}/${1} should now be clean" >> "${processed}/cleaned_sample_list.txt"
+#echo "Sample ${project}/${sample_name} should now be clean" >> "${processed}/cleaned_sample_list.txt"

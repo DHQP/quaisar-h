@@ -6,23 +6,76 @@
 #$ -cwd
 #$ -q short.q
 
-# Sets the sharescript variable temporarily to the current working directory, allowing it to find the original config.sh file
-shareScript=$(pwd)
-#Import the config file with shortcuts and settings
-. ${shareScript}/config.sh
-
 #
 # Description: This version of the script on ly needs to know the location of the list to retry the pipeline on. All pieces should already be in place from the previous attempt.
-# Usage: ./parallel_failed_quaisar.sh /list_of_samples_to_redo
+# Usage: ./parallel_failed_quaisar.sh -l /list_of_samples_to_redo [-c path_to_config_file]
 # Output location: default_config.sh_output_location
 #
 # Modules required: None
 #		*script must be run on cluster or grid scheduler machine
 #
-# v1.0.1 (10/31/2019)
+# v1.0.2 (08/24/2019)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
+
+
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./parallel_failed_quaisar.sh -l path_to_list_of_samples_to_rerun [-c path_to_config_file]"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?l:c:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		l)
+			echo "Option -l triggered, argument = ${OPTARG}"
+			list_path=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+# Show help info for when no options are given
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
+
+# Checks for proper argumentation
+if [[ ! -f "${list_path}" ]] || [[ -z "${list_path}" ]]; then
+	echo "List empty or non-existent, exiting"
+	exit 1
+fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
+
 
 
 # Creates a copy of config file to use for each run of the script, in case there is a change in output locations
@@ -49,14 +102,11 @@ do
 done
 
 #Print out which type of machine the script is running on (Biolinux or Aspen as an interactive session or node based)
-if [ "${host}" = "biolinux" ];
-then
+if [ "${host}" = "biolinux" ]; then
 	echo "Running pipeline on Biolinux"
-elif [ "${host}" = "aspen_login" ];
-then
+elif [ "${host}" = "aspen_login" ]; then
 	echo "Running pipeline on Aspen interactive node"
-elif [[ "${host}" = "cluster"* ]];
-then
+elif [[ "${host}" = "cluster"* ]]; then
 	echo "Running pipeline on Aspen ${host}"
 fi
 
@@ -67,22 +117,10 @@ then
 	exit 1;
 fi
 
-# Checking for proper number of arguments from command line
-if [[ $# -ne 1 ]]; then
-	echo "If reads are in default location set in config file then"
-  echo "Usage: ./parallel_quaisar.sh list_of_samples"
-	echo "You have used $# args"
-  exit 3
-elif [[ ! -f "${1}" ]]; then
-	echo "No list file exists, exiting"
-	exit 463
-fi
-
 # Checks the arguments (more to come)
 nopts=$#
 global_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
 requestor=$(whoami)
-list_path="${1}"
 
 
 
@@ -142,11 +180,11 @@ do
 		cp ${shareScript}/quaisar_failed_assembly_template.sh ${shareScript}/qfa_${file}.sh
 		sed -i -e "s/qfa_X/qfa_${file}/g" "${shareScript}/qfa_${file}.sh"
 		echo "Entering ${shareScript}/qfa_${file}.sh" "${file}" "${proj}" "${shareScript}/config_${config_counter}.sh"
-		qsub "${shareScript}/qfa_${file}.sh" "${file}" "${proj}" "continue" "${shareScript}/config_${config_counter}.sh"
+		qsub "${shareScript}/qfa_${file}.sh" -n "${file}" -p "${proj}" -c "${shareScript}/config_${config_counter}.sh"
 		echo "Created and ran qfa_${file}.sh"
 	else
 		echo "${shareScript}/qfa_${file}.sh already exists, will resubmit"
-		qsub "${shareScript}/qha_${file}.sh" "${file}" "${proj}" "continue" "${shareScript}/config_${config_counter}.sh"
+		qsub "${shareScript}/qha_${file}.sh" -n "${file}" -p "${proj}" -c "${shareScript}/config_${config_counter}.sh"
 	fi
 done
 
@@ -186,7 +224,7 @@ done
 # Get run summary info to send in an email
 # Hold for completion of all submited single quaisars
 for run_sample in "${run_list[@]}"; do
-	"${shareScript}/run_sum.sh" "${run_sample}"
+	"${shareScript}/run_sum.sh" -p "${run_sample}" -c "${config}"
 done
 
 # Add print time the run completed in the text that will be emailed

@@ -6,80 +6,73 @@
 #$ -cwd
 #$ -q short.q
 
+#Import the config file with shortcuts and settings
+if [[ ! -f "./config.sh" ]]; then
+	cp ./config_template.sh ./config.sh
+fi
+. ./config.sh
+
 #
 # Description: Grabs the best species match based on %/read hits from the kraken tool run
 #
-# Usage: ./best_hit_from_kraken.sh -i path_to_sample_folder -r pre/post(relative to assembly)  -t paired|assembled|assembled_BP(source_type) -k kraken|kraken2(source)
+# Usage: ./best_hit_from_kraken.sh sample_name pre/post(relative to assembly) paired|assembled(source_type) run_ID kraken|kraken2(source) [alt_path-for-output]
 #
-# Output location: path_to_sample_folder/kraken/pre|postAssembly/
-#
+# Output location: default_config.sh_output_location/run_ID/sample_name/kraken/pre|post-Assembly/
+#				or				alt_path-for-output/kraken/pre|postAssembly
 # Modules required: None
 #
-# v1.0.2b (05/15/2020)
+# v1.0.1 (05/12/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
-#  Function to print out help blurb
-show_help () {
-	echo "Usage is ./best_hit_from_kraken.sh  -i path_to_sample_folder  -r pre|post -t paired|assembled|assembled_BP -k kraken|kraken2"
-	echo "Output is saved to path_to_sample_folder/kraken(2)/(pre/post)assembly/sample_name_kraken_summary_(paired/assembled)"
-}
-
-# Parse command line options
-options_found=0
-while getopts ":h?n:p:" option; do
-	options_found=$(( options_found + 1 ))
-	case "${option}" in
-		\?)
-			echo "Invalid option found: ${OPTARG}"
-      show_help
-      exit 0
-      ;;
-		i)
-			echo "Option -i triggered, argument = ${OPTARG}"
-			SAMPDATADIR=${OPTARG}
-			;;
-		r)
-			echo "Option -r triggered, argument = ${OPTARG}"
-			relativity=${OPTARG,,}
-			;;
-		t)
-			echo "Option -s triggered, argument = ${OPTARG}"
-			type=${OPTARG,,}
-			;;
-		k)
-			echo "Option -k triggered, argument = ${OPTARG}"
-			source=${OPTARG,,}
-			;;
-		:)
-			echo "Option -${OPTARG} requires as argument";;
-		h)
-			show_help
-			exit 0
-			;;
-	esac
-done
-
-if [[ "${options_found}" -eq 0]]; then
-	echo "No argument supplied to best_hit_from_gottcha1.sh, exiting"
+# Checks for proper argumentation
+if [[ $# -eq 0 ]]; then
+	echo "No argument supplied to $0, exiting"
 	exit 1
-elif [ ! -d "${SAMPDATADIR}" ]; then
-	echo "Path (${SAMPDATADIR}) does not exist, exiting"
-	exit 2
-elif [[ "${relativity}" != "pre" ]] && [[ "${relativity}" != "post" ]]; then
-	echo "Relativity must equal either pre or post, exiting best_hit_from_kraken.sh"
-elif [[ "${type}" != "paired" ]] && [[ "${source}" != "assembled" ]] || [[ "${source}" != "assembled_BP" ]]; then
-	echo "Source must be paired, assembled, or assembled_BP, exiting best_hit_from_kraken.sh"
-elif [[ "${source}" != "kraken" ]] && [[ "${source}" != "kraken2" ]]; then
-	echo "Source must be kraken or kraken2, exiting best_hit_from_kraken.sh"
+elif [ -z "$1" ]; then
+	echo "Empty sample name supplied to $0, exiting"
+	exit 1
+elif [[ "$1" = "-h" ]]; then
+	echo "Usage is ./best_hit_from_kraken.sh  sample_name  pre|post paired|assembled run_ID	kraken|kraken2 [alt_path-for-output]"
+	echo "Output is saved to ${processed}/miseq_run_ID_id/sample_name/kraken/pre|postassembly/sample_name_kraken_summary_paired|assembled"
+	echo "				or				alt_path-for-output/kraken/pre|postAssembly"
+	exit 0
+elif [ -z "$2" ]; then
+	echo "Empty assembly relativity supplied to $0, exiting"
+	exit 1
+elif [ -z "$3" ]; then
+	echo "Empty source type supplied to $0, exiting"
+	exit 1
+elif [ -z "$4" ]; then
+	echo "Empty project id supplied to $0, exiting"
+	exit 1
+elif [ -z "$5" ]; then
+	echo "Empty out folder supplied to $0, exiting"
+	exit 1
+elif [ -z "${6}" ]; then
+	echo "Using default path - ${processed}"
+	OUTDATADIR="${processed}/${4}/${1}/${5}/${2}Assembly"
+elif [ -d "${6}" ]; then
+	echo "Using given path - ${3}"
+	OUTDATADIR="${6}/${4}/${1}/${5}/${2}Assembly"
+else
+	OUTDATADIR="${processed}/${4}/${1}/${5}/${2}Assembly"
+	echo "Path does not exist - ${6}, using default (${processed})"
+	exit 1
 fi
 
-# Based upon standard naming protocols pulling last portion of path off should result in proper name
-sample_name=$(echo "${SAMPDATADIR}" | rev | cut -d'/' -f1 | rev)
-relativity="${relativity}Assembly"
+# Checks what source flag was set as,indicating that it was from kraken or kraken2
+if [[ "${5}" != "kraken" ]] && [[ "${5}" != "kraken2" ]]; then
+	echo "Source must be kraken or kraken2, exiting"
+	exit 334
+else
+	source="${5}"
+fi
 
-echo "-${SAMPDATADIR}-"
+#Sets output folder to the correct path relative to assembly completion
+OUTDATADIR="${processed}/${4}/${1}/${5}/${2}Assembly"
+echo "-${OUTDATADIR}-"
 
 #Creates the default values for output in case any calculations are interrupted.
 unclass_reads=0
@@ -117,8 +110,8 @@ genus="N/A"
 species="N/A"
 
 #Checks to see if the list file used for calculations exists and exits if it does not
-if [[ ! -s "${SAMPDATADIR}/${source}/${relativity}/${sample_name}_${type}.list" ]]; then
-	echo "${SAMPDATADIR}/${source}/${relativity}/${sample_name}_${type}.list does not exist"
+if [[ ! -s "${OUTDATADIR}/${1}_${3}.list" ]]; then
+	echo "${OUTDATADIR}/${1}_${3}.list does not exist"
 	exit 1
 fi
 
@@ -189,15 +182,15 @@ while IFS= read -r line  || [ -n "$line" ]; do
 		species_reads=${reads}
 		echo "New: ${species}-${species_reads}"
 	fi
-done < "${SAMPDATADIR}/${source}/${relativity}/${sample_name}_${type}.list"
+done < "${OUTDATADIR}/${1}_${3}.list"
 
 # Calculate % of unclassified reads/contigs using sum of highest taxon level reads against total reads found in QC counts
 # Grabs total possible reads from preQC counts if kraken was used on reads (pre assembly)
-if [[ "${relativity}" = "preAssembly" ]]; then
+if [[ "${2}" = "pre" ]]; then
 	# Checks for the existence of the preQC counts file to get total possible reads
-	if [[ -s "${SAMPDATADIR}/preQCcounts/${sample_name}_trimmed_counts.txt" ]]; then
+	if [[ -s "${processed}/${4}/${1}/preQCcounts/${1}_trimmed_counts.txt" ]]; then
 		# Pulls the total number of possible reads from the preQC counts file
-		file_reads=$(tail -n 1 "${SAMPDATADIR}/preQCcounts/${sample_name}_trimmed_counts.txt" | cut -d'	' -f13)
+		file_reads=$(tail -n 1 "${processed}/${4}/${1}/preQCcounts/${1}_trimmed_counts.txt" | cut -d'	' -f13)
 		# Calculates the true count of unclassified reads/contigs rather than the reported value from kraken
 		unclass_reads=$(( file_reads - classified_reads ))
 		# Calculates the percent of unclassified reads/contigs using the total possible reads
@@ -208,10 +201,10 @@ if [[ "${relativity}" = "preAssembly" ]]; then
 		u_percent="UNK"
 	fi
 # Grabs total possible bases from contigs in trimmed assembly (post assembly, using weighted kraken output)
-elif [[ "${relativity}" = "postAssembly" ]]; then
+elif [[ "${2}" = "post" ]]; then
 	total_reads=$(( classified_reads + unclass_reads ))
 	# Checks for existence of trimmed contig file
-	if [[ -s "${SAMPDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta" ]]; then
+	if [[ -s "${processed}/${4}/${1}/Assembly/${1}_scaffolds_trimmed.fasta" ]]; then
 		# Sums unclassified and classified weighted base length from contigs
 		file_reads=$(( unclass_reads + classified_reads ))
 		# Calculates percent of classified reads as 100*classified reads/contigs
@@ -246,7 +239,7 @@ else
 fi
 
 #Print out the best taxa for each level and its corresponding % of reads reported by kraken, % reads of total, taxon description
-(echo -e "U: ${unclass_percent} (${u_percent}) unclassified\\nD: ${domain_percent} (${domain_percent_total}) ${domain}\\nP: ${phylum_percent} (${phylum_percent_total}) ${phylum}\\nC: ${class_percent} (${class_percent_total}) ${class}\\nO: ${order_percent} (${order_percent_total}) ${order}\\nF: ${family_percent} (${family_percent_total}) ${family}\\nG: ${genus_percent} (${genus_percent_total}) ${genus}\\ns: ${species_percent} (${species_percent_total}) ${species}") > "${SAMPDATADIR}/${sample_name}_kraken_summary_${3}.txt"
+(echo -e "U: ${unclass_percent} (${u_percent}) unclassified\\nD: ${domain_percent} (${domain_percent_total}) ${domain}\\nP: ${phylum_percent} (${phylum_percent_total}) ${phylum}\\nC: ${class_percent} (${class_percent_total}) ${class}\\nO: ${order_percent} (${order_percent_total}) ${order}\\nF: ${family_percent} (${family_percent_total}) ${family}\\nG: ${genus_percent} (${genus_percent_total}) ${genus}\\ns: ${species_percent} (${species_percent_total}) ${species}") > "${OUTDATADIR}/${1}_kraken_summary_${3}.txt"
 
 #Script exited gracefully (unless something else inside failed)
 exit 0

@@ -6,38 +6,74 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Creates a tsv file that matches the order of samples on the this when the run was created in QuAISAR (instead of matching the MMB_Seq log)
 #
-# Usage: ./make_Seqlog_from_list.sh path_to_list
+# Usage: ./make_Seqlog_from_list.sh -l path_to_list [-c path_to_config]
 #
 # Output location: same folder as path_to_list input parameter
 #
 # Modules required: None
 #
-# v1.0.3 (07/17/2020)
+# v1.0.4 (08/21/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./make_Seqlog_from_list.sh -l path_to_list [-c path_to_config_file]"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?l:c:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		l)
+			echo "Option -l triggered, argument = ${OPTARG}"
+			list=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+# Show help info for when no options are given
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
+
 # Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
+if [[ ! -f "${list}" ]] || [[ -z "${list}" ]]; then
+	echo "List empty or non-existent, exiting"
 	exit 1
-elif [[ -z "${1}" ]]; then
-	echo "Empty sample name supplied to $0, exiting"
-	exit 1
-# Gives the user a brief usage and help section if requested with the -h option argument
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./make_Seqlog_from_list.sh list_of_samples"
-	echo "Output is saved to Seqlog_output.txt in same folder as list"
-	exit 0
+fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
 fi
 
 # Creates a dictionary of commonly found bugs to use when looking up sizes and assembly ratios later
@@ -53,7 +89,7 @@ while IFS= read -r bug_lines  || [ -n "$bug_lines" ]; do
 done < ${local_DBs}/MMB_Bugs.txt
 
 # Set output folder as directory of input list
-output_folder=$(dirname ${1})
+output_folder=$(dirname ${list})
 > "${output_folder}/Seqlog_output.txt"
 
 # Goes through each item on the list and pulls all relevant info
@@ -76,11 +112,9 @@ while IFS= read -r var || [ -n "$var" ]; do
 	if [[ -s "${OUTDATADIR}/kraken/postAssembly/${sample_name}_kraken_summary_assembled_BP.txt" ]]; then
 		while IFS= read -r line  || [ -n "$line" ]; do
 			first=${line::1}
-			if [ "${first}" = "s" ]
-			then
+			if [ "${first}" = "s" ]; then
 				species_post=$(echo "${line}" | awk -F ' ' '{print $4}')
-			elif [ "${first}" = "G" ]
-			then
+			elif [ "${first}" = "G" ]; then
 				genus_post=$(echo "${line}" | awk -F ' ' '{print $4}')
 			fi
 		done < "${OUTDATADIR}/kraken/postAssembly/${sample_name}_kraken_summary_assembled_BP.txt"
@@ -98,11 +132,9 @@ while IFS= read -r var || [ -n "$var" ]; do
 	if [[ -s "${OUTDATADIR}/kraken/preAssembly/${sample_name}_kraken_summary_paired.txt" ]]; then
 		while IFS= read -r line  || [ -n "$line" ]; do
 			first=${line::1}
-			if [ "${first}" = "s" ]
-			then
+			if [ "${first}" = "s" ]; then
 				species_reads=$(echo "${line}" | awk -F ' ' '{print $4}')
-			elif [ "${first}" = "G" ]
-			then
+			elif [ "${first}" = "G" ]; then
 				genus_reads=$(echo "${line}" | awk -F ' ' '{print $4}')
 			fi
 		done < "${OUTDATADIR}/kraken/preAssembly/${sample_name}_kraken_summary_paired.txt"
@@ -164,8 +196,7 @@ while IFS= read -r var || [ -n "$var" ]; do
 			if [ ${counter} -eq 0 ]
 			then
 				num_contigs=$(sed -n '14p' "${OUTDATADIR}/Assembly_Stats/${sample_name}_report.tsv"| sed -r 's/[\t]+/ /g' | cut -d' ' -f3 )
-			elif [ ${counter} -eq 1 ]
-			then
+			elif [ ${counter} -eq 1 ]; then
 				assembly_length=$(sed -n '16p' "${OUTDATADIR}/Assembly_Stats/${sample_name}_report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
 				#Check Assembly ratio against expected size to see if it is missing a large portion or if there is contamination/double genome
 				dec_genus_initial="${dec_genus:0:1}"
@@ -179,8 +210,7 @@ while IFS= read -r var || [ -n "$var" ]; do
 				else
 					assembly_ratio="Not_in_DB (${tax_source}-${assembly_ID})"
 				fi
-			elif [ ${counter} -eq 3 ]
-			then
+			elif [ ${counter} -eq 3 ]; then
 				N50=$(sed -n '18p' "${OUTDATADIR}/Assembly_Stats/${sample_name}_report.tsv"  | sed -r 's/[\t]+/ /g'| cut -d' ' -f2)
 			fi
 			counter=$((counter+1))
@@ -198,12 +228,10 @@ while IFS= read -r var || [ -n "$var" ]; do
 			then
 				#echo "C-"${line}
 				found_buscos=$(echo "${line}" | awk -F ' ' '{print $1}')
-			elif [[ ${line} == *"Total BUSCO groups searched"* ]];
-			then
+			elif [[ ${line} == *"Total BUSCO groups searched"* ]]; then
 				#echo "T-"${line}
 				total_buscos=$(echo "${line}" | awk -F ' ' '{print $1}')
-			elif [[ "${line}" == *"The lineage dataset is:"* ]];
-			then
+			elif [[ "${line}" == *"The lineage dataset is:"* ]]; then
 				#echo "L-"${line}
 				db=$(echo "${line}" | awk -F ' ' '{print $6}')
 			fi
@@ -254,7 +282,7 @@ while IFS= read -r var || [ -n "$var" ]; do
 
 	# Add all pertinent info to the output file in the correct formatting to add to MMB_Seq log
 	echo -e "${sample_name}\\t${NOW}\\t${g_s_reads}\\t${g_s_assembled}\\t${g_s_16s}\\t${read_qc_info}\\t${avg_coverage}\\t${contig_info}\\t${busco_info}\\t${ani_info}\\r" >> "${output_folder}/Seqlog_output.txt"
- done < ${1}
+done < ${list}
 
 #Script exited gracefully
 exit 0
