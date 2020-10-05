@@ -58,7 +58,7 @@ while getopts ":h?c:p:n:g:s:d:l" option; do
 			echo "Option -d triggered, argument = ${OPTARG}"
 			alt_db=${OPTARG};;
 		l)
-			echo "Option -l triggered, argument = ${OPTARG}"
+			echo "Option -l triggered, plasmid mode activated"
 			plasmid="true";;
 		:)
 			echo "Option -${OPTARG} requires as argument";;

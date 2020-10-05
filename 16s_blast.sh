@@ -6,22 +6,16 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Creates a species prediction based on blasting the largest and also 'best' hit of the suggested 16s sequences found using barrnap
 #
-# Usage: ./16s_blast.sh -n sample_name -p run_ID
+# Usage: ./16s_blast.sh -n sample_name -p run_ID [-c path_to_config_file]
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/16s/
 #
 # Modules required: barrnap/0.8, ncbi-blast+/LATEST, perl/5.12.3. hmmer/3.1b2 loaded by barrnap/0.8
 #
-# v1.0.2 (03/05/2020)
+# v1.0.3 (08/18/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -36,7 +30,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?n:p:" option; do
+while getopts ":h?n:p:c:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -50,6 +44,9 @@ while getopts ":h?n:p:" option; do
 		p)
 			echo "Option -p triggered, argument = ${OPTARG}"
 			project=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -66,6 +63,18 @@ if [[ "${options_found}" -eq 0 ]]; then
 	exit
 fi
 
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
 
 # Creates new output folder based on the universally set processed location from config.sh
 OUTDATADIR=${processed}/${project}/${sample_name}/

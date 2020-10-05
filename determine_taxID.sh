@@ -43,7 +43,7 @@ while getopts ":h?n:p:d:c:" option; do
 			project=${OPTARG};;
 		d)
 			echo "Option -d triggered, argument = ${OPTARG}"
-			altDB=${OPTARG};;
+			alt_db=${OPTARG};;
 		c)
 			echo "Option -c triggered, argument = ${OPTARG}"
 			config=${OPTARG};;
@@ -92,7 +92,7 @@ fi
 if [[ -z "${altDB}" ]]; then
 	databases=${local_DBs}
 else
-	databases=${3}
+	databases=${alt_db}
 fi
 
 # Set default values for a ll taxonomic levels

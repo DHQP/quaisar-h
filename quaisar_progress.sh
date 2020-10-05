@@ -9,13 +9,13 @@
 #
 # Description: Helper for the main quaisar script to allow easy visualization of progress of run
 #
-# Usage ./quaisar-progress.sh path_to_run_folder
+# Usage ./quaisar-progress.sh -i path_to_run_folder [-c path_to_config_file]
 #
 # Output loction: screen
 #
 # Modules required: None
 #
-# v1.0.1 (05/14/2020)
+# v1.0.2 (09/08/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -27,20 +27,61 @@ tasks_per_isolate=29
 printf '\e[8;6;140t'
 printf '\e[2t' && sleep 1 && printf '\e[1t'
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./quaisar_progress.sh path_to_run_folder"
-	echo "Output is saved to path_to_run_folder"
-	exit 0
-elif [[ ! -d "${1}" ]]; then
-	echo "Path (${1}) does not exist, exiting quaisar-progress.sh"
-	exit 2
+#  Function to print out help blurb
+show_help () {
+	echo "Usage: ./quaisar-progress.sh -i path_to_run_folder [-c path_to_config_file]"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?c:i:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		i)
+			echo "Option -i triggered, argument = ${OPTARG}"
+			run_path=${OPTARG};;
+		c)
+			echo "Option -v triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
 fi
 
-run_path=${1}
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
+
+# Checks for proper argumentation
+if [ ! -d "${run_path}" ]; then
+	echo "Run path (${run_path}) does not exist. Exiting"
+	exit 1
+fi
+
 run_name=$(echo "${run_path}" | rev | cut -d'/' -f1 | rev)
 BAR_length=100
 BAR_character='#'
@@ -77,7 +118,7 @@ while true; do
 	#echo -e "${current_Isolate_progress}+${isolate_incomplete_percent}=100?"
 	#echo -e "${total_progress}+${total_incomplete_percent}=100?"
 	clear
-	echo -en "\n\nProgress for run $1\n[${isolate_progress}]\t${current_Isolate_progress}%-${current_Isolate_name}-${iso_AA[${pro_Isolate_task_number}]}\n[${run_progress}]\t${total_progress}%-${run_AA[${pro_run_task_id}]}\n\n"
+	echo -en "\n\nProgress for run $run_name\n[${isolate_progress}]\t${current_Isolate_progress}%-${current_Isolate_name}-${iso_AA[${pro_Isolate_task_number}]}\n[${run_progress}]\t${total_progress}%-${run_AA[${pro_run_task_id}]}\n\n"
 
 	#echo -ne "\r${BAR:0:$current_Isolate_progress}(${current_Isolate_progress}%-${current_Isolate_name}-${iso_AA[${pro_Isolate_task_number}]})"
 	#	echo -ne "\r${BAR:0:$total_progress}(${total_progress}%-${run_AA[${pro_run_task_id}]})"

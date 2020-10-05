@@ -6,83 +6,136 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp config_template.sh config.sh
-fi
-. ./config.sh
-
 #
 # Description: Will attempt to recalculate the best hit from a previously completed ANI analysis
 #
-# Usage: ./retry_ANI_best_hit.sh sample_name   genus	species   run_ID  list_samples_to_include(optional)
+# Usage: ./retry_ANI_best_hit.sh -n sample_name -g genus -s	species -p run_ID [-a list_samples_to_include(optional)] [-c path_to_config_file] [-a path_to_list_of_additional_samples]
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/ANI/
 #
 # Modules required: Python/3.5.2
 #
-# v1.0 (10/3/2019)
+# v1.0.1 (08/24/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
 ml Python3/3.5.2
 
+
+#  Function to print out help blurb
+show_help () {
+	echo "./retry_ANI_best_hit.sh -n sample_name -g genus -s	species -p run_ID [-a list_samples_to_include(optional)] [-c path_to_config_file] [-a path_to_list_of_additional_samples]"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?c:p:n:g:s:a:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			sample_name=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		g)
+			echo "Option -g triggered, argument = ${OPTARG}"
+			genus_in=${OPTARG};;
+		s)
+			echo "Option -s triggered, argument = ${OPTARG}"
+			species=${OPTARG};;
+		a)
+			echo "Option -a triggered, argument = ${OPTARG}"
+			others="true"
+			additional_samples=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
+
+if [[ -z "${project}" ]]; then
+	echo "No Project/Run_ID supplied to retry_ANI_best_hit.sh, exiting"
+	exit 33
+elif [[ -z "${sample_name}" ]]; then
+	echo "No sample name supplied to retry_ANI_best_hit.sh, exiting"
+	exit 34
+elif [[ -z "${species}" ]]; then
+	echo "No species supplied to retry_ANI_best_hit.sh, exiting"
+	exit 35
+elif [[ -z "${genus}" ]]; then
+	echo "No genus supplied to retry_ANI_best_hit.sh, exiting"
+	exit 36
+elif [[ "${others}" == "true" ]]; then
+	if [[ ! -f "${additional_samples}" ]]; then
+		echo "Additional sample file list does not exist...continuing without extra samples"
+	fi
+fi
+
+
+
 # Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-elif [[ -z "${1}" ]]; then
-	echo "Empty sample name supplied to run_ANI.sh, exiting"
-	exit 1
-# Gives the user a brief usage and help section if requested with the -h option argument
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./retry_ANI_best_hit.sh sample_name ani_database(which is also genus) species run_ID list_of_samples_to_include(optional)"
-	echo "Output is saved to in ${processed}/sample_name/ANI"
-	exit 0
-elif [ -z "$2" ]; then
-	echo "Empty database name supplied to retry_ANI_best_hit.sh. Second argument should be a genus found in ${local_DBs}/ANI/  ...Exiting"
-	exit 1
-elif [ ! -s "${local_DBs}/aniDB/${2,}" ]; then
+if [ ! -s "${local_DBs}/aniDB/${2,}" ]; then
 	echo "The genus does not exist in the ANI database. This will be noted and the curator of the database will be notified. However, since nothing can be done at the moment....exiting"
 	# Create a dummy folder to put non-results into (if it doesnt exist
-	if [ ! -d "${processed}/${4}/${1}/ANI" ]; then  #create outdir if absent
-		echo "${processed}/${4}/${1}/ANI"
-		mkdir -p "${processed}/${4}/${1}/ANI"
+	if [ ! -d "${processed}/${4}/${sample_name}/ANI" ]; then  #create outdir if absent
+		echo "${processed}/${4}/${sample_name}/ANI"
+		mkdir -p "${processed}/${4}/${sample_name}/ANI"
 	fi
 	# Write non-results to a file in ANI folder
-	echo "No matching ANI database found for ${2}(genus)" >> "${processed}/${4}/${1}/ANI/best_ANI_hits_ordered(${1}_vs_${2}).txt"
+	echo "No matching ANI database found for ${genus_in}(genus)" >> "${processed}/${4}/${sample_name}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${genus_in}).txt"
 	# Add genus to list to download and to database
 	global_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
-	echo "ANI: ${2} - Found as ${1} on ${global_time}" >> "${shareScript}/maintenance_To_Do.txt"
+	echo "ANI: ${genus_in} - Found as ${sample_name} on ${global_time}" >> "${shareScript}/maintenance_To_Do.txt"
 	exit 1
-elif [ -z "$3" ]; then
-	echo "Empty species name supplied to run_ANI.sh. Third argument should be the suspected species of the sample. Exiting"
-	exit 1
-elif [ -z "$4" ]; then
-	echo "Empty miseq_run_ID name supplied to run_ANI.sh. Fourth argument should be the run id. Exiting"
-	exit 1
-elif [ ! -z "$5" ]; then
-	others="true"
 fi
 
 start_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
 echo "Started ANI at ${start_time}"
 
 # Sets the output folder to the sample_name folder in processed samples
-OUTDATADIR="${processed}/${4}/${1}"
+OUTDATADIR="${processed}/${project}/${sample_name}"
 
 # Checks to see if an ANI folder already exists and creates it if not
-if [ ! -d "$OUTDATADIR/ANI" ]; then
-	echo "No $OUTDATADIR/ANI directory, exiting"
+if [ ! -d "${OUTDATADIR}/ANI" ]; then
+	echo "No ${OUTDATADIR}/ANI directory, exiting"
 	exit
 fi
 
 # Gets persons name to use as email during entrez request to identify best matching sample
 me=$(whoami)
 
-# Sets the genus as the database that was passed in (The $2 seemed to be getting changed somewhere, so I just set it as a local variable)
-genus_in=${2}
 
 #Extracts the top line from the %id file to get all the sample names used in analysis (they are tab separated along the top row)
 if [[ -s "${OUTDATADIR}/ANI/aniM/ANIm_percentage_identity.tab" ]]; then
@@ -208,12 +261,12 @@ fi
 #best_organism_guess="${best_organism_guess_arr[@]:0:2}"
 
 #Creates a line at the top of the file to show the best match in an easily readable format that matches the style on the MMB_Seq log
-echo -e "${best_percent}%-${best_organism_guess}(${best_file}.fna)\\n$(cat "${OUTDATADIR}/ANI/best_hits_ordered.txt")" > "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${1}_vs_${genus_in}).txt"
+echo -e "${best_percent}%-${best_organism_guess}(${best_file}.fna)\\n$(cat "${OUTDATADIR}/ANI/best_hits_ordered.txt")" > "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${genus_in}).txt"
 
-"${shareScript}/determine_taxID.sh" ${1} ${4}
+"${shareScript}/determine_taxID.sh" -n "${sample_name}" -p "${project}" -c "${config}"
 
-genus=$(tail -n3 ${OUTDATADIR}/${1}.tax | head -n1 | cut -d'	' -f2)
-species=$(tail -n2 ${OUTDATADIR}/${1}.tax | head -n1 | cut -d'	' -f2)
+genus=$(tail -n3 ${OUTDATADIR}/${sample_name}.tax | head -n1 | cut -d'	' -f2)
+species=$(tail -n2 ${OUTDATADIR}/${sample_name}.tax | head -n1 | cut -d'	' -f2)
 
 echo -e "${genus^} ${species}"
 

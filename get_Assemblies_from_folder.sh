@@ -6,16 +6,10 @@
 #$ -cwd
 #$ -q short.q
 
-# Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Will find all assembly files (.fna or .fasta) within the given folder
 #
-# Usage: ./get_Assemblies_from_folder.sh run_ID folder_with_Assemblies output_directory
+# Usage: ./get_Assemblies_from_folder.sh -p run_ID -i folder_with_Assemblies -o output_directory [-c config_file_path]
 #
 # Output location: output_directory/run_ID
 #
@@ -26,40 +20,89 @@ fi
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./get_Assemblies_from_folder.sh -i input_folder -o output folder -p project_ID [-c path_to_config_file]"
+	echo "Output is saved to ${processed}/run_ID/ where processed is retrieved from config file, either default or imported"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?i:p:o:c:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		i)
+			echo "Option -i triggered, argument = ${OPTARG}"
+			input_folder=${OPTARG};;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		o)
+			echo "Option -o triggered, argument = ${OPTARG}"
+			output_folder=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+# Show help info for when no options are given
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
+
 # Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
+if [[ -z "${input_folder}" ]] || [[ ! -d "${input_folder}" ]]; then
+	echo "Empty/non-existent input folder (${input_folder}) supplied, exiting"
 	exit 1
-elif [[ -z "${1}" ]]; then
-	echo "Empty project name supplied to $0, exiting"
+elif [[ -z "${output_folder}" ]]; then
+	echo "Empty/non-existent output folder (${output_folder}) supplied, exiting"
 	exit 1
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./get_Assemblies_from_folder.sh  run_ID location_of_Assemblies"
-	echo "Output by default is downloaded to ${processed}/run_ID and copied to ${processed}/run_ID/sample_name/Assembly"
-	exit 0
-elif [[ -z "${2}" ]]; then
-	echo "Empty source supplied to $0, exiting"
-	exit 1
-elif [[ ! -d "${3}" ]]; then
-	echo "Output directory ${3} does not exist, exiting"
+elif [[ -z "${project}" ]]; then
+	echo "Empty project ID supplied, can not place files correctly, must exit"
 	exit 1
 fi
 
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
 
 # Sets folder to where files will be downloaded to
-OUTDATADIR="${3}/${1}"
+OUTDATADIR="${output}/${project}"
 if [ ! -d "${OUTDATADIR}" ]; then
 	echo "Creating $OUTDATADIR"
 	mkdir -p "${OUTDATADIR}"
 fi
 
-if [ -f "${OUTDATADIR}/${1}_list.txt" ]; then
-	rm "${OUTDATADIR}/${1}_list.txt"
+if [ -f "${OUTDATADIR}/${project}_list.txt" ]; then
+	rm "${OUTDATADIR}/${project}_list.txt"
 fi
 
 # Goes through given folder
-echo "${2}"
-for file in ${2}/*
+echo "${input_folder}"
+for file in ${input_folder}/*
 do
 	# Check if file is a recognized assembly format externsion
 	if [[ "${file}" = *.fasta ]] || [[ "${file}" = *.fna ]]; then

@@ -6,41 +6,75 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Quick and dirty way to perform something on a list of samples in the standard format (project/sample_name)
 #
-# Usage: ./list_runner.sh path_to_list
+# Usage: ./list_runner.sh -l path_to_list [-c path_to_config_file]
 #
 # Output location: Varies on contents
 #
-# Modules required: Varies on contents
+# Modules required: Varies on contents but should be loaded by what it calls
 #
-# v1.0 (10/3/2019)
+# v1.0.2 (09/08/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-# Shows a brief uasge/help section if -h option used as first argument
-elif [[ "$1" = "-h" ]]; then
-	echo "Usage is ./act_by_list_template.sh path_for_list_file"
-	exit 0
-elif [[ ! -f "${1}" ]]; then
-	echo "List file (${1}) does not exist, can not proceed"
-	exit 0
+#  Function to print out help blurb
+show_help () {
+	echo "Usage is ./list_runner.sh -l path_to_list [-c path_to_config_file]"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?l:c:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		l)
+			echo "Option -l triggered, argument = ${OPTARG}"
+			list=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+# Show help info for when no options are given
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
 fi
 
-#sample_name="${1}"
-#project="${processed}/${2}"
+# Checks for proper argumentation
+if [[ ! -f "${list}" ]] || [[ -z "${list}" ]]; then
+	echo "List empty or non-existent, exiting"
+	exit 1
+fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
 
 # Loop through and act on each sample name in the passed/provided list
 while IFS= read -r var; do
@@ -69,7 +103,7 @@ while IFS= read -r var; do
 		echo "${output}" > "${processed}/${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst"
 	fi
 
-done < "${1}"
+done < "${list}"
 
 # Send a completion email to whoever ran the script
 echo "All isolates completed"

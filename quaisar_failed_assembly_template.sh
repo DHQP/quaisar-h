@@ -7,55 +7,82 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp config_template.sh config.sh
-fi
-. ./config.sh
-
 #
 # Description: Alternate version of the main QuAISAR-H pipeline that (re)starts from the assembly step, project/isolate_name must already have a populated FASTQs folder to work with
 # 	This script assumes the sample is located in the default location ($processed) specified within the config file
 #
-# Usage: ./quaisar_failed_assembly.sh isolate_name project_name [continue]
+# Usage: ./quaisar_failed_assembly.sh -n isolate_name -p project_name [-c path_to_config_file]
 #
 # Output location: default_config.sh_output_location
 #
 # Modules required: Python3/3.5.4
 #
-# v1.0.4 (11/18/2019)
+# v1.0.5 (08/24/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
 ml Python3/3.5.4
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./quaisar_failed_assembly.sh  sample_name miseq_run_ID(or_project_name) continue config_file_to_run_on"
-	echo "Populated trimmed folder needs to be present in ${2}/${1}, wherever it resides"
-	echo "Output by default is processed
-	to processed/miseq_run_ID/sample_name"
-	exit 0
-elif [[ -z "${2}" ]]; then
+#  Function to print out help blurb
+show_help () {
+	echo "Usage 1: ./quaisar_failed_assembly.sh -n isolate_name -p project_name [-c path_to_config_file]"
+}
+
+# Parse command line options
+options_found=0
+while getopts ":h?c:p:n:" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			sample_name=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
+fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	cwd=$(pwd)
+	. ./config.sh
+	config="${cwd}/config.sh"
+fi
+
+if [[ -z "${project}" ]]; then
 	echo "No Project/Run_ID supplied to quaisar_failed_assembly.sh, exiting"
 	exit 33
-elif [[ ! -z "${3}" ]] && [[ "${3}" != "continue" ]]; then
-	echo "Continue flag not set correctly, can ONLY be continue, exiting"
+elif [[ -z "${sample_name}" ]]; then
+	echo "No sample name supplied to quaisar_failed_assembly.sh, exiting"
 	exit 34
 fi
-
-if [[ ! -f "${4}" ]]; then
-	echo "no config file to load (${4}), exiting"
-	exit 223
-else
-	echo "${2}/${1} is loading config file ${4}"
-	. "${4}"
-fi
-
 
 
 #Time tracker to gauge time used by each step
@@ -63,16 +90,11 @@ totaltime=0
 start_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
 
 # Set arguments to sample_name(sample name) project (miseq run id) and outdatadir(${processed}/project/sample_name)
-sample_name="${1}"
-project="${2}"
 OUTDATADIR="${processed}/${project}"
-if [[ ! -z "${5}" ]]; then
-	OUTDATADIR="${5}/${project}"
-fi
 
 # Remove old run stats as the presence of the file indicates run completion
-if [[ -f "${processed}/${proj}/${sample_name}/${sample_name}_pipeline_stats.txt" ]]; then
-	rm "${processed}/${proj}/${sample_name}/${sample_name}_pipeline_stats.txt"
+if [[ -f "${processed}/${project}/${sample_name}/${sample_name}_pipeline_stats.txt" ]]; then
+	rm "${processed}/${project}/${sample_name}/${sample_name}_pipeline_stats.txt"
 fi
 
 # Create an empty time_summary_redo file that tracks clock time of tools used
@@ -125,7 +147,7 @@ do
 		#else
 		#	"${shareScript}/run_SPAdes.sh" "${sample_name}" normal "${project}"
 		#fi
-		"${shareScript}/run_SPAdes.sh" "${sample_name}" normal "${project}"
+		"${shareScript}/run_SPAdes.sh" -n "${sample_name}" -t normal -p "${project}" -c "${config}"
 	fi
 	# Removes any core dump files (Occured often during testing and tweaking of memory parameter
 	if [ -n "$(find "${shareScript}" -maxdepth 1 -name 'core.*' -print -quit)" ]; then
@@ -210,7 +232,7 @@ echo "----- Running Kraken on Assembly -----"
 # Get start time of kraken on assembly
 start=$SECONDS
 # Run kraken on assembly
-"${shareScript}/run_kraken.sh" "${sample_name}" post assembled "${project}"
+"${shareScript}/run_kraken.sh" -n "${sample_name}" -r post -p "${project}" -c "${config}"
 # Get end time of kraken on assembly and calculate run time and append to time summary (and sum to total time used)
 end=$SECONDS
 timeKrakAss=$((end - start))
@@ -220,14 +242,14 @@ totaltime=$((totaltime + timeKrakAss))
 # Get ID fom 16s
 echo "----- Identifying via 16s blast -----"
 start=$SECONDS
-"${shareScript}/16s_blast.sh" "-n" "${sample_name}" "-p" "${project}"
+"${shareScript}/16s_blast.sh" -n "${sample_name}" -p "${project}" -c "${config}"
 end=$SECONDS
 time16s=$((end - start))
 echo "16S - ${time16s} seconds" >> "${time_summary_redo}"
 totaltime=$((totaltime + time16s))
 
 # Get taxonomy from currently available files (Only ANI, has not been run...yet, will change after discussions)
-"${shareScript}/determine_taxID.sh" "${sample_name}" "${project}"
+"${shareScript}/determine_taxID.sh" -n "${sample_name}" -p "${project}" -c "${config}"
 # Capture the anticipated taxonomy of the sample using kraken on assembly output
 echo "----- Extracting Taxonomy from Taxon Summary -----"
 # Checks to see if the kraken on assembly completed successfully
@@ -240,26 +262,19 @@ if [ -s "${OUTDATADIR}/${sample_name}/${sample_name}.tax" ]; then
 		if [ "${first}" = "s" ]
 		then
 			species=$(echo "${line}" | awk -F '	' '{print $2}')
-		elif [ "${first}" = "G" ]
-		then
+		elif [ "${first}" = "G" ]; then
 			genus=$(echo "${line}" | awk -F ' ' '{print $2}')
-		elif [ "${first}" = "F" ]
-		then
+		elif [ "${first}" = "F" ]; then
 			family=$(echo "${line}" | awk -F ' ' '{print $2}')
-		elif [ "${first}" = "O" ]
-		then
+		elif [ "${first}" = "O" ]; then
 			order=$(echo "${line}" | awk -F ' ' '{print $2}')
-		elif [ "${first}" = "C" ]
-		then
+		elif [ "${first}" = "C" ]; then
 			class=$(echo "${line}" | awk -F ' ' '{print $2}')
-		elif [ "${first}" = "P" ]
-		then
+		elif [ "${first}" = "P" ]; then
 			phylum=$(echo "${line}" | awk -F ' ' '{print $2}')
-		elif [ "${first}" = "K" ]
-		then
+		elif [ "${first}" = "K" ]; then
 			kingdom=$(echo "${line}" | awk -F ' ' '{print $2}')
-		elif [ "${first}" = "D" ]
-		then
+		elif [ "${first}" = "D" ]; then
 			domain=$(echo "${line}" | awk -F ' ' '{print $2}')
 		fi
 	done < "${OUTDATADIR}/${sample_name}/${sample_name}.tax"
@@ -275,7 +290,7 @@ echo "----- Running quality checks on Assembly -----"
 # Get start time of QC assembly check
 start=$SECONDS
 # Run qc assembly check
-"${shareScript}/run_Assembly_Quality_Check.sh" "${sample_name}" "${project}"
+"${shareScript}/run_Assembly_Quality_Check.sh" -n "${sample_name}" -p "${project}" -c "${config}"
 # Get end time of qc quality check and calculate run time and append to time summary (and sum to total time used)
 end=$SECONDS
 timeQCcheck=$((end - start))
@@ -287,7 +302,7 @@ echo "----- Running Prokka on Assembly -----"
 # Get start time for prokka
 start=$SECONDS
 # Run prokka
-"${shareScript}/run_prokka.sh" "${sample_name}" "${project}"
+"${shareScript}/run_prokka.sh" -n "${sample_name}" -p "${project}" -c "${config}"
 # Get end time of prokka and calculate run time and append to time summary (and sum to total time used)
 end=$SECONDS
 timeProk=$((end - start))
@@ -319,7 +334,8 @@ if [[ -d "${OUTDATADIR}/${sample_name}/ANI" ]]; then
 	rm -r "${OUTDATADIR}/${sample_name}/ANI"
 fi
 
-"${shareScript}/run_ANI.sh" "${sample_name}" "${genus}" "${species}" "${project}"
+#"${shareScript}/run_ANI.sh" -n "${sample_name}" -g "${genus}" -s "${species}" -p "${project}" -c "${config}"
+"${shareScript}/run_ANI.sh" -n "${sample_name}" -p "${project}" -c "${config}"
 # Get end time of ANI and calculate run time and append to time summary (and sum to total time used
 end=$SECONDS
 timeANI=$((end - start))
@@ -327,7 +343,7 @@ echo "autoANI - ${timeANI} seconds" >> "${time_summary_redo}"
 totaltime=$((totaltime + timeANI))
 
 # Get taxonomy from currently available files (Only ANI, has not been run...yet, will change after discussions)
-"${shareScript}/determine_taxID.sh" "${sample_name}" "${project}"
+"${shareScript}/determine_taxID.sh" -n "${sample_name}" -p "${project}" -c "${config}"
 "${OUTDATADIR}/${sample_name}/${sample_name}.tax"
 
 ### BUSCO on prokka output ###
@@ -356,7 +372,7 @@ if [ -s "${OUTDATADIR}/${sample_name}/prokka/${sample_name}_PROKKA.gbf" ] || [ -
 	# Show which database entry will be used for comparison
 	echo "buscoDB:${buscoDB}"
 	# Run busco
-	"${shareScript}/do_busco.sh" "${sample_name}" "${buscoDB}" "${project}"
+	"${shareScript}/do_busco.sh" -n "${sample_name}" -d "${buscoDB}" -p "${project}" -c "${config}"
 	# Get end time of busco and calculate run time and append to time summary (and sum to total time used
 	end=$SECONDS
 	timeBUSCO=$((end - start))
@@ -374,13 +390,13 @@ echo "----- Running c-SSTAR for AR Gene identification -----"
 start=$SECONDS
 
 # Run csstar in default mode from config.sh
-"${shareScript}/run_c-sstar.sh" "${sample_name}" "${csstar_gapping}" "${csstar_identity}" "${project}"
-"${shareScript}/run_c-sstar_altDB.sh" "${sample_name}" "${csstar_gapping}" "${csstar_identity}" "${project}" "${local_DBs}/star/ResGANNOT_20180608_srst2.fasta"
+"${shareScript}/run_c-sstar.sh" -n "${sample_name}" -g "${csstar_gapping}" -s "${csstar_identity}" -p "${project}" -c "${config}"
+"${shareScript}/run_c-sstar.sh" -n "${sample_name}" -g "${csstar_gapping}" -s "${csstar_identity}" -p "${project}" -c "${config}" -d "${local_DBs}/star/ResGANNOT_20180608_srst2.fasta"
 
 
 ### GAMA - finding AR Genes ###
 echo "----- Running GAMA for AR Gene identification -----"
-"${shareScript}/run_GAMA.sh" "${sample_name}" "${project}" -c
+"${shareScript}/run_GAMA.sh" -n "${sample_name}" -p "${project}" -c "${config}"
 
 # Get end time of csstar and calculate run time and append to time summary (and sum to total time used
 end=$SECONDS
@@ -391,10 +407,10 @@ totaltime=$((totaltime + timestar))
 # Get MLST profile
 echo "----- Running MLST -----"
 start=$SECONDS
-"${shareScript}/run_MLST.sh" "${sample_name}" "${project}"
+"${shareScript}/run_MLST.sh" -n "${sample_name}" -p "${project}" -c "${config}"
 python3 "${shareScript}/check_and_fix_MLST.py" -i "${processed}/${project}/${sample_name}/MLST/${sample_name}.mlst" -t standard
 if [[ "${genus}_${species}" = "Acinetobacter_baumannii" ]]; then
-	"${shareScript}/run_MLST.sh" "${sample_name}" "${project}" "-f" "abaumannii"
+	"${shareScript}/run_MLST.sh" -n "${sample_name}" -p "${project}" "-f" "abaumannii" -c "${config}"
 	python3 "${shareScript}/check_and_fix_MLST.py" -i "${processed}/${project}/${sample_name}/MLST/${sample_name}_abaumannii.mlst" -t standard
 	mv "${processed}/${project}/${sample_name}/MLST/${sample_name}_abaumannii.mlst" "${processed}/${project}/${sample_name}/MLST/${sample_name}_Oxford.mlst"
 	mv "${processed}/${project}/${sample_name}/MLST/${sample_name}.mlst" "${processed}/${project}/${sample_name}/MLST/${sample_name}_Pasteur.mlst"
@@ -402,27 +418,27 @@ if [[ "${genus}_${species}" = "Acinetobacter_baumannii" ]]; then
 	type1=$(tail -n1 ${processed}/${project}/${sample_name}/MLST/${sample_name}_abaumannii.mlst | cut -d' ' -f3)
 	type2=$(head -n1 ${processed}/${project}/${sample_name}/MLST/${sample_name}.mlst | cut -d' ' -f3)
 	if [[ "${type1}" = "-" ]]; then
-		"${shareScript}/run_srst2_mlst.sh" "${sample_name}" "${project}" "Acinetobacter" "baumannii#1"
+		"${shareScript}/run_srst2_mlst.sh" -n "${sample_name}" -p "${project}" -g "Acinetobacter" -s "baumannii#1" -c "${config}"
 		python3 "${shareScript}/check_and_fix_MLST.py" -i "${processed}/${project}/${sample_name}/MLST/${sample_name}_srst2_acinetobacter_baumannii-baumannii#1.mlst" -t srst2
 	fi
 	if [[ "${type2}" = "-" ]]; then
-		"${shareScript}/run_srst2_mlst.sh" "${sample_name}" "${project}" "Acinetobacter" "baumannii#2"
+		"${shareScript}/run_srst2_mlst.sh" -n "${sample_name}" -p "${project}" -g "Acinetobacter" -s "baumannii#2" -c "${config}"
 		python3 "${shareScript}/check_and_fix_MLST.py" -i "${processed}/${project}/${sample_name}/MLST/${sample_name}_srst2_acinetobacter_baumannii-baumannii#2.mlst" -t srst2
 	fi
 elif [[ "${genus}_${species}" = "Escherichia_coli" ]]; then
 	# Verify that ecoli_2 is default and change accordingly
-	"${shareScript}/run_MLST.sh" "${sample_name}" "${project}" "-f" "ecoli_2"
+	"${shareScript}/run_MLST.sh" -n "${sample_name}" -p "${project}" "-f" "ecoli_2" -c "${config}"
 	python3 "${shareScript}/check_and_fix_MLST.py" -i "${processed}/${project}/${sample_name}/MLST/${sample_name}_ecoli_2.mlst" -t standard
 	mv "${processed}/${project}/${sample_name}/MLST/${sample_name}_ecoli_2.mlst" "${processed}/${project}/${sample_name}/MLST/${sample_name}_Pasteur.mlst"
 	mv "${processed}/${project}/${sample_name}/MLST/${sample_name}.mlst" "${processed}/${project}/${sample_name}/MLST/${sample_name}_Achtman.mlst"
 	type2=$(tail -n1 ${processed}/${project}/${sample_name}/MLST/${sample_name}_ecoli_2.mlst | cut -d' ' -f3)
 	type1=$(head -n1 ${processed}/${project}/${sample_name}/MLST/${sample_name}.mlst | cut -d' ' -f3)
 	if [[ "${type1}" = "-" ]]; then
-		"${shareScript}/run_srst2_mlst.sh" "${sample_name}" "${project}" "Escherichia" "coli#1"
+		"${shareScript}/run_srst2_mlst.sh" -n "${sample_name}" -p "${project}" -g "Escherichia" -s "coli#1" -c "${config}"
 		python3 "${shareScript}/check_and_fix_MLST.py" -i "${processed}/${project}/${sample_name}/MLST/${sample_name}_srst2_escherichia_coli-coli#1.mlst" -t srst2
 	fi
 	if [[ "${type2}" = "-" ]]; then
-		"${shareScript}/run_srst2_mlst.sh" "${sample_name}" "${project}" "Escherichia" "coli#2"
+		"${shareScript}/run_srst2_mlst.sh" -n "${sample_name}" -p "${project}" -g "Escherichia" -s "coli#2" -c "${config}"
 		python3 "${shareScript}/check_and_fix_MLST.py" -i "${processed}/${project}/${sample_name}/MLST/${sample_name}_srst2_escherichia_coli-coli#2.mlst" -t srst2
 	fi
 else
@@ -436,7 +452,7 @@ totaltime=$((totaltime + timeMLST))
 # Try to find any plasmids
 echo "----- Identifying plasmids using plasmidFinder -----"
 start=$SECONDS
-"${shareScript}/run_plasmidFinder.sh" "${sample_name}" "${project}" plasmidFinder
+"${shareScript}/run_plasmidFinder.sh" -n "${sample_name}" -p "${project}" -o plasmidFinder -c "${config}"
 end=$SECONDS
 timeplasfin=$((end - start))
 echo "plasmidFinder - ${timeplasfin} seconds" >> "${time_summary_redo}"
@@ -445,10 +461,11 @@ totaltime=$((totaltime + timeplasfin))
 # Run plasFlow if isolate is from the Enterobacteriaceae family  ##### When should we check if this will be expanded?
 if [[ "${family}" == "Enterobacteriaceae" ]]; then
 	start=$SECONDS
-	${shareScript}/run_plasFlow.sh "${sample_name}" "${project}"
-	${shareScript}/run_c-sstar_plasFlow.sh "${sample_name}" g o "${project}" -p
-	${shareScript}/run_plasmidFinder.sh "${sample_name}" "${project}" plasmidFinder_on_plasFlow
-	${shareScript}/run_GAMA.sh "${sample_name}" "${project}" -p
+	${shareScript}/run_plasFlow.sh -n "${sample_name}" -p "${project}" -c "${config}"
+	${shareScript}/run_Assembly_Quality_Check.sh -n "${sample_name}" -p "${project}" -l -c "${config}"
+	${shareScript}/run_c-sstar.sh -n "${sample_name}" -g g -s o -p "${project}" -l -c "${config}"
+	${shareScript}/run_plasmidFinder.sh -n "${sample_name}" -p "${project}" -o plasmidFinder_on_plasFlow -c "${config}"
+	${shareScript}/run_GAMA.sh -n "${sample_name}" -p "${project}" -l -c "${config}"
 
 	end=$SECONDS
 	timeplasflow=$((end - start))
@@ -456,11 +473,11 @@ if [[ "${family}" == "Enterobacteriaceae" ]]; then
 	totaltime=$((totaltime + timeplasflow))
 fi
 
-"${shareScript}/validate_piperun.sh" "${sample_name}" "${project}" > "${processed}/${project}/${sample_name}/${sample_name}_pipeline_stats.txt"
+"${shareScript}/validate_piperun.sh" -n "${sample_name}" -p "${project}" -c "${config}" > "${processed}/${project}/${sample_name}/${sample_name}_pipeline_stats.txt"
 
 status=$(tail -n1 "${processed}/${project}/${sample_name}/${sample_name}_pipeline_stats.txt" | cut -d' ' -f5)
 if [[ "${status}" != "FAILED" ]]; then
-	"${shareScript}/sample_cleaner.sh" "${sample_name}" "${project}"
+	"${shareScript}/sample_cleaner.sh" -n "${sample_name}" -p "${project}" -c "${config}"
 fi
 
 # Extra dump cleanse in case anything else failed

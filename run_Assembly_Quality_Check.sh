@@ -6,18 +6,12 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Checks the Assembly quality  using Toms tool and QUAST and comparing the output of both
 # 	Important stats are # of contigs, assembly length, n%0 and G/C content
 #
-# Usage: ./run_Assembly_Quality_Check.sh   sample_name   run_ID [-p]
-# 	Optional p flag is to run it only on the plasmid assembly, assuming it is in the default location of the config file and unicycled
+# Usage: ./run_Assembly_Quality_Check.sh   -n sample_name   -p run_ID [-l] [-c path_to_config_file]
+# 	Optional l flag is to run it only on the plasmid assembly, assuming it is in the default location of the config file and unicycled
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/Assembly_Stats(_plasFlow)
 #
@@ -30,30 +24,75 @@ fi
 
 ml quast/4.3 Python2/2.7.15
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-elif [[ -z "${1}" ]]; then
-	echo "Empty sample name supplied to run_Assembly_Quality_Check.sh.sh, exiting"
-	exit 1
-# Gives the user a brief usage and help section if requested with the -h option argument
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./run_Assembly_Quality_Check.sh   sample_name run_ID"
-	echo "Output is saved to ${processed}/miseq_run_ID/sample_name/Assembly_Stats"
-	exit 0
-elif [ -z "$2" ]; then
-	echo "Empty project id supplied to run_Assembly_Quality_Check.sh, exiting"
-	exit 1
-elif [[ "${3}" == "-p" ]]; then
-	echo "Only running Assembly quality check on plasFlow assembly"
-	do_plasFlow_only="true"
-else
-	do_plasFlow_only="false"
+
+#  Function to print out help blurb
+show_help () {
+	echo "Usage: ./run_Assembly_Quality_Check.sh -n sample_name -p run_ID [-l] [-c path_to_config_file]"
+}
+
+do_plasFlow_only="false"
+
+# Parse command line options
+options_found=0
+while getopts ":h?c:p:n:l" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			sample_name=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		l)
+			echo "Option -l triggered, plasmid mode activated"
+			do_plasFlow_only="true";;
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
+	exit
 fi
 
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
+
+if [[ -z "${project}" ]]; then
+	echo "No Project/Run_ID supplied to retry_ANI_best_hit.sh, exiting"
+	exit 33
+elif [[ -z "${sample_name}" ]]; then
+	echo "No sample name supplied to retry_ANI_best_hit.sh, exiting"
+	exit 34
+fi
+
+
 # Sets the parent output folder as the sample name folder in the processed samples folder in MMB_Data
-OUTDATADIR="${processed}/${2}/${1}"
+OUTDATADIR="${processed}/${project}/${sample_name}"
 
 
 echo "Checking Assembly QC with QUAST"
@@ -68,20 +107,20 @@ if [[ "${do_plasFlow_only}" != "true" ]]; then
 	fi
 	cd "${OUTDATADIR}/Assembly_Stats"
 	# Call QUAST
-	python2 "/apps/x86_64/quast/quast-4.3/quast.py" -o "${OUTDATADIR}/Assembly_Stats" "${OUTDATADIR}/Assembly/${1}_scaffolds_trimmed.fasta"
-	mv "${OUTDATADIR}/Assembly_Stats/report.txt" "${OUTDATADIR}/Assembly_Stats/${1}_report.txt"
-	mv "${OUTDATADIR}/Assembly_Stats/report.tsv" "${OUTDATADIR}/Assembly_Stats/${1}_report.tsv"
+	python2 "/apps/x86_64/quast/quast-4.3/quast.py" -o "${OUTDATADIR}/Assembly_Stats" "${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta"
+	mv "${OUTDATADIR}/Assembly_Stats/report.txt" "${OUTDATADIR}/Assembly_Stats/${sample_name}_report.txt"
+	mv "${OUTDATADIR}/Assembly_Stats/report.tsv" "${OUTDATADIR}/Assembly_Stats/${sample_name}_report.tsv"
 fi
-if [[ -s "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta" ]]; then
+if [[ -s "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_plasmid_assembly_trimmed.fasta" ]]; then
 	if [ ! -d "$OUTDATADIR/Assembly_Stats_plasFlow" ]; then
 		echo "Creating $OUTDATADIR/Assembly_Stats_plasFlow"
  		mkdir -p "$OUTDATADIR/Assembly_Stats_plasFlow"
  	fi
- 	python2 "/apps/x86_64/quast/quast-4.3/quast.py" -o "${OUTDATADIR}/Assembly_Stats_plasFlow" "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta"
- 	mv "${OUTDATADIR}/Assembly_Stats_plasFlow/report.txt" "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.txt"
- 	mv "${OUTDATADIR}/Assembly_Stats_plasFlow/report.tsv" "${OUTDATADIR}/Assembly_Stats_plasFlow/${1}_report.tsv"
+ 	python2 "/apps/x86_64/quast/quast-4.3/quast.py" -o "${OUTDATADIR}/Assembly_Stats_plasFlow" "${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_plasmid_assembly_trimmed.fasta"
+ 	mv "${OUTDATADIR}/Assembly_Stats_plasFlow/report.txt" "${OUTDATADIR}/Assembly_Stats_plasFlow/${sample_name}_report.txt"
+ 	mv "${OUTDATADIR}/Assembly_Stats_plasFlow/report.tsv" "${OUTDATADIR}/Assembly_Stats_plasFlow/${sample_name}_report.tsv"
  else
-	echo "No plasFlow assembly (${OUTDATADIR}/plasFlow/Unicycler_assemblies/${1}_uni_assembly/${1}_plasmid_assembly_trimmed.fasta)"
+	echo "No plasFlow assembly (${OUTDATADIR}/plasFlow/Unicycler_assemblies/${sample_name}_uni_assembly/${sample_name}_plasmid_assembly_trimmed.fasta)"
 fi
 
 # Return to original directory

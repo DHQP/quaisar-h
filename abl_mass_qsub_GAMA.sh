@@ -28,7 +28,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?l:s:m:s:k:c:d:o:" option; do
+while getopts ":h?l:m:k:c:d:o:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -142,48 +142,48 @@ start_time=$(date "+%m-%d-%Y_at_%Hh_%Mm_%Ss")
 
 # Creates and submits qsub scripts to check all isolates on the list against the newest ResGANNCBI DB
 while [ ${counter} -lt ${arr_size} ] ; do
-	sample=$(echo "${arr[${counter}]}" | cut -d'/' -f2)
+	sample_name=$(echo "${arr[${counter}]}" | cut -d'/' -f2)
 	project=$(echo "${arr[${counter}]}" | cut -d'/' -f1)
 	if [[ "${clobberness}" = "clobber" ]]; then
-		rm ${processed}/${project}/${sample}/GAMA/${sample}_${ResGANNCBI_srst2_filename}.GAMA
+		rm ${processed}/${project}/${sample_name}/GAMA/${sample_name}_${ResGANNCBI_srst2_filename}.GAMA
 	fi
 	echo ${counter}
 	# Check if counter is below max number of concurrent submissions
 	if [ ${counter} -lt ${max_subs} ]; then
 		# Check if the output file of GAMA exist, skip submission if so
-		if [[ ! -f "${processed}/${project}/${sample}/GAMA/${sample}_${ResGANNCBI_srst2_filename}.GAMA" ]]; then
+		if [[ ! -f "${processed}/${project}/${sample_name}/GAMA/${sample_name}_${ResGANNCBI_srst2_filename}.GAMA" ]]; then
 			echo  "Index is below max submissions, submitting"
-			echo -e "#!/bin/bash -l\n" > "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-			echo -e "#$ -o GAMAAR_${sample}.out" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-			echo -e "#$ -e GAMAAR_${sample}.err" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-			echo -e "#$ -N GAMAAR_${sample}"   >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-			echo -e "#$ -cwd"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-			echo -e "#$ -q short.q\n"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-			echo -e "cd ${shareScript}" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+			echo -e "#!/bin/bash -l\n" > "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
+			echo -e "#$ -o GAMAAR_${sample_name}.out" >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
+			echo -e "#$ -e GAMAAR_${sample_name}.err" >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
+			echo -e "#$ -N GAMAAR_${sample_name}"   >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
+			echo -e "#$ -cwd"  >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
+			echo -e "#$ -q short.q\n"  >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
+			echo -e "cd ${shareScript}" >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
 			if [[ "${use_alt_db}" == "true" ]]; then
-				echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+				echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample_name}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
 			else
-				echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+				echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample_name}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
 			fi
-			echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_GAMAAR_complete.txt\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+			echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample_name}_GAMAAR_complete.txt\"" >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
 			if [[ "${counter}" -lt "${last_index}" ]]; then
-				qsub "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+				qsub "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
 			else
-				qsub -sync y "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+				qsub -sync y "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
 			fi
-			mv "${shareScript}/GAMAAR_${sample}.err" ${main_dir}
-			mv "${shareScript}/GAMAAR_${sample}.out" ${main_dir}
+			mv "${shareScript}/GAMAAR_${sample_name}.err" ${main_dir}
+			mv "${shareScript}/GAMAAR_${sample_name}.out" ${main_dir}
 		# Old data existed, skipping
 		else
-			echo -e $(date) > "${main_dir}/complete/${sample}_GAMAAR_complete.txt"
-			echo "${project}/${sample} already has newest GAMA ResGANNCBI ${ResGANNCBI_srst2_filename}"
+			echo -e $(date) > "${main_dir}/complete/${sample_name}_GAMAAR_complete.txt"
+			echo "${project}/${sample_name} already has newest GAMA ResGANNCBI ${ResGANNCBI_srst2_filename}"
 		fi
 	# Counter is above max submission, must wait for previous ones to finish before moving on
 	else
 		waiting_for_index=$(( counter - max_subs ))
 		waiting_sample=$(echo "${arr[${waiting_for_index}]}" | cut -d'/' -f2)
 		timer=0
-		echo "Index is above max submissions, waiting for index ${waiting_for_index}:${waiting_sample} to complete"
+		echo "Index is above max submissions, waiting for index ${waiting_for_index}:${waiting_sample_name} to complete"
 		while :
 		do
 			# Check if timer is above max time allowed
@@ -192,36 +192,36 @@ while [ ${counter} -lt ${arr_size} ] ; do
 				break
 			fi
 			# Check if waiting sample is finished
-			if [ -f "${main_dir}/complete/${waiting_sample}_GAMAAR_complete.txt" ]; then
+			if [ -f "${main_dir}/complete/${waiting_sample_name}_GAMAAR_complete.txt" ]; then
 				# Check if current sample has etiher one of the output files from GAMA, skip analysis if so
-				if [[ ! -f "${processed}/${project}/${sample}/GAMA/${sample}_${ResGANNCBI_srst2_filename}.GAMA" ]]; then
+				if [[ ! -f "${processed}/${project}/${sample_name}/GAMA/${sample_name}_${ResGANNCBI_srst2_filename}.GAMA" ]]; then
 					echo  "Index is below max submissions, submitting"
-					echo -e "#!/bin/bash -l\n" > "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-					echo -e "#$ -o GAMAAR_${sample}.out" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-					echo -e "#$ -e GAMAAR_${sample}.err" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-					echo -e "#$ -N GAMAAR_${sample}"   >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-					echo -e "#$ -cwd"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-					echo -e "#$ -q short.q\n"  >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
-					echo -e "cd ${shareScript}" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+					echo -e "#!/bin/bash -l\n" > "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
+					echo -e "#$ -o GAMAAR_${sample_name}.out" >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
+					echo -e "#$ -e GAMAAR_${sample_name}.err" >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
+					echo -e "#$ -N GAMAAR_${sample_name}"   >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
+					echo -e "#$ -cwd"  >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
+					echo -e "#$ -q short.q\n"  >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
+					echo -e "cd ${shareScript}" >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
 					if [[ "${use_alt_db}" == "true" ]]; then
-						echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+						echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample_name}\" -p \"${project}\" -c \"${config}\" -d \"${database_path}\"" >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
 					else
-						echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+						echo -e "\"${shareScript}/run_GAMA.sh\" -n \"${sample_name}\" -p \"${project}\" -c \"${config}\"" >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
 					fi
-					echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample}_GAMAAR_complete.txt\"" >> "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+					echo -e "echo \"$(date)\" > \"${main_dir}/complete/${sample_name}_GAMAAR_complete.txt\"" >> "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
 
 					#cd "${main_dir}"
 					if [[ "${counter}" -lt "${last_index}" ]]; then
-						qsub "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+						qsub "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
 					else
-						qsub -sync y "${main_dir}/GAMAAR_${sample}_${start_time}.sh"
+						qsub -sync y "${main_dir}/GAMAAR_${sample_name}_${start_time}.sh"
 					fi
-					mv "${shareScript}/GAMAAR_${sample}.err" ${main_dir}
-					mv "${shareScript}/GAMAAR_${sample}.out" ${main_dir}
+					mv "${shareScript}/GAMAAR_${sample_name}.err" ${main_dir}
+					mv "${shareScript}/GAMAAR_${sample_name}.out" ${main_dir}
 				# Old data existed, skipping
 				else
-					echo -e $(date) > "${main_dir}/complete/${sample}_GAMAAR_complete.txt"
-					echo "${project}/${sample} already has newest GAMA ResGANNCBI ${ResGANNCBI_srst2_filename}"
+					echo -e $(date) > "${main_dir}/complete/${sample_name}_GAMAAR_complete.txt"
+					echo "${project}/${sample_name} already has newest GAMA ResGANNCBI ${ResGANNCBI_srst2_filename}"
 				fi
 				break
 			# Wait 5 seconds and then check if "waiting" sample is complete
@@ -239,13 +239,13 @@ done
 timer=0
 for item in "${arr[@]}"; do
 	waiting_sample=$(echo "${item}" | cut -d'/' -f2)
-	if [[ -f "${main_dir}/complete/${waiting_sample}_GAMAAR_complete.txt" ]]; then
+	if [[ -f "${main_dir}/complete/${waiting_sample_name}_GAMAAR_complete.txt" ]]; then
 		echo "${item} is complete"
-		if [[ -f "${shareScript}/GAMAAR_${waiting_sample}.out" ]]; then
-			mv "${shareScript}/GAMAAR_${waiting_sample}.out" "${main_dir}"
+		if [[ -f "${shareScript}/GAMAAR_${waiting_sample_name}.out" ]]; then
+			mv "${shareScript}/GAMAAR_${waiting_sample_name}.out" "${main_dir}"
 		fi
-		if [[ -f "${shareScript}/GAMAAR_${waiting_sample}.err" ]]; then
-			mv "${shareScript}/GAMAAR_${waiting_sample}.err" "${main_dir}"
+		if [[ -f "${shareScript}/GAMAAR_${waiting_sample_name}.err" ]]; then
+			mv "${shareScript}/GAMAAR_${waiting_sample_name}.err" "${main_dir}"
 		fi
 	else
 		while :
@@ -254,13 +254,13 @@ for item in "${arr[@]}"; do
 					echo "Timer exceeded limit of 3600 seconds = 60 minutes"
 					exit 1
 				fi
-				if [[ -f "${main_dir}/complete/${waiting_sample}_GAMAAR_complete.txt" ]]; then
+				if [[ -f "${main_dir}/complete/${waiting_sample_name}_GAMAAR_complete.txt" ]]; then
 					echo "${item} is complete"
-					if [[ -f "${shareScript}/GAMAAR_${waiting_sample}.out" ]]; then
-						mv "${shareScript}/GAMAAR_${waiting_sample}.out" "${main_dir}"
+					if [[ -f "${shareScript}/GAMAAR_${waiting_sample_name}.out" ]]; then
+						mv "${shareScript}/GAMAAR_${waiting_sample_name}.out" "${main_dir}"
 					fi
-					if [[ -f "${shareScript}/GAMAAR_${waiting_sample}.err" ]]; then
-						mv "${shareScript}/GAMAAR_${waiting_sample}.err" "${main_dir}"
+					if [[ -f "${shareScript}/GAMAAR_${waiting_sample_name}.err" ]]; then
+						mv "${shareScript}/GAMAAR_${waiting_sample_name}.err" "${main_dir}"
 					fi
 					break
 				else

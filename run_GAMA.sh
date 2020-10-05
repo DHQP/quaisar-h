@@ -52,7 +52,7 @@ while getopts ":h?c:p:n:d:l" option; do
 			echo "Option -d triggered, argument = ${OPTARG}"
 			alt_db=${OPTARG};;
 		l)
-			echo "Option -l triggered, argument = ${OPTARG}"
+			echo "Option -l triggered, plasmid mode activated"
 			plasmid="true";;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
@@ -84,7 +84,6 @@ fi
 
 database_path="${ResGANNCBI_srst2}"
 database_and_version="${ResGANNCBI_srst2_filename}"
-echo "0 - ${database_path} and ${database_and_version}"
 
 if [[ -z "${project}" ]]; then
 	echo "No Project/Run_ID supplied to run_c-sstar_altDB.sh, exiting"
@@ -101,11 +100,8 @@ elif [[ ! -z "${alt_db}" ]]; then
 		database_path="${alt_db}"
 		database_basename=$(basename -- "${alt_db}")
 		database_and_version=$(echo ${database_basename##*/} | cut -d'_' -f1,2)
-		echo "1 - ${database_path} and ${database_and_version}"
 	fi
 fi
-
-echo "2 - ${database_path} and ${database_and_version}"
 
 OUTDATADIR="${processed}/${project}/${sample_name}"
 

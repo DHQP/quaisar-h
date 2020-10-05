@@ -12,7 +12,7 @@
 #
 # Modules required: None
 #
-# v1.0.1 (1/17/2020)
+# v1.0.2 (05/08/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -23,7 +23,7 @@ host=$(echo ${hostname} | cut -d'.' -f1)
 #echo ${hostname}
 if [[ "${host}" = "scicomp-mue-01" ]];
 then
-	host="biolinux"
+	host="Biolinux"
 elif [[ "${host}" =~ ^("login01"|"aspen"|"login.aspen"|"login02"|"login2.aspen") ]];
 then
 	host="aspen_login"
@@ -75,6 +75,23 @@ procs=12 # Number of processors
 
 # Phred scoring scale to be used (33 or 64)
 phred=33
+
+############# Tool versions for recordings sake ###########
+version_BBMap="38.26"
+version_Trimmomatic="0.35"
+version_Kraken="0.10.5"
+version_GOTTCHA="1.0c"
+version_SPAdes="3.13.0"
+version_QUAST="4.3"
+version_PROKKA="1.12"
+version_BUSCO="3.0.2"
+version_pyANI="0.2.7"
+version_CSSTAR="1.1.01"
+version_srst2="0.2.0"
+version_GAMA="4.7.4"
+version_MLST="2.16"
+version_plasFlow="1.1"
+version_BARRNAP="0.8"
 
 
 ############# Application Specific Options #############
@@ -132,6 +149,9 @@ spades_cov_cutoff="auto"
 ##### ANI specific options #####
 #Max number of samples to be kept (not including source sample) when creating the mash tree
 max_ani_samples=20
+ani_coverage_threshold=70
+REFSEQ=$(find ${local_DBs}/ANI/REFSEQ_*.msh -maxdepth 1 -type f -printf '%p\n' | sort -k2,2 -rt '_' -n | head -n 1)
+REFSEQ_date=$(echo ${REFSEQ} | rev | cut -d'/' -f1 | rev | cut -d'_' -f2 | cut -d'.' -f1,2)
 
 ##### c-SSTAR identity options #####
 csstar_perfect=100

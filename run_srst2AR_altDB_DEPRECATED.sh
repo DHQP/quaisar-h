@@ -6,22 +6,16 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Script to use srst2 to attempt to find AR genes in parllel with assembly searches by other tools. This uses an alternate DB of genes
 #
-# Usage: ./run_srst2AR_altDB.sh   sample_name   MiSeq_Run_ID	path_to_alternate_DB
+# Usage: ./run_srst2AR_altDB.sh   sample_name   MiSeq_Run_ID	path_to_alternate_DB path_to_config_file(optional)
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/srst2/
 #
 # Modules required: srst2/0.2.0 bowtie2/2.2.4(?) Python2/2.7.13
 #
-# v1.0.1 (1/6/2020)
+# v1.0.2 (8/18/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -37,6 +31,19 @@ elif [[ "$1" = "-h" ]]; then
 	echo "Usage is ./run_srst2AR_altDB.sh.sh  sample_name MiSeq_Run_ID path_to_alt_DB"
 	echo "Output location is ${processed}/run_ID/srst2"
 	exit 0
+elif [[ ! -f ${3} ]]; then
+	echo "Alternate database ($3) does not exist, exiting"
+fi
+
+if [[ -f "${4}" ]];
+	echo "Loading special config file - ${4}"
+	. "${4}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
 fi
 
 alt_DB_path=${3}

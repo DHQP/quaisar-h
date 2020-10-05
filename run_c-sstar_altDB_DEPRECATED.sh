@@ -6,90 +6,138 @@
 #$ -cwd
 #$ -q short.q
 
-#Import the config file with shortcuts and settings
-if [[ ! -f "./config.sh" ]]; then
-	cp ./config_template.sh ./config.sh
-fi
-. ./config.sh
-
 #
 # Description: Finds anti-microbial resistance genes in the resFinder and ARG-ANNOT databases and exports a file containing list of all genes found using a non-standard srst2 formatted database (see rules for formatting alternate databases in readme ..... eventually)
 #
-# Usage: ./run_c-sstar_altDB.sh sample_name run_type(g/u for gapped/ungapped) similarity(l/m/h/u/p/o for low(80),medium(95),high(98),ultra-high(99),perfect(100),other(set in config.sh)) miseq_run_ID path_to_alt_DB
+# Usage: ./run_c-sstar_altDB.sh -n sample_name -g run_type(g/u for gapped/ungapped) -s similarity(l/m/h/u/p/o for low(80),medium(95),high(98),ultra-high(99),perfect(100),other(set in config.sh)) -p miseq_run_ID -d path_to_alt_DB [-c path_to_config_file] [-l]
 #
 # Output location: default_config.sh_output_location/run_ID/sample_name/csstar(_plasFlow)/
 #
 # Modules required: Python3/3.5.2, ncbi-blast+/LATEST
 #
-# v1.0.1 (10/29/2019)
+# v1.0.2 (08)/24/2020)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
 ml ncbi-blast+/LATEST Python3/3.5.2
 
-# Checks for proper argumentation
-if [[ $# -eq 0 ]]; then
-	echo "No argument supplied to $0, exiting"
-	exit 1
-elif [[ -z "${1}" ]]; then
-	echo "Empty sample name supplied to run_c-sstar_altDB.sh, exiting"
-	exit 1
-# Gives the user a brief usage and help section if requested with the -h option argument
-elif [[ "${1}" = "-h" ]]; then
-	echo "Usage is ./run_c-sstar.sh   sample_name   run-type[g/u](for gapped/ungapped)   similarity[l/m/h/u/p/o](for low/medium/high/ultra-high/perfect as 80/95/98/99/100, other(st in config.sh) miseq_run_ID path/to/DB"
-	echo "Output is saved to ${processed}/sample_name/c-sstar"
+#  Function to print out help blurb
+show_help () {
+	echo "Usage: ./run_c-sstar_altDB.sh -n sample_name -g run_type(g/u for gapped/ungapped) -s similarity(l/m/h/u/p/o for low(80),medium(95),high(98),ultra-high(99),perfect(100),other(set in config.sh)) -p miseq_run_ID -d path_to_alt_DB [-c path_to_config_file]"
+}
+
+plasmid="false"
+
+# Parse command line options
+options_found=0
+while getopts ":h?c:p:n:g:s:d:l" option; do
+	options_found=$(( options_found + 1 ))
+	case "${option}" in
+		\?)
+			echo "Invalid option found: ${OPTARG}"
+      show_help
+      exit 0
+      ;;
+		p)
+			echo "Option -p triggered, argument = ${OPTARG}"
+			project=${OPTARG};;
+		n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			sample_name=${OPTARG};;
+		c)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			config=${OPTARG};;
+		g)
+			echo "Option -g triggered, argument = ${OPTARG}"
+			gapping=${OPTARG};;
+		s)
+			echo "Option -s triggered, argument = ${OPTARG}"
+			sim_letter=${OPTARG};;
+		d)
+			echo "Option -c triggered, argument = ${OPTARG}"
+			alt_db=${OPTARG};;
+		l)
+			echo "Option -l triggered, argument = ${OPTARG}"
+			plamid="true"
+		:)
+			echo "Option -${OPTARG} requires as argument";;
+		h)
+			show_help
+			exit 0
+			;;
+	esac
+done
+
+if [[ "${options_found}" -eq 0 ]]; then
+	echo "No options found"
+	show_help
 	exit
-elif [ -z "$2" ]; then
-	echo "Empty run type supplied to run_c-sstar.sh, exiting"
-	exit 1
-elif [ -z "$3" ]; then
-	echo "Empty similarity supplied to run_c-sstar.sh, exiting"
-	exit 1
-elif [ -z "$4" ]; then
-	echo "Empty project id supplied to run_c-sstar.sh, exiting"
-	exit 1
-elif [ -z "$5" ] || [ ! -f "${5}" ]; then
-	echo "Empty alternate ID supplied to run_c-sstar.sh, exiting"
-	exit 1
+fi
+
+if [[ -f "${config}" ]]; then
+	echo "Loading special config file - ${config}"
+	. "${config}"
+else
+	echo "Loading default config file"
+	if [[ ! -f "./config.sh" ]]; then
+		cp ./config_template.sh ./config.sh
+	fi
+	. ./config.sh
+	cwd=$(pwd)
+	config="${cwd}/config.sh"
+fi
+
+if [[ -z "${project}" ]]; then
+	echo "No Project/Run_ID supplied to run_c-sstar_altDB.sh, exiting"
+	exit 33
+elif [[ -z "${sample_name}" ]]; then
+	echo "No sample name supplied to run_c-sstar_altDB.sh, exiting"
+	exit 34
+if [[ -z "${gapping}" ]] || [[ "${gapping}" != "g"]] && [[ "${gapping}" != "u"]]; then
+	echo "No or incorrect gapping provided to run_c-sstar_altDB.sh, exiting"
+	exit 37
+elif [[ -z "${sim}" ]]; then
+	echo "No similarity supplied to run_c-sstar_altDB.sh, exiting"
+	exit 38
+
 fi
 
 # Sets the parent output folder as the sample name folder in the processed samples folder in MMB_Data
-OUTDATADIR="${processed}/${4}/${1}"
-
+OUTDATADIR="${processed}/${project}/${sample_name}"
 
 #Set similarity threshold (set in config.sh) to values given in arguments
-if [ "${3}" == "h" ]; then
+if [ "${sim_letter}" == "h" ]; then
 	sim=${csstar_high}
-elif [ "${3}" == "l" ]; then
+elif [ "${sim_letter}" == "l" ]; then
 	sim=${csstar_low}
-elif [ "${3}" == "u" ]; then
+elif [ "${sim_letter}" == "u" ]; then
 	sim=${csstar_ultrahigh}
-elif [ "${3}" == "m" ]; then
+elif [ "${sim_letter}" == "m" ]; then
 	sim=${csstar_medium}
-elif [ "${3}" == "p" ]; then
+elif [ "${sim_letter}" == "p" ]; then
 	sim=${csstar_perfect}
-elif [ "${3}" == "o" ]; then
+elif [ "${sim_letter}" == "o" ]; then
 	sim=${csstar_other}
 else
 	echo "Unknown similarity threshold set (use 'l,m,h,u,or p' for 80,95,98,99,or 100% respectively). Defaulting to 98%"
 	sim=${csstar_high}
 fi
-if [[ "${6}" == "--plasmid" ]] || [[ "${6}" == "-p" ]]; then
-	if [[ -s "${OUTDATADIR}/plasmidAssembly/${1}_plasmid_scaffolds_trimmed.fasta" ]]; then
-		source_assembly="${OUTDATADIR}/plasmidAssembly/${1}_plasmid_scaffolds_trimmed.fasta"
+if [[ "${plasmid}" == "true" ]]; then
+	if [[ -s "${OUTDATADIR}/plasmidAssembly/${sample_name}_plasmid_scaffolds_trimmed.fasta" ]]; then
+		source_assembly="${OUTDATADIR}/plasmidAssembly/${sample_name}_plasmid_scaffolds_trimmed.fasta"
 		OUTDATADIR="${OUTDATADIR}/c-sstar_plasmid"
 	else
-		"No anti-microbial genes were found using c-SSTAR because there were No Plasmids Found" > "${OUTDATADIR}/c-sstar_plasmid/${1}_plasmid_scaffolds_trimmed.fasta"
+		"No anti-microbial genes were found using c-SSTAR because there were No Plasmids Found" > "${OUTDATADIR}/c-sstar_plasmid/${sample_name}_plasmid_scaffolds_trimmed.fasta"
 		exit
 	fi
 else
-	source_assembly="${OUTDATADIR}/Assembly/${1}_scaffolds_trimmed.fasta"
+	source_assembly="${OUTDATADIR}/Assembly/${sample_name}_scaffolds_trimmed.fasta"
 	OUTDATADIR="${OUTDATADIR}/c-sstar"
 fi
 
 #alt_database="${5##*/}"
-alt_database_path=$(basename -- "${5}")
+alt_database_path=$(basename -- "${alt_db}")
 alt_database=$(echo ${alt_database_path##*/} | cut -d'.' -f1)
 alt_database=${alt_database//_srst2/}
 #echo ${alt_database}
@@ -102,7 +150,7 @@ if [ ! -d "$OUTDATADIR" ]; then  #create outdir if absent
 fi
 
 # Set and call proper version of script based upon if gaps are allowed or not
-if [ "${2}" == "u" ]; then
+if [ "${gapping}" == "u" ]; then
 	suffix="ungapped"
 	if [ ! -d "$OUTDATADIR/${alt_database}" ]; then  #create outdir if absent
 		echo "Creating $OUTDATADIR/${alt_database}"
@@ -111,8 +159,8 @@ if [ "${2}" == "u" ]; then
 	owd=$(pwd)
 	cd "${OUTDATADIR}/${alt_database}_${suffix}"
 	echo "Running c-SSTAR on ResGANNCBI DB"
-	python "${shareScript}/c-SSTAR_ungapped.py" -g "${source_assembly}" -s "${sim}" -d "${5}" > "${OUTDATADIR}/${alt_database}_${suffix}/${1}.${alt_database}.${suffix}_${sim}.sstar"
-elif [ "${2}" == "g" ]; then
+	python "${shareScript}/c-SSTAR_ungapped.py" -g "${source_assembly}" -s "${sim}" -d "${alt_db}" > "${OUTDATADIR}/${alt_database}_${suffix}/${sample_name}.${alt_database}.${suffix}_${sim}.sstar"
+elif [ "${gapping}" == "g" ]; then
 	suffix="gapped"
 	if [ ! -d "$OUTDATADIR/${alt_database}_${suffix}" ]; then  #create outdir if absent
 		echo "Creating $OUTDATADIR/${alt_database}_${suffix}"
@@ -121,7 +169,7 @@ elif [ "${2}" == "g" ]; then
 	owd=$(pwd)
 	cd "${OUTDATADIR}/${alt_database}_${suffix}"
 	echo "Running c-SSTAR on ResGANNCBI DB"
-	python "${shareScript}/c-SSTAR_gapped.py" -g "${source_assembly}" -s "${sim}" -d "${5}" > "${OUTDATADIR}/${alt_database}_${suffix}/${1}.${alt_database}.${suffix}_${sim}.sstar"
+	python "${shareScript}/c-SSTAR_gapped.py" -g "${source_assembly}" -s "${sim}" -d "${alt_db}" > "${OUTDATADIR}/${alt_database}_${suffix}/${sample_name}.${alt_database}.${suffix}_${sim}.sstar"
 else
 	echo "Unknown run type set (only use 'g' or 'u' for gapped/ungapped analysis"
 	exit 1
@@ -178,12 +226,12 @@ while IFS= read -r line || [ -n "$line" ]; do
 	fi
 	#printf "%-10s %-50s %-15s %-25s %-25s %-40s %-4s %-5d %-5d %-5d\\n" "${source}" "${resistance}" "${label1}" "${info1}" "${label2}" "${contig}" "${percent}" "${len1}" "${len2}" "${plen}" "${SNPs}"
 	echo "${source}	${resistance}	${label1}	${info1}	${label2}	${contig}	${percent}	${len1}	${len2}	${plen}" "${SNPs}"
-done < "${OUTDATADIR}/${alt_database}_${suffix}/${1}.${alt_database}.${suffix}_${sim}.sstar" > "${OUTDATADIR}/${alt_database}_${suffix}/${1}.${alt_database}.${suffix}_${sim}.sstar_grouped"
-sort -k7,7nr -k10,10nr -k8,8n "${OUTDATADIR}/${alt_database}_${suffix}/${1}.${alt_database}.${suffix}_${sim}.sstar_grouped" > "${OUTDATADIR}/${1}.${alt_database}.${suffix}_${sim}_sstar_summary.txt"
+done < "${OUTDATADIR}/${alt_database}_${suffix}/${sample_name}.${alt_database}.${suffix}_${sim}.sstar" > "${OUTDATADIR}/${alt_database}_${suffix}/${sample_name}.${alt_database}.${suffix}_${sim}.sstar_grouped"
+sort -k7,7nr -k10,10nr -k8,8n "${OUTDATADIR}/${alt_database}_${suffix}/${sample_name}.${alt_database}.${suffix}_${sim}.sstar_grouped" > "${OUTDATADIR}/${sample_name}.${alt_database}.${suffix}_${sim}_sstar_summary.txt"
 
 # Catches an empty or missing file
-if [ ! -s "${OUTDATADIR}/${1}.${alt_database}.${suffix}_${sim}_sstar_summary.txt" ]; then
-	echo "No anti-microbial genes were found using c-SSTAR with both resFinder and ARG-ANNOT DBs" > "${OUTDATADIR}/${1}.${alt_database}.${suffix}_${sim}_sstar_summary.txt"
+if [ ! -s "${OUTDATADIR}/${sample_name}.${alt_database}.${suffix}_${sim}_sstar_summary.txt" ]; then
+	echo "No anti-microbial genes were found using c-SSTAR with both resFinder and ARG-ANNOT DBs" > "${OUTDATADIR}/${sample_name}.${alt_database}.${suffix}_${sim}_sstar_summary.txt"
 fi
 
 #Returns to original directory

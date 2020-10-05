@@ -108,7 +108,7 @@ fi
 
 echo $(python3 -V)
 
-${shareScript}/clean_list.sh ${list}
+${shareScript}/clean_list.sh -l ${list}
 cp ${list} ${OUTDATADIR}
 centroid_filename=$(basename ${list}).centroid
 python3 ${shareScript}/Mash_centroid.py -i ${list} -o ${OUTDATADIR}/${centroid_filename}
@@ -118,7 +118,7 @@ ml -Python3/3.5.2 Python2/2.7.13
 counter=0
 while IFS= read -r var || [ -n "$var" ]; do
 	echo "var:$var"
-	sample=$(echo "${var}" | awk -F"/" '{print $2}' | tr -d '[:space:]')
+	sample_name=$(echo "${var}" | awk -F"/" '{print $2}' | tr -d '[:space:]')
 	# SNVPhyl can simulate reads on assemblies, :asm at the end of the filename is the designation for this action, It is unused in SNVPhyl and just removed
 	if [[ ${#sample} -gt 4 ]]; then
 		if [[ ${sample: -4} = ":asm" ]]; then
@@ -129,34 +129,34 @@ while IFS= read -r var || [ -n "$var" ]; do
 	project=$(echo "${var}" | awk -F"/" '{print $1}' | tr -d '[:space:]')
 	echo "project:$project"
 	if [[ ${counter} -eq 0 ]]; then
-		#echo "Setting reference as ${sample} from ${project}"
-		ref=${sample}
+		#echo "Setting reference as ${sample_name} from ${project}"
+		ref=${sample_name}
 		ref_proj=${project}
 		counter=$(( counter + 1))
 		continue
 	fi
-	echo "Copying: ${sample} from ${project}"
+	echo "Copying: ${sample_name} from ${project}"
 	# Copy over standard FASTQs not compressed
-	if [[ -f "${processed}/${project}/${sample}/trimmed/${sample}_R1_001.paired.fq.gz" ]]; then
-		cp "${processed}/${project}/${sample}/trimmed/${sample}_R1_001.paired.fq.gz" "${OUTDATADIR}/FASTQs/${sample}_R1_001.fq.gz"
-	elif [[ -f "${processed}/${project}/${sample}/trimmed/${sample}_R1_001.fq.gz" ]]; then
-		cp "${processed}/${project}/${sample}/trimmed/${sample}_R1_001.fq.gz" "${OUTDATADIR}/FASTQs/${sample}_R1_001.fq.gz"
-	elif [[ -f "${processed}/${project}/${sample}/trimmed/${sample}_R1_001.paired.fq" ]]; then
-		echo "Copying ${processed}/${project}/${sample}/trimmed/${sample}_R1_001.paired.fq"
-		cp "${processed}/${project}/${sample}/trimmed/${sample}_R1_001.paired.fq" "${OUTDATADIR}/FASTQs/${sample}_R1_001.fq"
-		gzip "${OUTDATADIR}/FASTQs/${sample}_R1_001.fq"
+	if [[ -f "${processed}/${project}/${sample_name}/trimmed/${sample_name}_R1_001.paired.fq.gz" ]]; then
+		cp "${processed}/${project}/${sample_name}/trimmed/${sample_name}_R1_001.paired.fq.gz" "${OUTDATADIR}/FASTQs/${sample_name}_R1_001.fq.gz"
+	elif [[ -f "${processed}/${project}/${sample_name}/trimmed/${sample_name}_R1_001.fq.gz" ]]; then
+		cp "${processed}/${project}/${sample_name}/trimmed/${sample_name}_R1_001.fq.gz" "${OUTDATADIR}/FASTQs/${sample_name}_R1_001.fq.gz"
+	elif [[ -f "${processed}/${project}/${sample_name}/trimmed/${sample_name}_R1_001.paired.fq" ]]; then
+		echo "Copying ${processed}/${project}/${sample_name}/trimmed/${sample_name}_R1_001.paired.fq"
+		cp "${processed}/${project}/${sample_name}/trimmed/${sample_name}_R1_001.paired.fq" "${OUTDATADIR}/FASTQs/${sample_name}_R1_001.fq"
+		gzip "${OUTDATADIR}/FASTQs/${sample_name}_R1_001.fq"
 	else
 		echo "No zipped or unzipped trimmed R1 exists...."
 		exit
 	fi
-	if [[ -f "${processed}/${project}/${sample}/trimmed/${sample}_R2_001.paired.fq.gz" ]]; then
-		cp "${processed}/${project}/${sample}/trimmed/${sample}_R2_001.paired.fq.gz" "${OUTDATADIR}/FASTQs/${sample}_R2_001.fq.gz"
-	elif [[ -f "${processed}/${project}/${sample}/trimmed/${sample}_R2_001.fq.gz" ]]; then
-		cp "${processed}/${project}/${sample}/trimmed/${sample}_R2_001.fq.gz" "${OUTDATADIR}/FASTQs/${sample}_R2_001.fq.gz"
-	elif [[ -f "${processed}/${project}/${sample}/trimmed/${sample}_R2_001.paired.fq" ]]; then
-		echo "Copying ${processed}/${project}/${sample}/trimmed/${sample}_R2_001.paired.fq"
-		cp "${processed}/${project}/${sample}/trimmed/${sample}_R2_001.paired.fq" "${OUTDATADIR}/FASTQs/${sample}_R2_001.fq"
-		gzip "${OUTDATADIR}/FASTQs/${sample}_R2_001.fq"
+	if [[ -f "${processed}/${project}/${sample_name}/trimmed/${sample_name}_R2_001.paired.fq.gz" ]]; then
+		cp "${processed}/${project}/${sample_name}/trimmed/${sample_name}_R2_001.paired.fq.gz" "${OUTDATADIR}/FASTQs/${sample_name}_R2_001.fq.gz"
+	elif [[ -f "${processed}/${project}/${sample_name}/trimmed/${sample_name}_R2_001.fq.gz" ]]; then
+		cp "${processed}/${project}/${sample_name}/trimmed/${sample_name}_R2_001.fq.gz" "${OUTDATADIR}/FASTQs/${sample_name}_R2_001.fq.gz"
+	elif [[ -f "${processed}/${project}/${sample_name}/trimmed/${sample_name}_R2_001.paired.fq" ]]; then
+		echo "Copying ${processed}/${project}/${sample_name}/trimmed/${sample_name}_R2_001.paired.fq"
+		cp "${processed}/${project}/${sample_name}/trimmed/${sample_name}_R2_001.paired.fq" "${OUTDATADIR}/FASTQs/${sample_name}_R2_001.fq"
+		gzip "${OUTDATADIR}/FASTQs/${sample_name}_R2_001.fq"
 	else
 		echo "No zipped or unzipped trimmed R2 exists...."
 		exit
