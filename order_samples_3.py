@@ -66,7 +66,7 @@ def do_conversion(excel_filename, sheetname_in, output_name, run_name, sample_li
 	for index, row in seqlog.iterrows():
 		#print(index,row)
 		if row['Output Folder Name'] == run_name:
-						print(column_title, str(row[column_title]))
+			print(column_title, str(row[column_title]))
 			if column_title == "OSII WGS ID (HQ)":
 				if str(row[column_title]) in sample_list:
 					matching_isolates.append(str(run_name)+"/"+str(row[column_title]))
