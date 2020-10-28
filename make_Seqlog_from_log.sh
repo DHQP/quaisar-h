@@ -290,7 +290,7 @@ while IFS= read -r var || [ -n "$var" ]; do
 	fi
 	# If 1 and only 1 file exists pull the first line as the best hit information
 	# echo "test-${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_${dec_genus}).txt"
-	if [[ -s "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_REFSEQ_${REFSEQ_date}.txt" ]]; then
+	if [[ -s "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_REFSEQ_${REFSEQ_date}).txt" ]]; then
 		ani_info=$(head -n 1 "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_REFSEQ_${REFSEQ_date}).txt")
 	elif [[ -s "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_All.txt" ]]; then
 		ani_info=$(head -n 1 "${OUTDATADIR}/ANI/best_ANI_hits_ordered(${sample_name}_vs_All).txt")
